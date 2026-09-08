@@ -2,7 +2,14 @@
 
 A bridge from a discrete-manufacturing line to
 [`arbiter-engine`](https://github.com/james-sheen/arbiter), built to the method
-in that repository's `BRIDGES.md` by someone who did not write the engine.
+in that repository's `BRIDGES.md` against nothing but its published surfaces.
+
+**The engine and this bridge share an author.** So the exam below is a
+deliberate self-exam, not the independent adoption `BRIDGES.md` asks for, and
+this sentence used to say otherwise. What the findings rest on is the method
+rather than the distance: the bridge was written from the published document and
+the released package, and every claim names the probe that produced it. Read
+them as a first pass by someone holding every advantage.
 
 The engine judges series and properties it is handed and refuses to invent a fact
 to fill a gap. Everything it refuses to own -- what exists on the line, what each

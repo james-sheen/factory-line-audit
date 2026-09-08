@@ -6,11 +6,17 @@ first to carry the method into a vertical sharing no vocabulary with them, **the
 parts that do not survive contact are worth more to the document than the parts
 that do**.
 
-This file is that. `factory-line-audit` was built to the method, against
-`arbiter-engine 0.1.10` from PyPI, by someone who did not write the engine. The
-verification battery is green on all thirteen legs. Everything below is a place
-where following the document produced a wrong answer, or where a measurement
-contradicted something the surrounding documents say.
+This file is that, with one correction to the invitation it answers.
+`factory-line-audit` was built to the method against `arbiter-engine 0.1.10`
+from PyPI, using only published surfaces -- but **it shares an author with the
+engine**, so it is a self-exam and not the independent adoption the invitation
+asks for. This paragraph claimed independence until it was checked. Section E
+already said the engine is *not somebody else's*, two hundred lines further
+down, which is where the true half of this was sitting the whole time.
+
+The verification battery is green on all thirteen legs. Everything below is a
+place where following the document produced a wrong answer, or where a
+measurement contradicted something the surrounding documents say.
 
 Every claim here names the probe that produced it. `battery/probe_engine.py` is
 code that re-runs; `battery/engine_floors.json` is its output.
