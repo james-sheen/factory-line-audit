@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "factory-line-audit"
+version = "0.1.0"
+description = "A bridge from a discrete-manufacturing line to arbiter-engine"
+readme = "README.md"
+# Both extras below resolve only on 3.10 or later -- `arbiter-engine` and
+# `presence-audit` each declare `>=3.10` in their own metadata, so under 3.9
+# `pip install factory-line-audit[detect]` cannot resolve at all. This used to
+# read `>=3.9`, which was true of the bare Stage 1 package and false of the
+# package as declared. A range is a claim about every interpreter in it.
+requires-python = ">=3.10"
+# PEP 639 SPDX expression, which is why the build requirement below is
+# `setuptools>=77` rather than the 61 it used to name: the string form of
+# this field is not understood before that. Deliberately NO
+# `License :: OSI Approved ::` classifier -- the index rejects the two
+# together, and a clean local build is not the check.
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+# Stage 1 -- presence, the declarations channel, its gate, and model generation
+# -- has no dependency at all. That is C1, and it is enforced here rather than
+# described: `pip install factory-line-audit` installs nothing else, so a Stage 1
+# run cannot silently be leaning on something the engine dragged in.
+dependencies = []
+
+[project.optional-dependencies]
+# The floor is 0.1.10 because it was MEASURED, not chosen: `battery/probe_pin.py`
+# installs each published release and runs this package's own detect against it.
+# 0.1.7, 0.1.8 and 0.1.9 all stop at
+#   AttributeError: 'EngineSession' object has no attribute 'unread_properties'
+# -- an accessor this package's hard-stop list depends on. Written from memory
+# this comment said the floor was forced by `add_relationship`; the run said
+# otherwise, which is the whole reason C8 asks for a run.
+# A range is a claim about every release inside it, so the claim starts where
+# the claim is true. Evidence: battery/pin_evidence.json.
+detect = ["arbiter-engine>=0.1.10,<0.2"]
+# The live leg's dependency, deliberately in its own extra. BRIDGES, on the
+# verification battery:
+# optional extras installed to make one leg run can pull a transitive major that
+# breaks something the battery does not look at.
+live = ["asyncua>=1.0,<3"]
+# This domain, offered to `presence-audit`'s neutral core as a registered
+# vertical -- `src/factory_line_audit/vertical.py`. Stage 1 keeps its own
+# dependency-free path; this is additive, and both are asserted to give the same
+# three-valued answer by `tests/test_vertical_agrees.py`.
+#
+# The floor is the core's first release, and it is where the claim starts being
+# true rather than where the history starts. The predecessor pin below was
+# written against an unpublished version deliberately, to bind publish order;
+# that ordering is discharged, because the core is published and this floor
+# names a release that exists.
+# The tests do not trust this pin either: they probe the BEHAVIOUR -- does the
+# installed core read `.points`? -- and skip with that reason when it does not,
+# because a version number is a proxy for the requirement and goes stale the
+# moment a backport or a local checkout is in play.
+# THE SPLIT'S PAYOFF, and it is measurable: this used to read
+# `bmc-sensor-audit>=0.2.6,<0.3`, which dragged in a Redfish client, an
+# entity-manager parser and a BMC command line to get a protocol and a
+# three-valued diff. Every symbol this vertical actually used is in
+# `presence-audit`, which has no dependencies of its own. Nothing about a BMC is
+# installed to run a factory line any more.
+vertical = ["presence-audit>=0.1.0,<0.2"]
+
+[project.scripts]
+factory-line-audit = "factory_line_audit.cli:main"
+
+# How an outside vertical reaches the core: the group is the core's, the module
+# is this package's. `presence-audit` finds it on a plain `pip install` and
+# needs no edit to know this domain exists.
+[project.entry-points."presence_audit.plugins"]
+factory-line = "factory_line_audit.vertical:register"
+
+[tool.setuptools.packages.find]
+where = ["src"]

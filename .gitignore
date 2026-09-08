@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+# The corpus is DERIVED and it EXPIRES. `make_corpus.py` sizes it from the
+# measured floors and stamps it at build time, because several axiom arms count
+# inside a window measured backwards from now. A committed copy would be stale
+# on arrival and the battery's `corpus` leg would refuse it -- so it is built,
+# never shipped. `engine_floors.json` and `pin_evidence.json` ARE committed:
+# they are measurements with provenance, and the whole point is that they can be
+# compared against a re-run.
+battery/corpus/
+battery/battery_result.json
+
+# Site-specific hygiene vocabulary. Untracked on purpose: a rule that forbids a
+# private name must spell that name out, so committing it here would publish
+# exactly what it exists to protect. See tools/hygiene_check.py.
+.hygiene-local.json
+
+.venv/
+venv/

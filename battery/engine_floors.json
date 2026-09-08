@@ -1,0 +1,947 @@
+{
+  "measured_on": "2026-09-03T12:00:00+00:00",
+  "engine_version": "0.1.10",
+  "engine_file": "/tmp/claude-0/-root-w/591c7f45-863b-4c41-868d-93b7c2e72686/scratchpad/envs/pristine/lib/python3.10/site-packages/arbiter_engine",
+  "python": "3.10.12",
+  "probes": {
+    "V1": {
+      "question": "how many decline reasons does this engine define",
+      "measured": {
+        "count": 12,
+        "reasons": [
+          "checker_error",
+          "insufficient_samples",
+          "missing_config",
+          "missing_entity_type",
+          "missing_property",
+          "missing_role",
+          "no_current_value",
+          "no_threshold",
+          "not_applicable",
+          "precondition_unmet",
+          "undefined_for_values",
+          "wrong_indicator_type"
+        ]
+      },
+      "note": ""
+    },
+    "V2": {
+      "question": "is a misspelled axiom visible on check, or only on model_describe",
+      "measured": {
+        "on_check": false,
+        "on_model_describe": true,
+        "invariants": 0
+      },
+      "note": "the check the author wrote did not run; whether the envelope says so is the question a bridge's hard stop depends on"
+    },
+    "B1": {
+      "question": "property only, no history: does it judge",
+      "measured": {
+        "findings": 1,
+        "declined": 0
+      },
+      "note": ""
+    },
+    "B2": {
+      "question": "history but no property: what reason",
+      "measured": {
+        "declined": [
+          "no_current_value"
+        ]
+      },
+      "note": ""
+    },
+    "M1": {
+      "question": "how many recent reversals before the reversal arm fires",
+      "measured": {
+        "fires_at": 3,
+        "per_count": {
+          "0": false,
+          "1": false,
+          "2": false,
+          "3": true,
+          "4": true,
+          "5": true
+        }
+      },
+      "note": "MODELING.md states the default reversal_tolerance is 3"
+    },
+    "M2": {
+      "question": "with reversal_tolerance declared, at how many reversals it fires",
+      "measured": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "5": 5
+      },
+      "note": "confirms the count is the declared tolerance and not an offset from it"
+    },
+    "M3": {
+      "question": "THE WINDOW, WHICH IS THE ONE THAT BITES: how far back can six reversals sit at 60 s cadence and still be counted",
+      "measured": {
+        "0 samples back": true,
+        "5 samples back": true,
+        "10 samples back": true,
+        "12 samples back": true,
+        "15 samples back": false,
+        "20 samples back": false,
+        "30 samples back": false
+      },
+      "note": "BRIDGES states the count-inside-a-window trap for insufficient_samples only. It applies to every count-based tolerance, and this is one: a 50-sample corpus with reversals spread through it fires at six, and with the same six at the end fires at three. Neither number is the tolerance; the window is doing the work"
+    },
+    "M4": {
+      "question": "the same tolerance measured with reversals SPREAD through the corpus rather than packed at the end",
+      "measured": {
+        "12": 3,
+        "20": 3,
+        "30": 6,
+        "60": 16
+      },
+      "note": "one engine behaviour, four different apparent tolerances, decided by where the injector put the fault"
+    },
+    "R1": {
+      "question": "THE ARM THE FIRST PASS MISSED: at what climb rate does the rate arm fire, with no rate declared",
+      "measured": {
+        "0.01": {
+          "fired": false,
+          "severity": null
+        },
+        "0.05": {
+          "fired": false,
+          "severity": null
+        },
+        "0.09": {
+          "fired": false,
+          "severity": null
+        },
+        "0.1": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "0.11": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "0.4": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "0.49": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "0.5": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "0.51": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "1.0": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "50.0": {
+          "fired": true,
+          "severity": "critical"
+        }
+      },
+      "note": "a counter faster than this is a finding the model never asked for, answered from an engine default rather than declined no_threshold"
+    },
+    "R2": {
+      "question": "does a declared rate_warning/rate_critical displace the default",
+      "measured": {
+        "0.5": {
+          "fired": false,
+          "severity": null
+        },
+        "50.0": {
+          "fired": false,
+          "severity": null
+        },
+        "200.0": {
+          "fired": true,
+          "severity": "warning"
+        }
+      },
+      "note": "if it does, a fast counter is declarable and the clean corpus can be quiet without choosing the corpus"
+    },
+    "A1": {
+      "question": "with allow_reset TRUE, how many drops to near zero before the reset arm says anything",
+      "measured": {
+        "fires_at": 3,
+        "per_count": {
+          "0": [],
+          "1": [],
+          "2": [],
+          "3": [
+            "monotonicity_reset_storm:c"
+          ],
+          "4": [
+            "monotonicity_reset_storm:c",
+            "monotonicity_rate:c"
+          ],
+          "5": [
+            "monotonicity_reset_storm:c"
+          ]
+        },
+        "note": "per_count shows EVERY arm, so the contamination is visible rather than filtered away: a drop steepens the fitted slope and the rate arm answers too. fires_at is the reset arm only"
+      },
+      "note": "MODELING.md says allow_reset excuses a drop-to-near-zero INDIVIDUALLY and that reset_tolerance is the separate count of them; this is the count, measured"
+    },
+    "A2": {
+      "question": "with allow_reset FALSE, which arm answers and at what count",
+      "measured": {
+        "reversal_fires_at": 3,
+        "reset_fires_at": null,
+        "per_count": {
+          "0": [],
+          "1": [],
+          "2": [],
+          "3": [
+            "monotonicity_reversal:c"
+          ],
+          "4": [
+            "monotonicity_reversal:c",
+            "monotonicity_rate:c"
+          ]
+        }
+      },
+      "note": "if one drop is a finding here and not above, `allow_reset` is the switch the guide describes and the tolerance only applies when it is on"
+    },
+    "A3": {
+      "question": "with reset_tolerance declared, at how many drops it fires",
+      "measured": {
+        "1": 1,
+        "2": 2,
+        "5": 5
+      },
+      "note": "reads whether the declared number IS the firing count, as the reversal tolerance turned out to be"
+    },
+    "A4": {
+      "question": "IS A RESET ALSO COUNTED AS A REVERSAL",
+      "measured": {
+        "allow_reset true -- reversal arm ever fires": false,
+        "allow_reset true -- reset arm ever fires": true,
+        "allow_reset false -- reversal arm ever fires": true,
+        "allow_reset false -- reset arm ever fires": false
+      },
+      "note": "the two tolerances default to the same number and are counted separately on purpose. If a drop lands in BOTH counters, a bridge that declares one of them is silently moving the other"
+    },
+    "A5": {
+      "question": "how far back can six drops sit and still be counted",
+      "measured": {
+        "0 samples back": true,
+        "5 samples back": true,
+        "10 samples back": true,
+        "15 samples back": false,
+        "25 samples back": false
+      },
+      "note": "the reversal arm's window bit this package once already; the reset arm is counted by the same checker and is not assumed to differ"
+    },
+    "H1": {
+      "question": "how many samples before learned HOMEOSTASIS stops declining",
+      "measured": 30,
+      "note": "the widest sample floor in the format"
+    },
+    "H2": {
+      "question": "30 samples at widening cadence: where does the window cut them off",
+      "measured": {
+        "1h": {
+          "declined": null,
+          "span_days": 1.21
+        },
+        "4h": {
+          "declined": null,
+          "span_days": 4.83
+        },
+        "5h": {
+          "declined": null,
+          "span_days": 6.04
+        },
+        "5.5h": {
+          "declined": null,
+          "span_days": 6.65
+        },
+        "5.7h": {
+          "declined": null,
+          "span_days": 6.89
+        },
+        "5.79h": {
+          "declined": null,
+          "span_days": 7.0
+        },
+        "5.9h": {
+          "declined": [
+            "insufficient_samples"
+          ],
+          "span_days": 7.13
+        },
+        "6h": {
+          "declined": [
+            "insufficient_samples"
+          ],
+          "span_days": 7.25
+        },
+        "8h": {
+          "declined": [
+            "insufficient_samples"
+          ],
+          "span_days": 9.67
+        },
+        "24h": {
+          "declined": [
+            "insufficient_samples"
+          ],
+          "span_days": 29.0
+        }
+      },
+      "note": "a floor is a count inside a window; a collector slower than this can never present it, however long it runs"
+    },
+    "H3": {
+      "question": "at what deviation from the learned baseline does it fire, and at what severity",
+      "measured": {
+        "1.0": {
+          "fired": false,
+          "severity": null
+        },
+        "1.5": {
+          "fired": false,
+          "severity": null
+        },
+        "2.0": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "2.5": {
+          "fired": true,
+          "severity": "warning"
+        },
+        "3.0": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "3.5": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "4.0": {
+          "fired": true,
+          "severity": "critical"
+        },
+        "6.0": {
+          "fired": true,
+          "severity": "critical"
+        }
+      },
+      "note": "this is what decides whether a corpus of noisy stationary series can ever be quiet"
+    },
+    "H4": {
+      "question": "over 12 independent Gaussian series with no injected shift, how often does learned HOMEOSTASIS fire",
+      "measured": {
+        "fired": 1,
+        "of": 12,
+        "per_seed": {
+          "0": true,
+          "1": false,
+          "2": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "6": false,
+          "7": false,
+          "8": false,
+          "9": false,
+          "10": false,
+          "11": false
+        }
+      },
+      "note": "the false-positive rate a clean corpus inherits per learned series"
+    },
+    "H5": {
+      "question": "declared setpoint: how many samples does it need",
+      "measured": {
+        "samples": 1,
+        "findings": 1,
+        "declined": []
+      },
+      "note": "the way past the widest floor in the format"
+    },
+    "H6": {
+      "question": "same 12 noisy series, but with a declared setpoint at 3 sigma tolerance",
+      "measured": {
+        "fired": 0,
+        "of": 12
+      },
+      "note": "if this is 0 where H4 is not, the remedy is a declaration rather than a quieter corpus"
+    },
+    "S1": {
+      "question": "expect_variation on a flat series: sample floor",
+      "measured": 10,
+      "note": ""
+    },
+    "S2": {
+      "question": "default arm: which oscillation periods fire, up to 60 samples",
+      "measured": {
+        "2": true,
+        "4": false,
+        "6": false,
+        "8": false
+      },
+      "note": "if only period 2 fires, the default detector is period-2 by construction"
+    },
+    "S3": {
+      "question": "with detect_slow_oscillation: which periods fire",
+      "measured": {
+        "2": true,
+        "4": true,
+        "6": true,
+        "8": true
+      },
+      "note": ""
+    },
+    "S5": {
+      "question": "a probe that DIED PART WAY THROUGH: how many trailing flat samples of fifty before expect_variation says so",
+      "measured": {
+        "5": false,
+        "10": false,
+        "20": false,
+        "30": false,
+        "40": false,
+        "45": false,
+        "49": false,
+        "50": true
+      },
+      "note": "MODELING.md describes this arm as *a reading that never moves is a dead probe*. If only k=50 fires, the arm means never moved in the WHOLE fed history, and a sensor that froze this morning is not reported until every varying sample has aged out. That is a much weaker check than the sentence suggests, and it decides how a fault must be injected"
+    },
+    "S4": {
+      "question": "does the slow-oscillation arm fire on Gaussian noise",
+      "measured": {
+        "fired": 0,
+        "of": 12
+      },
+      "note": ""
+    },
+    "C1": {
+      "question": "role: percentage above 100",
+      "measured": {
+        "findings": [
+          "impossible_value"
+        ]
+      },
+      "note": ""
+    },
+    "C2": {
+      "question": "role: count below zero",
+      "measured": {
+        "findings": [
+          "impossible_value"
+        ]
+      },
+      "note": ""
+    },
+    "C3": {
+      "question": "agrees_with at tolerance 0.01: where does it break",
+      "measured": {
+        "0.0": [],
+        "0.005": [],
+        "0.02": [
+          "redundant_disagreement:a"
+        ],
+        "0.05": [
+          "redundant_disagreement:a"
+        ]
+      },
+      "note": ""
+    },
+    "P1": {
+      "question": "latency role, threshold, and what each absence declines",
+      "measured": {
+        "12": [],
+        "34": [
+          "response_time_critical:lat"
+        ],
+        "no_role": [
+          "missing_role"
+        ],
+        "no_threshold@34": {
+          "declined": [],
+          "findings": [],
+          "invariants_attempted": 1
+        },
+        "no_threshold@10000000": {
+          "declined": [],
+          "findings": [],
+          "invariants_attempted": 1
+        }
+      },
+      "note": "the no_threshold rows are the interesting ones: an indicator counted in the denominator that neither fires nor declines has been reported as covered while being unable to produce a verdict"
+    },
+    "K1": {
+      "question": "deficit sizes that fire",
+      "measured": {
+        "0": false,
+        "1": false,
+        "5": false,
+        "20": true,
+        "50": true
+      },
+      "note": ""
+    },
+    "K2": {
+      "question": "does the indicator's window: reach the checker, or is there a global one",
+      "measured": {
+        "1min": {
+          "fired": true,
+          "span_min": 10,
+          "declined": null
+        },
+        "3min": {
+          "fired": true,
+          "span_min": 30,
+          "declined": null
+        },
+        "5min": {
+          "fired": true,
+          "span_min": 50,
+          "declined": null
+        },
+        "10min": {
+          "fired": true,
+          "span_min": 100,
+          "declined": null
+        },
+        "30min": {
+          "fired": true,
+          "span_min": 300,
+          "declined": null
+        }
+      },
+      "note": "if a deficit stops firing as the samples spread out while window: says 1h, the checker is reading its own window and the model cannot set it"
+    },
+    "K3": {
+      "question": "zero input",
+      "measured": {
+        "declined": [
+          "undefined_for_values"
+        ],
+        "findings": 0
+      },
+      "note": ""
+    },
+    "K7": {
+      "question": "is the threshold ABSOLUTE or RELATIVE, and where is it",
+      "measured": {
+        "100.0": {
+          "0.001": false,
+          "0.005": false,
+          "0.01": false,
+          "0.02": false,
+          "0.05": false,
+          "0.08": true,
+          "0.1": true,
+          "0.12": true,
+          "0.2": true
+        },
+        "8800.0": {
+          "0.001": false,
+          "0.005": false,
+          "0.01": false,
+          "0.02": false,
+          "0.05": false,
+          "0.08": true,
+          "0.1": true,
+          "0.12": true,
+          "0.2": true
+        }
+      },
+      "note": "if the same fraction fires at both scales, the threshold is relative -- which means a lifetime counter's balance is judged against a lifetime total. A real loss of forty parts against nine thousand is 0.45 %, and gets quieter every shift. The remedy is the bridge's: balance the derived per-interval rate, not the counter"
+    },
+    "K4": {
+      "question": "CONSERVATION declared with no conservation: block",
+      "measured": {
+        "declined": [
+          "missing_config"
+        ],
+        "findings": 0,
+        "unread": []
+      },
+      "note": ""
+    },
+    "N1": {
+      "question": "edge present, min_cardinality 1",
+      "measured": {
+        "findings": 1,
+        "declined": []
+      },
+      "note": ""
+    },
+    "N2": {
+      "question": "edge missing",
+      "measured": {
+        "findings": [
+          "missing_relationship:feeds_b"
+        ],
+        "declined": []
+      },
+      "note": ""
+    },
+    "N3": {
+      "question": "target entity type never observed",
+      "measured": {
+        "findings": [],
+        "declined": [
+          "missing_entity_type"
+        ]
+      },
+      "note": ""
+    },
+    "G1": {
+      "question": "required_property on a CONNECTIVITY indicator: what each state does",
+      "measured": {
+        "gate absent everywhere": {
+          "findings": [],
+          "declined": [
+            "missing_property"
+          ]
+        },
+        "gate present and true": {
+          "findings": [
+            "missing_relationship:feeds_b"
+          ],
+          "declined": []
+        },
+        "gate present and false": {
+          "findings": [],
+          "declined": [
+            "precondition_unmet"
+          ]
+        }
+      },
+      "note": ""
+    },
+    "G2": {
+      "question": "THE QUESTION THE HANDOFF LEFT OPEN: does required_property gate a NUMERIC axiom such as BOUNDEDNESS",
+      "measured": {
+        "findings": 1,
+        "declined": [],
+        "unread_fields": [
+          [
+            "required_property",
+            "axiom_not_declared",
+            [
+              "CONNECTIVITY"
+            ]
+          ]
+        ]
+      },
+      "note": "if BOUNDEDNESS still fires with the gate property absent, the gate does not reach this axiom and machine-state gating is the bridge's problem"
+    },
+    "G3": {
+      "question": "which reason does a bare absent property produce",
+      "measured": {
+        "declined": [
+          "missing_property"
+        ]
+      },
+      "note": ""
+    },
+    "W1": {
+      "question": "envelope meta on a run where everything declined",
+      "measured": {
+        "meta": {
+          "schema_version": 1,
+          "engine_version": "0.1.10",
+          "source": "live"
+        },
+        "invariants": 1,
+        "declined": [
+          "insufficient_samples"
+        ]
+      },
+      "note": ""
+    },
+    "X1": {
+      "question": "which model shape produces no_threshold",
+      "measured": {
+        "BOUNDEDNESS with no thresholds": {
+          "declined": [
+            "no_threshold"
+          ],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": []
+        },
+        "RESPONSIVENESS role latency, no critical": {
+          "declined": [],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": []
+        },
+        "HOMEOSTASIS setpoint with no tolerance": {
+          "declined": [
+            "undefined_for_values"
+          ],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": [
+            "indicator 'm' declares a setpoint the checker cannot use (setpoint=60, tolerance=None) \u2014 falling back to the learned baseline; both must be numbers and `tolerance` is required"
+          ]
+        }
+      },
+      "note": "a reason a bridge cannot reach is a row in the requirements table with nothing behind it"
+    },
+    "X2": {
+      "question": "of the twelve reasons, which can a model this bridge could generate actually produce",
+      "measured": {
+        "reachable": [
+          "insufficient_samples",
+          "missing_config",
+          "missing_entity_type",
+          "missing_property",
+          "missing_role",
+          "no_current_value",
+          "no_threshold",
+          "precondition_unmet",
+          "undefined_for_values",
+          "wrong_indicator_type"
+        ],
+        "not_reached": [
+          "checker_error",
+          "not_applicable"
+        ],
+        "detail": {
+          "insufficient_samples": {
+            "reached": true,
+            "how": "HOMEOSTASIS learned, 3 samples"
+          },
+          "missing_property": {
+            "reached": true,
+            "how": "BOUNDEDNESS, entity carries no property"
+          },
+          "no_current_value": {
+            "reached": true,
+            "how": "BOUNDEDNESS, history fed but no property"
+          },
+          "missing_entity_type": {
+            "reached": true,
+            "how": "CONNECTIVITY pointing at an unobserved type"
+          },
+          "missing_config": {
+            "reached": true,
+            "how": "CONSERVATION with no conservation: block"
+          },
+          "no_threshold": {
+            "reached": true,
+            "how": "three shapes tried"
+          },
+          "wrong_indicator_type": {
+            "reached": true,
+            "how": "BOUNDEDNESS on a STATE indicator"
+          },
+          "missing_role": {
+            "reached": true,
+            "how": "RESPONSIVENESS with no role"
+          },
+          "undefined_for_values": {
+            "reached": true,
+            "how": "CONSERVATION with zero input"
+          },
+          "precondition_unmet": {
+            "reached": true,
+            "how": "CONNECTIVITY gate present and false"
+          },
+          "not_applicable": {
+            "reached": false,
+            "how": "engine-side residue; no model shape a bridge can write reaches it"
+          },
+          "checker_error": {
+            "reached": false,
+            "how": "an engine fault; not reachable from a model"
+          }
+        }
+      },
+      "note": "BRIDGES says the vocabulary is the requirements document; this measures how much of it a bridge can be held to"
+    },
+    "K5": {
+      "question": "ten samples spread over SIX DAYS, with window: declared 5m, 1h and 30d",
+      "measured": {
+        "5m": {
+          "fired": true,
+          "declined": null
+        },
+        "1h": {
+          "fired": true,
+          "declined": null
+        },
+        "30d": {
+          "fired": true,
+          "declined": null
+        }
+      },
+      "note": "a respected window: of 5m would leave one sample inside it and the deficit unseeable. Identical results across all three mean the indicator's window: does not reach this checker"
+    },
+    "K6": {
+      "question": "how far back can a deficit be and still be seen",
+      "measured": {
+        "span 9 min": {
+          "fired": true,
+          "declined": null
+        },
+        "span 90 min": {
+          "fired": true,
+          "declined": null
+        },
+        "span 15 h": {
+          "fired": true,
+          "declined": null
+        },
+        "span 6 d": {
+          "fired": true,
+          "declined": null
+        }
+      },
+      "note": "the first probe of this package reported a 300 s horizon; this is the measurement that either reproduces it or retires it"
+    }
+  },
+  "floors": {
+    "HOMEOSTASIS": {
+      "samples": 30,
+      "max_cadence_s": 20844,
+      "first_failing_cadence_s": 21240,
+      "note": "learned baseline. A collector slower than max_cadence_s can never present this floor, however long it runs. A declared setpoint needs one sample and no window"
+    },
+    "STABILITY": {
+      "samples": 10,
+      "max_cadence_s": null,
+      "note": "expect_variation arm on a flat series"
+    },
+    "MONOTONICITY": {
+      "samples": 3,
+      "max_cadence_s": null,
+      "reversal_window_s": 900,
+      "note": "reversals, counted inside a window; the count is a tolerance rather than a floor, so it is not a corpus-size input"
+    }
+  },
+  "vocabulary": [
+    "checker_error",
+    "insufficient_samples",
+    "missing_config",
+    "missing_entity_type",
+    "missing_property",
+    "missing_role",
+    "no_current_value",
+    "no_threshold",
+    "not_applicable",
+    "precondition_unmet",
+    "undefined_for_values",
+    "wrong_indicator_type"
+  ],
+  "reachability": {
+    "insufficient_samples": {
+      "reached": true,
+      "how": "HOMEOSTASIS learned, 3 samples",
+      "saw": [
+        "insufficient_samples"
+      ]
+    },
+    "missing_property": {
+      "reached": true,
+      "how": "BOUNDEDNESS, entity carries no property",
+      "saw": [
+        "missing_property"
+      ]
+    },
+    "no_current_value": {
+      "reached": true,
+      "how": "BOUNDEDNESS, history fed but no property",
+      "saw": [
+        "no_current_value"
+      ]
+    },
+    "missing_entity_type": {
+      "reached": true,
+      "how": "CONNECTIVITY pointing at an unobserved type",
+      "saw": [
+        "missing_entity_type"
+      ]
+    },
+    "missing_config": {
+      "reached": true,
+      "how": "CONSERVATION with no conservation: block",
+      "saw": [
+        "missing_config"
+      ]
+    },
+    "no_threshold": {
+      "reached": true,
+      "how": "three shapes tried",
+      "saw": {
+        "BOUNDEDNESS with no thresholds": {
+          "declined": [
+            "no_threshold"
+          ],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": []
+        },
+        "RESPONSIVENESS role latency, no critical": {
+          "declined": [],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": []
+        },
+        "HOMEOSTASIS setpoint with no tolerance": {
+          "declined": [
+            "undefined_for_values"
+          ],
+          "findings": [],
+          "invariants": 1,
+          "loader_said": [
+            "indicator 'm' declares a setpoint the checker cannot use (setpoint=60, tolerance=None) \u2014 falling back to the learned baseline; both must be numbers and `tolerance` is required"
+          ]
+        }
+      }
+    },
+    "wrong_indicator_type": {
+      "reached": true,
+      "how": "BOUNDEDNESS on a STATE indicator",
+      "saw": [
+        "wrong_indicator_type"
+      ]
+    },
+    "missing_role": {
+      "reached": true,
+      "how": "RESPONSIVENESS with no role",
+      "saw": [
+        "missing_role"
+      ]
+    },
+    "undefined_for_values": {
+      "reached": true,
+      "how": "CONSERVATION with zero input",
+      "saw": [
+        "undefined_for_values"
+      ]
+    },
+    "precondition_unmet": {
+      "reached": true,
+      "how": "CONNECTIVITY gate present and false",
+      "saw": [
+        "precondition_unmet"
+      ]
+    },
+    "not_applicable": {
+      "reached": false,
+      "how": "engine-side residue; no model shape a bridge can write reaches it",
+      "saw": []
+    },
+    "checker_error": {
+      "reached": false,
+      "how": "an engine fault; not reachable from a model",
+      "saw": []
+    }
+  },
+  "corpus_samples": 50
+}

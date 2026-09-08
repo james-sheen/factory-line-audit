@@ -1,0 +1,221 @@
+{
+  "format": "factory-line-audit/register/1",
+  "line": "line1",
+  "name": "Cell 1 -- press, weld, assembly, inspection",
+  "_note": "SYNTHETIC. Every node id, limit and takt below is invented for a test corpus. Nothing here was exported from a plant, and no number in it is a fact about any real machine. SpareAnalog3 carries templated: true because a person declared it so, not because its name starts with Spare.",
+  "assets": [
+    {
+      "id": "PR-01",
+      "type": "Press",
+      "meta": {
+        "takt_s": 60
+      },
+      "tags": {
+        "die_temp_c": {
+          "node": "ns=2;s=PR01.DieTemp",
+          "class": "measurement"
+        },
+        "tonnage_kn": {
+          "node": "ns=2;s=PR01.Tonnage",
+          "class": "measurement"
+        },
+        "stroke_count": {
+          "node": "ns=2;s=PR01.Strokes",
+          "class": "counter"
+        },
+        "SpareAnalog3": {
+          "node": "ns=2;s=PR01.Spare3",
+          "class": "measurement",
+          "templated": true,
+          "_why": "Declared, not inferred. The name only PROPOSES this; a person put the flag here."
+        }
+      },
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "ST-01",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "ST-01",
+      "type": "Station",
+      "meta": {
+        "takt_s": 60,
+        "operation": "weld"
+      },
+      "tags": {
+        "cycle_time_s": {
+          "node": "ns=2;s=ST01.CycleTime",
+          "class": "measurement"
+        },
+        "parts_out": {
+          "node": "ns=2;s=ST01.PartsOut",
+          "class": "counter"
+        },
+        "weld_current_a": {
+          "node": "ns=2;s=ST01.WeldAmps",
+          "class": "measurement"
+        },
+        "state_running": {
+          "node": "ns=2;s=ST01.Running",
+          "class": "state"
+        }
+      },
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "ST-02",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "ST-02",
+      "type": "Station",
+      "meta": {
+        "takt_s": 60,
+        "operation": "assembly"
+      },
+      "tags": {
+        "cycle_time_s": {
+          "node": "ns=2;s=ST02.CycleTime",
+          "class": "measurement"
+        },
+        "parts_in": {
+          "node": "ns=2;s=ST02.PartsIn",
+          "class": "counter"
+        },
+        "parts_out": {
+          "node": "ns=2;s=ST02.PartsOut",
+          "class": "counter"
+        },
+        "parts_out_mes": {
+          "node": "ns=2;s=ST02.PartsOutMES",
+          "class": "counter"
+        },
+        "scrap_count": {
+          "node": "ns=2;s=ST02.Scrap",
+          "class": "counter"
+        },
+        "state_running": {
+          "node": "ns=2;s=ST02.Running",
+          "class": "state"
+        }
+      },
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "ST-03",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "ST-03",
+      "type": "Station",
+      "meta": {
+        "takt_s": 60,
+        "operation": "inspection"
+      },
+      "tags": {
+        "cycle_time_s": {
+          "node": "ns=2;s=ST03.CycleTime",
+          "class": "measurement"
+        },
+        "parts_out": {
+          "node": "ns=2;s=ST03.PartsOut",
+          "class": "counter"
+        },
+        "reject_pct": {
+          "node": "ns=2;s=ST03.RejectPct",
+          "class": "percentage"
+        }
+      },
+      "relations": []
+    },
+    {
+      "id": "ROB-01",
+      "type": "Robot",
+      "meta": {
+        "controller": "synthetic"
+      },
+      "tags": {
+        "program_cycle_ms": {
+          "node": "ns=2;s=ROB01.ProgCycle",
+          "class": "latency"
+        },
+        "axis1_temp_c": {
+          "node": "ns=2;s=ROB01.Ax1Temp",
+          "class": "measurement"
+        },
+        "joint_torque_nm": {
+          "node": "ns=2;s=ROB01.Torque",
+          "class": "measurement"
+        }
+      },
+      "relations": []
+    },
+    {
+      "id": "CNV-01",
+      "type": "Conveyor",
+      "meta": {},
+      "tags": {
+        "speed_mpm": {
+          "node": "ns=2;s=CNV01.Speed",
+          "class": "measurement"
+        },
+        "motor_current_a": {
+          "node": "ns=2;s=CNV01.Amps",
+          "class": "measurement"
+        }
+      },
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "PR-01",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "PLC-01",
+      "type": "Controller",
+      "meta": {
+        "scan_ms": 20
+      },
+      "tags": {
+        "heartbeat": {
+          "node": "ns=2;s=PLC01.Heartbeat",
+          "class": "counter"
+        },
+        "scan_time_ms": {
+          "node": "ns=2;s=PLC01.ScanTime",
+          "class": "latency"
+        },
+        "cpu_load_pct": {
+          "node": "ns=2;s=PLC01.CpuLoad",
+          "class": "percentage"
+        }
+      },
+      "relations": []
+    },
+    {
+      "id": "MES-GW",
+      "type": "Gateway",
+      "meta": {},
+      "tags": {
+        "queue_depth": {
+          "node": "ns=2;s=MESGW.Queue",
+          "class": "count"
+        },
+        "uplink_latency_ms": {
+          "node": "ns=2;s=MESGW.Uplink",
+          "class": "latency"
+        }
+      },
+      "relations": []
+    }
+  ]
+}

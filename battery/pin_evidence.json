@@ -1,0 +1,67 @@
+{
+  "declared_range": "arbiter-engine>=0.1.10,<0.2",
+  "lower": "0.1.10",
+  "upper": "0.2",
+  "published": [
+    "0.1.0",
+    "0.1.1",
+    "0.1.4",
+    "0.1.5",
+    "0.1.6",
+    "0.1.7",
+    "0.1.8",
+    "0.1.9",
+    "0.1.10"
+  ],
+  "inside_range": [
+    "0.1.10"
+  ],
+  "results": {
+    "0.1.7": {
+      "exit": 2,
+      "outcome": null,
+      "stderr": [
+        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+      ],
+      "installed": true,
+      "inside_range": false
+    },
+    "0.1.8": {
+      "exit": 2,
+      "outcome": null,
+      "stderr": [
+        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+      ],
+      "installed": true,
+      "inside_range": false
+    },
+    "0.1.9": {
+      "exit": 2,
+      "outcome": null,
+      "stderr": [
+        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+      ],
+      "installed": true,
+      "inside_range": false
+    },
+    "0.1.10": {
+      "exit": 0,
+      "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=0 attempted=48",
+      "stderr": [],
+      "installed": true,
+      "inside_range": true
+    }
+  },
+  "every_release_in_range_runs_clean": true,
+  "floor_is_forced_by": {
+    "0.1.7": [
+      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+    ],
+    "0.1.8": [
+      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+    ],
+    "0.1.9": [
+      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+    ]
+  }
+}
