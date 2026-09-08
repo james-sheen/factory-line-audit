@@ -208,6 +208,26 @@ class FactoryLineVocabulary:
     def count_keys(self) -> Mapping[str, str]:
         return {TEMPLATED: "templated_tags", UNRECOGNISED: "unrecognised_class"}
 
+    @property
+    def noun(self) -> Sequence[str]:
+        """A line has tags, not sensors. Until the core asked, its report told a
+        press cell about its `Sensor coverage`."""
+        return ("tag", "tags")
+
+    def count_labels(self) -> Mapping[str, Sequence[str]]:
+        """These two counts existed and were INVISIBLE in the text report: the
+        core printed two keys by name and they were the other vertical's, so
+        anything this domain set aside was in the JSON and nowhere a person
+        looked."""
+        return {
+            "templated_tags": (
+                "templated",
+                "a name carrying a substitution; not a tag on its own"),
+            "unrecognised_class": (
+                "class unrecognised",
+                "not classified either way; NOT counted as absent"),
+        }
+
     def classify(self, declared_type: Optional[str]) -> str:
         if declared_type in presence.TAG_CLASSES:
             return declared_type
