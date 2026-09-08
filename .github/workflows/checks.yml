@@ -69,15 +69,30 @@ jobs:
         # asserts nothing arrived with it, and then runs Stage 1 there.
         run: |
           set -euo pipefail
+          # Compared as distribution NAMES, not as freeze lines. `pip freeze`
+          # spells a local install `name @ file://...` rather than `name==0.1.0`,
+          # so the first version of this step stripped nothing and the package
+          # counted itself as a stray dependency. The claim is about what else
+          # arrived; the predicate has to be about that too.
+          names() { /tmp/bare/bin/python -m pip list --format=freeze \
+                    | sed 's/[ =@].*//' | tr 'A-Z_' 'a-z-' | sort -u; }
           python3 -m venv /tmp/bare
-          BEFORE=$(/tmp/bare/bin/pip freeze | sort)
+          BEFORE=$(names)
           /tmp/bare/bin/pip install --quiet .
-          AFTER=$(/tmp/bare/bin/pip freeze | grep -v '^factory-line-audit==' | sort)
-          if [ "${BEFORE}" != "${AFTER}" ]; then
-            echo "::error::installing the bare package brought something with it"
-            diff <(echo "${BEFORE}") <(echo "${AFTER}") || true
+          EXTRA=$(comm -13 <(echo "${BEFORE}") <(names) | grep -vx 'factory-line-audit' || true)
+          if [ -n "${EXTRA}" ]; then
+            echo "::error::installing the bare package brought: ${EXTRA}"
             exit 1
           fi
+          # Non-vacuity: the comparison must be able to SEE an arrival, or a
+          # clean result means only that the probe is blind.
+          /tmp/bare/bin/pip install --quiet 'arbiter-engine>=0.1.10,<0.2'
+          SEEN=$(comm -13 <(echo "${BEFORE}") <(names) | grep -vx 'factory-line-audit' || true)
+          if [ -z "${SEEN}" ]; then
+            echo "::error::the check cannot see a dependency that IS there"
+            exit 1
+          fi
+          echo "  it can see an arrival (${SEEN}); the bare install had none"
           python3 battery/make_corpus.py
           /tmp/bare/bin/factory-line-audit presence \
             --register examples/asset_register.json \
