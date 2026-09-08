@@ -21,6 +21,14 @@ measurement contradicted something the surrounding documents say.
 Every claim here names the probe that produced it. `battery/probe_engine.py` is
 code that re-runs; `battery/engine_floors.json` is its output.
 
+**Which engine each claim is about.** The exam measured `arbiter-engine 0.1.10`,
+which is still this package's range floor. Engine fixes recorded below as *fixed
+in source* shipped in **0.1.11 (2026-09-04)**; the engine has released 0.1.12 and
+0.1.13 since. Where a finding says a release does or does not have something, it
+means **that release** -- not whatever the range resolves to on the day you read
+this. A range resolves to its newest member, so a fresh install and the floor are
+different engines, and this file is about the floor.
+
 ---
 
 ## A. Findings against the method
@@ -338,8 +346,9 @@ arms, one `axiom:` field in the finding.
 > hoisted out of `_check_latency_threshold` into `check`, where a
 > `not_evaluated` record survives the caller's `extend`, and the two truthiness
 > threshold guards became `is not None` so a declared `critical: 0` is compared.
-> Eleven tests. **Everything below remains true of released 0.1.10**, which is
-> the version this exam measured and the version a consumer resolves today.
+> Eleven tests. **Released in 0.1.11, 2026-09-04.** Everything below remains
+> true of released 0.1.10 -- the version this exam measured, and this package's
+> range floor -- and is false from 0.1.11 on.
 
 **Probe X1.** A `role: latency` indicator declaring RESPONSIVENESS with no
 `critical:`, fed a latency of ten million:
@@ -398,10 +407,12 @@ records the latter in the manifest for every counter without one.
 
 ### B7. A hard stop worth having does not exist at the range floor
 
-`check().dropped_declarations` is `[Unreleased]` in the engine's CHANGELOG. The
-released 0.1.10 does not have it. A bridge that builds its *did the engine
-understand my model* hard stop on that leg has a hard stop that silently does not
-exist on the version its own range floor resolves.
+`check().dropped_declarations` was `[Unreleased]` in the engine's CHANGELOG when
+this was written; it **shipped in 0.1.11, 2026-09-04**. Released 0.1.10 still does
+not have it, and 0.1.10 is this package's range floor. A bridge that builds its
+*did the engine understand my model* hard stop on that leg has a hard stop that
+silently does not exist at the floor it advertises -- which
+`battery/probe_pin.py` exercises alongside every other release the range admits.
 
 `model_describe().model.unread_fields` carries the same fact with
 `reason: unknown_value` on **both**, which is where this package reads it.
@@ -517,21 +528,22 @@ not somebody else's. **Keyed by finding rather than by ticket**: the ticket
 numbers are internal and a reader here cannot resolve them, so the column that
 named them is gone and the finding it covers is the row.
 
-Two of these were still open when this table was written, and both are named as
-open rather than as pending numbers:
+Two of these were still open when this table was written. Both have since
+closed, and the rows say what closed them rather than naming ticket numbers a
+reader here cannot resolve:
 
 | Finding | Disposition |
 |---|---|
-| B5 | engine fix, **done in source** |
+| B5 | engine fix, **released in 0.1.11**, 2026-09-04 |
 | A6 | guide: name the read surface — **done** |
 | A2 | guide: `missing_entity_type` is two-sided — **done** |
 | A3 | guide: findings need floors too — **done** |
 | A4, A5, A7, B4 | four smaller guide edits — **done** |
 | B2, B3 | MODELING.md expectations — **done** |
 | B6 | decision: **ruled**, the default is not intended |
-| B6 | engine fix, **done in source**; blocked on the consumer below |
+| B6 | engine fix, **released in 0.1.11**, 2026-09-04, once the consumer below was ready |
 | A9 | this bridge cites the guide by ordinal |
-| -- | `bmc-sensor-audit` must classify `no_threshold` first — **open** |
+| -- | the consumer must classify `no_threshold` first — **done**: the feeder moved out in the 0.3.0 split, so it ships in `presence-audit` 0.1.2 |
 | -- | `allow_reset` / `reset_tolerance` measured — **done** |
 
 A1 was retired on measurement and is not filed. A8 is a note about a trap rather
