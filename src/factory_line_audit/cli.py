@@ -90,6 +90,42 @@ def cmd_draft(args) -> int:
     return CLEAN
 
 
+def cmd_validate_walk(args) -> int:
+    """Stage 1: no engine, no core, no server. A receiver checking a file.
+
+    A malformed walk is INCOMPLETE and never FINDINGS: a file that could not be
+    read is not a finding about the line.
+    """
+    from .walkcheck import observations, validate_walk
+    try:
+        with open(args.walk, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except OSError as unreadable:
+        _out(f"  COULD NOT COMPLETE: cannot read {args.walk}: {unreadable}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+    except json.JSONDecodeError as malformed:
+        _out(f"  COULD NOT COMPLETE: {args.walk} is not JSON: {malformed}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+
+    problems = validate_walk(payload)
+    notes = observations(payload) if isinstance(payload, dict) else []
+    code = INCOMPLETE if problems else CLEAN
+    if args.json:
+        _out(json.dumps({"walk": args.walk, "problems": problems,
+                         "observations": notes}, indent=2))
+    else:
+        for problem in problems:
+            _out(f"  {problem}")
+        for note in notes:
+            _out(f"  note: {note}")
+        if not problems:
+            _out(f"  {args.walk} is a well-formed walk")
+    _out(f"OUTCOME exit={code} verdict={MEANING[code]}")
+    return code
+
+
 def cmd_regression(args) -> int:
     from .regression import compare, render
     code, body = compare(args.before, args.after, args.rename)
@@ -218,6 +254,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = subs.add_parser("attest", help="re-report a stored attestation")
     p.add_argument("attestation"); p.set_defaults(fn=cmd_attest)
+
+    p = subs.add_parser("validate-walk",
+                        help="everything wrong with a walk file, or nothing")
+    p.add_argument("walk")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=cmd_validate_walk)
 
     p = subs.add_parser("regression", help="two walks of one line, oldest first")
     p.add_argument("--before", required=True)
