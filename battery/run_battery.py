@@ -55,6 +55,8 @@ FIXTURE = os.path.join(EXAMPLES, "declarations", "line1.fixture.json")
 FLOORS = os.path.join(HERE, "engine_floors.json")
 PIN = os.path.join(HERE, "pin_evidence.json")
 
+CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
+
 RESULTS = []
 
 
@@ -413,6 +415,52 @@ def leg_conformance(python):
                                      f"verdict and disagree", added=True)
     return leg("conformance", answer["code"], answer["note"], added=True)
 
+# ----------------------------------------------------------------- regression
+def leg_regression(python, workdir):
+    """The verb through the CLI, which the suite does not reach: argparse's
+    two-argument `--rename`, the OUTCOME line and the exit code.
+
+    Both halves in one leg, because either alone passes for the wrong reason. A
+    declared move that paired proves nothing if an undeclared one pairs too --
+    that would be the guess the review gate exists to refuse, reported as a
+    clean run.
+    """
+    before = os.path.join(CORPUS, "clean.json")
+    absent = os.path.join(CORPUS, "asset_absent.json")
+    if not os.path.exists(before) or not os.path.exists(absent):
+        return leg("regression", 2, "the corpus is absent; run make_corpus.py",
+                   added=True)
+    with open(before, encoding="utf-8") as handle:
+        walk = json.load(handle)
+    moved = json.loads(json.dumps(walk))
+    for sample in moved["samples"]:
+        sample["nodes"] = {f"L1.{node}": reading
+                           for node, reading in sample["nodes"].items()}
+    shifted = os.path.join(workdir, "moved.json")
+    with open(shifted, "w", encoding="utf-8") as handle:
+        json.dump(moved, handle)
+
+    dropped = cli(python, ["regression", "--before", before, "--after", absent])
+    if dropped.returncode != FINDINGS:
+        return leg("regression", 2, f"a walk missing an asset exited "
+                                    f"{dropped.returncode}, not {FINDINGS}",
+                   added=True)
+    declared = cli(python, ["regression", "--before", before, "--after", shifted,
+                            "--rename", "ns=2;s=", "L1.ns=2;s="])
+    if declared.returncode != CLEAN:
+        return leg("regression", 1, f"a DECLARED prefix move exited "
+                                    f"{declared.returncode}: {declared.stdout.strip()[-160:]}",
+                   added=True)
+    undeclared = cli(python, ["regression", "--before", before, "--after", shifted])
+    if undeclared.returncode != FINDINGS:
+        return leg("regression", 1, "an UNDECLARED prefix move did not report; "
+                                    "a rename this package inferred is the "
+                                    "guess the review gate refuses", added=True)
+    return leg("regression", 0, "a removal reports, a declared prefix move "
+                                "pairs, and the same move undeclared is "
+                                "reported and not applied", added=True)
+
+
 # ------------------------------------------------------------------------ pin
 def leg_pin():
     """Every declared range, not the one that happened to be measured first.
@@ -548,6 +596,7 @@ def main() -> int:
         leg_tool(args.python, workdir)
         leg_suite(args.python)
         leg_conformance(args.python)
+        leg_regression(args.python, workdir)
         leg_pin()
         if args.no_ship:
             leg("ship", 2, "NOT RUN: --no-ship. Every other leg ran against a "

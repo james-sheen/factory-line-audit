@@ -173,10 +173,25 @@ class Walk:
     def __init__(self, walk: Mapping[str, Any]) -> None:
         self._w = walk
         self._index = presence.walk_index(walk)
+        self._points = [Node(node, readings)
+                        for node, readings in self._index.items()]
 
     @property
     def points(self) -> Iterable[Node]:
-        return [Node(node, readings) for node, readings in self._index.items()]
+        """THE SAME OBJECTS EVERY TIME, and that is load-bearing rather than an
+        optimisation. The core's `compare_walks` claims points into a set keyed
+        on `id()` and then re-reads `.points` to see what it did not claim.
+        Built on read, this handed it new objects the second time, nothing was
+        ever claimed, and two walks sharing 24 of 27 points came back as 27
+        removed and 24 added.
+
+        The protocol asks for `Iterable[CapturedPoint]` and says nothing about
+        identity, so building on read is a legal reading of it -- the core's own
+        `conformance.Capture` does exactly that, and comparing the core's sample
+        capture with ITSELF returns three removed and three added. Filed as
+        presence-audit #4. This is the local half, and it is right either way.
+        """
+        return self._points
 
     @property
     def captured_at(self) -> Optional[str]:

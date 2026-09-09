@@ -102,12 +102,12 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Fourteen legs: the twelve in `BRIDGES.md`'s verification battery, plus two added
+Fifteen legs: the twelve in `BRIDGES.md`'s verification battery, plus three added
 with the argument written down.
 
-All three additions started here. `pin` was proposed by this package and is now a
+All four additions started here. `pin` was proposed by this package and is now a
 row in the guide's own table, so it is no longer an addition and is unmarked
-below. `corpus` and `conformance` still are.
+below. `corpus`, `conformance` and `regression` still are.
 
 | Leg | Question |
 |---|---|
@@ -123,6 +123,7 @@ below. `corpus` and `conformance` still are.
 | `tool` | Is the tool surface closed, and does every entry construct? |
 | `suite` | Does the suite pass from a directory that is not the repository? |
 | `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
+| `regression` **added** | Does a declared prefix move pair, and the same move undeclared get reported and not applied? |
 | `pin` | Does every release inside each declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 

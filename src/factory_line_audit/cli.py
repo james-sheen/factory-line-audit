@@ -90,6 +90,17 @@ def cmd_draft(args) -> int:
     return CLEAN
 
 
+def cmd_regression(args) -> int:
+    from .regression import compare, render
+    code, body = compare(args.before, args.after, args.rename)
+    if args.json:
+        _out(json.dumps(body, indent=2))
+    else:
+        _out(render(body))
+    _out(f"OUTCOME exit={code} verdict={MEANING[code]}")
+    return code
+
+
 def cmd_gate(args) -> int:
     from .declarations import gate
     from .presence import load_register
@@ -207,6 +218,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = subs.add_parser("attest", help="re-report a stored attestation")
     p.add_argument("attestation"); p.set_defaults(fn=cmd_attest)
+
+    p = subs.add_parser("regression", help="two walks of one line, oldest first")
+    p.add_argument("--before", required=True)
+    p.add_argument("--after", required=True)
+    p.add_argument("--rename", action="append", nargs=2, default=[],
+                   metavar=("OLD", "NEW"),
+                   help="a prefix move somebody signed for, as two arguments. "
+                        "Repeatable. Two and not OLD=NEW because every OPC UA "
+                        "node id contains an equals sign. A shift nobody "
+                        "declared is REPORTED and never applied")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=cmd_regression)
     return parser
 
 
