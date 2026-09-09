@@ -29,7 +29,7 @@ re-measurement did not reproduce them.
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
-named below.** Seventeen battery legs green, including a real OPC UA server read
+named below.** Eighteen battery legs green, including a real OPC UA server read
 by a real client, the built wheel installed into an empty environment, and a
 sweep of the whole `arbiter-engine` range this package declares. Nothing here has
 touched a plant. Every number in `examples/` is invented.
@@ -108,12 +108,13 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Seventeen legs: the twelve in `BRIDGES.md`'s verification battery, plus the ones
+Eighteen legs: the twelve in `BRIDGES.md`'s verification battery, plus the ones
 this package added, each with the argument written down.
 
 Every addition started here. `pin` was proposed by this package and is now a
 row in the guide's own table, so it is no longer an addition and is unmarked
-below. `corpus`, `conformance`, `regression`, `capture` and `engine` still are.
+below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
+`orchestrator` still are.
 
 | Leg | Question |
 |---|---|

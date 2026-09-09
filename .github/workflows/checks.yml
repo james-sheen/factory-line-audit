@@ -128,6 +128,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # `qa-orchestrator` is a CONSUMER of this package, not a dependency of
+      # it: the `orchestrator` leg registers this tool as a referee and a tier
+      # in that harness and checks the registries come back. Without it here
+      # the leg reports 2 by name -- honest, and never run.
+      #
       # `virtualenv` and not the standard library's `venv`, because `ship` is
       # what calls it -- it builds an empty environment and installs the wheel
       # into it, and `build` is what makes the wheel. Missing either, `ship`
@@ -138,7 +143,7 @@ jobs:
           set -euo pipefail
           python3 -m pip install --quiet --upgrade pip
           python3 -m pip install --quiet -e '.[detect,live,vertical]' \
-            pytest build virtualenv
+            pytest build virtualenv qa-orchestrator
 
       # DERIVED and expiring, so it is not committed. Several axiom arms count
       # inside a window measured backwards from now, and a corpus on disk goes

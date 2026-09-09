@@ -14,7 +14,7 @@ asks for. This paragraph claimed independence until it was checked. Section E
 already said the engine is *not somebody else's*, two hundred lines further
 down, which is where the true half of this was sitting the whole time.
 
-The verification battery is green on all seventeen legs. Everything below is a
+The verification battery is green on all eighteen legs. Everything below is a
 place where following the document produced a wrong answer, or where a
 measurement contradicted something the surrounding documents say.
 

@@ -63,7 +63,7 @@ CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
 #: and a battery that ran nothing exits 0.
 SELECTABLE = ("engine", "corpus", "live", "draft", "gate", "clean", "fault",
               "absent", "attest", "pipe", "tool", "suite", "conformance",
-              "regression", "capture", "pin", "ship")
+              "regression", "capture", "orchestrator", "pin", "ship")
 
 RESULTS = []
 
@@ -626,6 +626,34 @@ def leg_capture(live_python, workdir):
                              "pass that read no value", added=True)
 
 
+# --------------------------------------------------------------- orchestrator
+def leg_orchestrator(python):
+    """Does this package's `qa-orchestrator` vertical register and come back?
+
+    Named for the consumer rather than `vertical`, because this package already
+    has one of those: `[vertical]` is the extra carrying its `presence-audit`
+    plugin. Two different plugin systems, and one word for both is how a reader
+    ends up debugging the wrong seam.
+
+    Thin, like `conformance`: the decision is in `probe_qa_vertical.py`. A
+    vertical that leaves a tier or a referee behind poisons the next scenario
+    in the same process, and the symptom surfaces somewhere else entirely.
+    """
+    probe = os.path.join(HERE, "probe_qa_vertical.py")
+    proc = subprocess.run([python, probe], capture_output=True, text=True,
+                          cwd=ROOT, timeout=300,
+                          env=dict(os.environ, PYTHONPATH=SRC))
+    if not proc.stdout.strip():
+        return leg("orchestrator", 2, f"the probe printed nothing: "
+                                  f"{(proc.stderr or '')[-200:]}", added=True)
+    answer = json.loads(proc.stdout)
+    if answer["code"] != proc.returncode:
+        return leg("orchestrator", 2, f"the probe reported {answer['code']} and "
+                                  f"exited {proc.returncode}; they are one "
+                                  f"verdict and disagree", added=True)
+    return leg("orchestrator", answer["code"], answer["note"], added=True)
+
+
 # ------------------------------------------------------------------------ pin
 def leg_pin():
     """Every declared range, not the one that happened to be measured first.
@@ -804,6 +832,8 @@ def main() -> int:
             leg_regression(args.python, workdir)
         if wanted("capture"):
             leg_capture(args.live_python, workdir)
+        if wanted("orchestrator"):
+            leg_orchestrator(args.python)
         if wanted("pin"):
             leg_pin()
         if wanted("ship"):
