@@ -90,6 +90,81 @@ def cmd_draft(args) -> int:
     return CLEAN
 
 
+def cmd_capture(args) -> int:
+    """One OUTCOME line is the contract; the rest of stdout is prose.
+
+    `walked` means a walk was written. `unchanged` means the address space still
+    holds exactly the declared nodes it held when the cache was written, so no
+    value was read -- which is a different claim from *nothing changed*, and the
+    cache says so in as many words.
+    """
+    from . import capture as capture_module
+    from .presence import load_register
+    try:
+        register = load_register(args.register)
+    except formats.Refusal as refused:
+        _out(f"  COULD NOT COMPLETE: {refused}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+
+    try:
+        import asyncua  # noqa: F401
+    except ImportError:
+        _out("  COULD NOT COMPLETE: the [live] extra is not installed, so "
+             "nothing was read from any server")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+
+    try:
+        if args.membership_cache:
+            fresh = capture_module.membership(register, args.target)
+            cached = None
+            if os.path.exists(args.membership_cache):
+                with open(args.membership_cache, encoding="utf-8") as handle:
+                    cached = json.load(handle)
+            if capture_module.membership_unchanged(cached, fresh):
+                _out(f"  {len(fresh['present'])} declared node(s) still in the "
+                     f"address space, {len(fresh['absent'])} not. No value was "
+                     f"read and none is cached: this says the membership is "
+                     f"unchanged, not that a reading is")
+                _out("OUTCOME unchanged")
+                return CLEAN
+            with open(args.membership_cache, "w", encoding="utf-8") as handle:
+                json.dump(fresh, handle, indent=2)
+                handle.write("\n")
+
+        walk = capture_module.capture(register, args.target,
+                                      samples=args.samples,
+                                      budget_s=args.budget,
+                                      namespace=args.namespace)
+    except formats.Refusal as refused:
+        _out(f"  COULD NOT COMPLETE: {refused}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+    except Exception as unreachable:
+        _out(f"  COULD NOT COMPLETE: {args.target}: "
+             f"{type(unreachable).__name__}: {unreachable}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+
+    raw = json.dumps(walk, indent=2) + "\n"
+    with open(args.out, "w", encoding="utf-8") as handle:
+        handle.write(raw)
+    source = walk["source"]
+    _out(f"  {source['nodes_served']}/{source['nodes_requested']} declared "
+         f"node(s) served, "
+         f"{len(source['nodes_not_in_address_space'])} absent, "
+         f"{len(source['nodes_present_but_unreadable'])} present and not "
+         f"reading; "
+         f"{len(walk['samples'])} sample(s) -> {args.out}")
+    _out(f"  taken with security_policy={source['security_policy']} "
+         f"security_mode={source['security_mode']} pinned={source['pinned']}")
+    if args.print_digest:
+        _out(capture_module.digest(raw))
+    _out("OUTCOME walked")
+    return CLEAN
+
+
 def cmd_validate_walk(args) -> int:
     """Stage 1: no engine, no core, no server. A receiver checking a file.
 
@@ -254,6 +329,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = subs.add_parser("attest", help="re-report a stored attestation")
     p.add_argument("attestation"); p.set_defaults(fn=cmd_attest)
+
+    p = subs.add_parser("capture", help="read a live OPC UA server, write a walk")
+    register_arg(p)
+    p.add_argument("--target", required=True, metavar="opc.tcp://HOST:PORT/PATH")
+    p.add_argument("--out", required=True)
+    p.add_argument("--samples", type=int, default=5)
+    p.add_argument("--budget", type=float, default=30.0,
+                   help="seconds to spend collecting, whatever --samples asks")
+    p.add_argument("--namespace", help="namespace URI; index 2 is assumed without it")
+    p.add_argument("--print-digest", action="store_true",
+                   help="print the content handle of the file written")
+    p.add_argument("--membership-cache", metavar="PATH",
+                   help="ask only whether the address space still holds the "
+                        "declared nodes. No value is read or stored")
+    p.set_defaults(fn=cmd_capture)
 
     p = subs.add_parser("validate-walk",
                         help="everything wrong with a walk file, or nothing")

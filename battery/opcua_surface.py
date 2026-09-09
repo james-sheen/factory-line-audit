@@ -141,111 +141,52 @@ def _quality_word(status) -> str:
 
 
 async def collect(port: int, out: str, want: int, budget_s: float) -> int:
-    from asyncua import Client, ua
+    """Rung 2, driven through the SHIPPED client.
 
-    wanted = node_ids()
-    seen = {}
-    served = 0
-    absent = []
-    unreadable = {}
-    refused = {}
-    async with Client(url=f"opc.tcp://127.0.0.1:{port}/factory-line-audit/") as client:
-        idx = await client.get_namespace_index(NAMESPACE)
-        handles = {}
-        for node in wanted:
-            handle = client.get_node(ua.NodeId(node.split(";s=", 1)[1], idx))
-            try:
-                await handle.read_data_value()
-                handles[node] = handle
-                served += 1
-            except ua.UaStatusCodeError as exc:
-                # THE DISTINCTION STAGE 1 IS FOR, MADE WHERE IT HAS TO BE MADE.
-                #
-                # A read that raises is not evidence the node is missing.
-                # `BadNodeIdUnknown` says the address space has no such node;
-                # every other Bad status says the node is there and the server
-                # will not vouch for its value. asyncua raises on both, and the
-                # first version of this collector caught the exception and put
-                # the node on the absent list -- which collapsed
-                # present-but-not-reading into absent one layer ABOVE the stage
-                # whose whole job is to keep them apart. Stage 1 could not have
-                # recovered it: by then the node simply was not in the walk.
-                code = getattr(exc, "code", None)
-                try:
-                    name = ua.StatusCode(code).name
-                except Exception:
-                    name = str(exc)
-                if "NodeIdUnknown" in str(name) or "NodeIdUnknown" in str(exc):
-                    absent.append(node)
-                else:
-                    handles[node] = handle
-                    served += 1
-                    unreadable[node] = str(name)
-            except Exception as exc:
-                absent.append(node)
-                refused[node] = f"{type(exc).__name__}: {exc}"
-        deadline = asyncio.get_event_loop().time() + budget_s
-        while len(seen) < want and asyncio.get_event_loop().time() < deadline:
-            nodes = {}
-            stamp = None
-            for node, handle in handles.items():
-                try:
-                    value = await handle.read_data_value()
-                except ua.UaStatusCodeError as exc:
-                    # Present, and the server will not vouch for it. Carried
-                    # into the walk with a Bad word and a null value, which is
-                    # what Stage 1 reads as present-but-not-reading.
-                    nodes[node] = {"v": None, "q": "Bad_DeviceFailure",
-                                   "t": stamp or _dt.datetime.now(
-                                       _dt.timezone.utc).isoformat().replace(
-                                           "+00:00", "Z")}
-                    continue
-                except Exception:
-                    continue
-                when = value.SourceTimestamp
-                if when is None:
-                    continue
-                if when.tzinfo is None:
-                    when = when.replace(tzinfo=_dt.timezone.utc)
-                text = when.isoformat().replace("+00:00", "Z")
-                stamp = stamp or text
-                nodes[node] = {"v": value.Value.Value,
-                               "q": _quality_word(value.StatusCode),
-                               "t": text}
-            if stamp and stamp not in seen and nodes:
-                seen[stamp] = {"t": stamp, "nodes": nodes}
-            await asyncio.sleep(0.03)
+    This held its own OPC UA client until 2026-09-09, which made rung 2 evidence
+    about a client nobody installs -- and kept a second copy of FINDINGS A7, the
+    rule that tells `BadNodeIdUnknown` apart from every other `Bad_*`. The
+    package now ships `capture`, so the ladder reads the code a user gets and
+    the rule has one home.
 
-    body = {
-        "format": "factory-line-audit/walk/1",
-        "line": "line1",
-        "source": {
-            "kind": "opcua",
-            "endpoint": f"opc.tcp://127.0.0.1:{port}/factory-line-audit/",
-            "collected_by": "battery/opcua_surface.py collect (asyncua)",
-            "cadence_s": 60,
-            "provenance": "EVIDENCE LADDER RUNG 2. A real OPC UA client read a "
-                          "real OPC UA server on localhost. The server was fed "
-                          "the rung-1 corpus and served each value with its "
-                          "source timestamp, so the cadence above is the one "
-                          "the timestamps carry, not the polling interval. "
-                          "Anonymous, unencrypted, localhost: nothing here is "
-                          "evidence about security or about a plant.",
-            "nodes_requested": len(wanted),
-            "nodes_served": served,
-            "nodes_not_in_address_space": absent,
-            "nodes_present_but_unreadable": unreadable,
-            "nodes_refused_for_another_reason": refused,
-        },
-        "samples": [seen[k] for k in sorted(seen)],
-    }
+    The provenance below is still this file's: what makes a walk rung-2 evidence
+    is how it was OBTAINED, and only this script knows the server on the other
+    end was fed the rung-1 corpus.
+
+    `node_ids()` and not the register: this asks the surface for every node it
+    was told to serve, INCLUDING the templated one the register loader drops, so
+    the rung keeps exercising a node the shipped path filters out.
+    """
+    import sys as _sys
+    _sys.path.insert(0, os.path.join(ROOT, "src"))
+    from factory_line_audit.capture import _walk
+
+    endpoint = f"opc.tcp://127.0.0.1:{port}/factory-line-audit/"
+    body = await _walk(endpoint, node_ids(), samples=want, budget_s=budget_s,
+                       namespace=None)
+    body["line"] = "line1"
+    body["source"].update({
+        "collected_by": "battery/opcua_surface.py collect, through "
+                        "factory_line_audit.capture (asyncua)",
+        "cadence_s": 60,
+        "provenance": "EVIDENCE LADDER RUNG 2. A real OPC UA client read a "
+                      "real OPC UA server on localhost. The server was fed "
+                      "the rung-1 corpus and served each value with its "
+                      "source timestamp, so the cadence above is the one "
+                      "the timestamps carry, not the polling interval. "
+                      "Anonymous, unencrypted, localhost: nothing here is "
+                      "evidence about security or about a plant.",
+    })
     with open(out, "w", encoding="utf-8") as handle:
-        json.dump(body, handle, indent=1)
+        json.dump(body, handle, indent=2)
         handle.write("\n")
+    source = body["source"]
     print(f"collected {len(body['samples'])} distinct samples from "
-          f"{served}/{len(wanted)} nodes; {len(absent)} not in the address "
-          f"space, {len(unreadable)} present but unreadable")
-    return 0 if body["samples"] else 2
+          f"{source['nodes_served']}/{source['nodes_requested']} nodes; "
+          f"{len(source['nodes_not_in_address_space'])} not in the address "
+          f"space, {len(source['nodes_present_but_unreadable'])} present but "
+          f"unreadable")
+    return 0
 
 
 def main() -> int:

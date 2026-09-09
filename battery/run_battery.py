@@ -36,6 +36,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import datetime as _dt
 import json
 import os
@@ -461,6 +462,103 @@ def leg_regression(python, workdir):
                                 "reported and not applied", added=True)
 
 
+# -------------------------------------------------------------------- capture
+def leg_capture(live_python, workdir):
+    """The shipped verb against a real server: the OUTCOME line, the content
+    handle, and the membership cache.
+
+    `live` already proves the client reads a server. This proves the CLI
+    contract around it, which is the part a consumer actually depends on: one
+    OUTCOME line, a handle `sha256sum` agrees with, and a second run that says
+    `unchanged` without reading a value.
+    """
+    surface = os.path.join(HERE, "opcua_surface.py")
+    check = subprocess.run([live_python, "-c", "import asyncua"],
+                           capture_output=True)
+    if check.returncode:
+        return leg("capture", 2, "asyncua is not installed in the live "
+                                 "interpreter; nothing was captured",
+                   added=True)
+    walk_out = os.path.join(workdir, "captured.json")
+    cache = os.path.join(workdir, "membership.json")
+    endpoint = "opc.tcp://127.0.0.1:48419/factory-line-audit/"
+
+    def against_a_fresh_surface(argv):
+        """One server per command: the surface plays the corpus once and stops."""
+        ready = os.path.join(workdir, "ready.json")
+        if os.path.exists(ready):
+            os.unlink(ready)
+        server = subprocess.Popen(
+            [live_python, surface, "serve", "--port", "48419", "--ready", ready],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            for _ in range(120):
+                if os.path.exists(ready):
+                    break
+                time.sleep(0.25)
+            else:
+                return None
+            return cli(live_python, argv, timeout=180)
+        finally:
+            server.terminate()
+            try:
+                server.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                server.kill()
+
+    first = against_a_fresh_surface(
+        ["capture", "--register", REGISTER, "--target", endpoint,
+         "--out", walk_out, "--samples", "2", "--budget", "15",
+         "--print-digest", "--membership-cache", cache])
+    if first is None:
+        return leg("capture", 2, "the surface never announced a working pass",
+                   added=True)
+    outcomes = [line for line in first.stdout.splitlines()
+                if line.startswith("OUTCOME")]
+    if len(outcomes) != 1 or outcomes[0] != "OUTCOME walked":
+        return leg("capture", 1, f"the OUTCOME line is the contract and this "
+                                 f"run printed {outcomes}", added=True)
+    if not os.path.exists(walk_out):
+        return leg("capture", 1, "OUTCOME walked and no walk was written",
+                   added=True)
+
+    printed = [line.strip() for line in first.stdout.splitlines()
+               if line.strip().startswith("sha256:")]
+    with open(walk_out, "rb") as handle:
+        actual = "sha256:" + hashlib.sha256(handle.read()).hexdigest()
+    if printed[:1] != [actual]:
+        return leg("capture", 1, f"the handle printed is not the one sha256sum "
+                                 f"computes, so a recipient cannot check it "
+                                 f"without this tool: {printed} vs {actual}",
+                   added=True)
+
+    with open(cache, encoding="utf-8") as handle:
+        cached = handle.read()
+    if '"v"' in cached or '"q"' in cached:
+        return leg("capture", 1, "the membership cache holds a reading; it is "
+                                 "membership only and says so in the file",
+                   added=True)
+
+    second = against_a_fresh_surface(
+        ["capture", "--register", REGISTER, "--target", endpoint,
+         "--out", walk_out + ".2", "--samples", "2", "--budget", "15",
+         "--membership-cache", cache])
+    if second is None:
+        return leg("capture", 2, "the surface never came back for the second "
+                                 "pass", added=True)
+    if "OUTCOME unchanged" not in second.stdout:
+        return leg("capture", 1, f"an unchanged address space did not report "
+                                 f"unchanged: "
+                                 f"{second.stdout.strip().splitlines()[-1:]}",
+                   added=True)
+    if os.path.exists(walk_out + ".2"):
+        return leg("capture", 1, "it reported unchanged and wrote a walk "
+                                 "anyway", added=True)
+    return leg("capture", 0, "one OUTCOME line, a handle sha256sum agrees "
+                             "with, a cache holding no reading, and a second "
+                             "pass that read no value", added=True)
+
+
 # ------------------------------------------------------------------------ pin
 def leg_pin():
     """Every declared range, not the one that happened to be measured first.
@@ -597,6 +695,7 @@ def main() -> int:
         leg_suite(args.python)
         leg_conformance(args.python)
         leg_regression(args.python, workdir)
+        leg_capture(args.live_python, workdir)
         leg_pin()
         if args.no_ship:
             leg("ship", 2, "NOT RUN: --no-ship. Every other leg ran against a "

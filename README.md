@@ -102,17 +102,18 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Fifteen legs: the twelve in `BRIDGES.md`'s verification battery, plus three added
+Sixteen legs: the twelve in `BRIDGES.md`'s verification battery, plus four added
 with the argument written down.
 
-All four additions started here. `pin` was proposed by this package and is now a
+All five additions started here. `pin` was proposed by this package and is now a
 row in the guide's own table, so it is no longer an addition and is unmarked
-below. `corpus`, `conformance` and `regression` still are.
+below. `corpus`, `conformance`, `regression` and `capture` still are.
 
 | Leg | Question |
 |---|---|
 | `corpus` **added** | Is the corpus still inside the narrowest measured window? |
 | `live` | Can a live OPC UA surface be read at all, and how many nodes did it serve? |
+| `capture` **added** | Does the shipped verb print one OUTCOME line, a handle `sha256sum` agrees with, and a membership cache holding no reading? |
 | `draft` | Does draft tooling emit an unreviewed statement and exit clean? |
 | `gate` | Does the gate then refuse that exact file, by name? |
 | `clean` | Over an uncontaminated corpus, does the pipeline stay quiet? |

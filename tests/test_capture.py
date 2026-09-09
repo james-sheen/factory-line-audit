@@ -1,0 +1,108 @@
+"""`capture`'s decisions that do not need a server.
+
+What DOES need one -- the client, the status-word rule, the OUTCOME line and
+the digest of a real file -- is the `capture` battery leg, against the rung-2
+surface. Faking a server here would test the fake.
+"""
+from __future__ import annotations
+
+import hashlib
+
+from factory_line_audit.capture import (declared_nodes, digest,
+                                        membership_unchanged)
+
+REGISTER = {"assets": [
+    {"id": "PR-01", "tags": {
+        "die_temp_c": {"node": "ns=2;s=PR01.DieTemp", "class": "measurement"},
+        "tonnage_kn": {"node": "ns=2;s=PR01.Tonnage", "class": "measurement"}}},
+    {"id": "ST-01", "tags": {
+        "cycle_time_s": {"node": "ns=2;s=ST01.CycleTime", "class": "measurement"}}},
+]}
+
+
+class TestReadingTheRegister:
+    def test_tags_are_an_object_not_a_list(self):
+        """Written as a list first, which iterated the KEYS and asked a string
+        for `.get("node")`. The verb then reported could-not-complete against a
+        server that was answering perfectly, which is the worst shape of wrong:
+        it blamed the far end."""
+        assert declared_nodes(REGISTER) == ["ns=2;s=PR01.DieTemp",
+                                            "ns=2;s=PR01.Tonnage",
+                                            "ns=2;s=ST01.CycleTime"]
+
+    def test_a_register_with_no_tags_asks_for_nothing(self):
+        assert declared_nodes({"assets": [{"id": "A", "tags": {}}]}) == []
+
+    def test_a_node_declared_twice_is_asked_for_once(self):
+        twice = {"assets": [{"id": "A", "tags": {
+            "one": {"node": "ns=2;s=X"}, "two": {"node": "ns=2;s=X"}}}]}
+        assert declared_nodes(twice) == ["ns=2;s=X"]
+
+
+class TestTheContentHandle:
+    def test_it_is_sha256_over_the_bytes(self):
+        """So `sha256sum` computes the same value and a recipient can check the
+        handle without installing this tool -- which is the whole reason it is
+        over the file rather than over a re-serialisation of it."""
+        raw = b'{"format": "factory-line-audit/walk/1"}\n'
+        assert digest(raw) == "sha256:" + hashlib.sha256(raw).hexdigest()
+
+    def test_text_and_bytes_agree(self):
+        raw = '{"a": 1}\n'
+        assert digest(raw) == digest(raw.encode("utf-8"))
+
+    def test_a_different_file_is_a_different_handle(self):
+        assert digest("a") != digest("b")
+
+
+class TestTheMembershipCache:
+    FRESH = {"endpoint": "opc.tcp://127.0.0.1:4840/x",
+             "namespaces": ["urn:a", "urn:b"],
+             "present": ["ns=2;s=A"], "absent": []}
+
+    def test_the_same_answer_from_the_same_server_is_unchanged(self):
+        assert membership_unchanged(dict(self.FRESH), self.FRESH)
+
+    def test_a_different_endpoint_is_not_unchanged(self):
+        """Found by getting it wrong: two runs against two different servers on
+        two different ports reported `unchanged`, because their address spaces
+        matched. A skipped walk justified by another machine's address space is
+        worse than no cache at all."""
+        other = dict(self.FRESH, endpoint="opc.tcp://127.0.0.1:4841/x")
+        assert not membership_unchanged(other, self.FRESH)
+
+    def test_a_node_that_appeared_is_not_unchanged(self):
+        assert not membership_unchanged(
+            dict(self.FRESH, present=["ns=2;s=A", "ns=2;s=B"]), self.FRESH)
+
+    def test_a_node_that_went_absent_is_not_unchanged(self):
+        assert not membership_unchanged(
+            dict(self.FRESH, absent=["ns=2;s=Z"]), self.FRESH)
+
+    def test_a_new_namespace_is_not_unchanged(self):
+        assert not membership_unchanged(
+            dict(self.FRESH, namespaces=["urn:a"]), self.FRESH)
+
+    def test_no_cache_at_all_is_not_unchanged(self):
+        """The first run must walk, not report a comparison it never made."""
+        assert not membership_unchanged(None, self.FRESH)
+        assert not membership_unchanged("", self.FRESH)
+
+
+class TestItStaysOutOfStageOne:
+    def test_asyncua_is_imported_lazily(self):
+        """Stage 1 declares no dependency and a test asserts it. Importing the
+        client library at module scope would make `presence` need the [live]
+        extra to run at all."""
+        import ast
+        import pathlib
+        source = pathlib.Path(__file__).resolve().parents[1] / "src" \
+            / "factory_line_audit" / "capture.py"
+        tree = ast.parse(source.read_text(encoding="utf-8"))
+        top = set()
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                top.update(a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                top.add(node.module.split(".")[0])
+        assert "asyncua" not in top, top
