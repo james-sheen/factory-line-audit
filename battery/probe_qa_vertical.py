@@ -142,32 +142,69 @@ def measure() -> dict:
             problems.append(f"the tier refused a foreign entity for the wrong "
                             f"reason: {type(refusal).__name__}: {refusal}")
 
-    # And the scenario end to end, when the tool and the client library are
+    # And the scenarios end to end, when the tool and the client library are
     # both here. A tier that registers and is never started is a declaration.
-    scenario = os.path.join(HERE, "scenarios", "tag-removed.yaml")
-    ran = "not attempted"
-    try:
-        import asyncua                                          # noqa: F401
+    def _run_scenario(name):
         environment = dict(os.environ)
         environment["PATH"] = (os.path.dirname(sys.executable) + os.pathsep
                                + environment.get("PATH", ""))
-        proc = subprocess.run(
+        return subprocess.run(
             [sys.executable, "-m", "qa_orchestrator.cli", "--plugin",
-             os.path.join(HERE, "qa_vertical.py"), "run", scenario],
+             os.path.join(HERE, "qa_vertical.py"), "run",
+             os.path.join(HERE, "scenarios", name)],
             capture_output=True, text=True, cwd=ROOT, env=environment,
             timeout=900)
+
+    ran = "not attempted"
+    wrong_on_purpose = "not attempted"
+    must_fail = os.path.join(HERE, "scenarios", "must-fail.yaml")
+    if not os.path.exists(must_fail):
+        problems.append("scenarios/must-fail.yaml is gone. It is the only thing "
+                        "here that shows the comparator compares anything; "
+                        "without it a blind referee and a working one look the "
+                        "same from a suite where everything passes")
+    try:
+        import asyncua                                          # noqa: F401
+
+        proc = _run_scenario("tag-removed.yaml")
         ran = f"exit {proc.returncode}"
         if proc.returncode != 0 or "every expectation held" not in proc.stdout:
             problems.append(f"the scenario did not hold: exit "
                             f"{proc.returncode}: "
                             f"{(proc.stdout or proc.stderr).strip()[-300:]}")
+
+        # THE WRONG-ON-PURPOSE SCENARIO. It must fail, and it must fail FOR THE
+        # REASONS IT WAS WRITTEN FOR. Requiring only a non-zero exit would be
+        # met by a scenario broken some other way -- an unknown substrate, a
+        # typo'd verb -- which says nothing about whether anything is compared.
+        if os.path.exists(must_fail):
+            bad = _run_scenario("must-fail.yaml")
+            wrong_on_purpose = f"exit {bad.returncode}"
+            output = bad.stdout + bad.stderr
+            if bad.returncode == 0:
+                problems.append(
+                    "scenarios/must-fail.yaml PASSED. Both of its expectations "
+                    "are false, so the comparator is not comparing -- and every "
+                    "green scenario beside it means nothing")
+            # One tell per channel, named by subject rather than by the whole
+            # sentence: the wording is the harness's to change, the subject is
+            # not.
+            for tell, channel in (("exit code", "the referee channel"),
+                                  ("ns=2;s=PR01.DieTemp", "the substrate channel"),
+                                  ("expected reading", "the substrate channel")):
+                if tell not in output:
+                    problems.append(
+                        f"must-fail.yaml failed without {channel} producing a "
+                        f"mismatch naming {tell!r}; it failed for some other "
+                        f"reason, which proves nothing")
     except ImportError:
-        ran = "asyncua absent, so the tier could not be started"
+        ran = wrong_on_purpose = "asyncua absent, so the tier could not be started"
 
     answer = {"qa_orchestrator": qa_orchestrator.__version__,
               "tier_states": tier_states,
               "foreign_entity_refused": foreign_refused,
               "scenario": ran,
+              "wrong_on_purpose": wrong_on_purpose,
               "summary": summary, "added": added,
               "findings_path_reachable": reachable,
               "checked_path_reachable": denominator == 48}
@@ -178,7 +215,9 @@ def measure() -> dict:
             f"qa-orchestrator {qa_orchestrator.__version__}: registries come "
             f"back ({added['substrates']} + {added['tools']}, no verbs); a "
             f"foreign entity is refused by name; the scenario ran end to end "
-            f"({ran}); findings stay unreachable pending their #1"))
+            f"({ran}) and the wrong-on-purpose one failed for both of its "
+            f"reasons ({wrong_on_purpose}); findings stay unreachable pending "
+            f"their #1"))
     return answer
 
 

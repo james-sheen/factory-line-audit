@@ -1,0 +1,38 @@
+# THIS SCENARIO IS WRONG ON PURPOSE AND MUST FAIL. Do not fix it.
+#
+# Every other scenario here passes, and a suite where everything passes cannot
+# tell a working comparator from one that compares nothing. The reference
+# vertical in this harness learned that the expensive way: its report schema
+# guessed the key its tool keeps finding text under, so every `findings.text`
+# expectation in three shipped scenarios matched nothing and passed, and only
+# running one against a real report showed it.
+#
+# So this asserts two things that the run will contradict, one in each
+# expectation channel:
+#
+#   * the REFEREE channel -- exit 0, where a line with an absent tag returns 1;
+#   * the SUBSTRATE channel -- a tag reporting `reading` in the same phase that
+#     removed it.
+#
+# `probe_qa_vertical.py` runs this and requires BOTH named mismatches. Requiring
+# only that it fails would be satisfied by a scenario broken in some unrelated
+# way -- an unknown substrate, a typo'd verb -- which proves nothing about
+# whether anything is being compared.
+format: qa-scenario/2
+name: WRONG ON PURPOSE -- both expectations are false and both must be caught
+substrate: factory-opcua
+referee: factory-line-audit
+mode: presence
+config: ../../examples/asset_register.json
+
+phases:
+  - note: a tag is removed, and both expectations deny it
+    captures: 1
+    action: {remove: "ns=2;s=PR01.DieTemp"}
+    expect:
+      # The line already withholds two nodes and this removes a third, so the
+      # tool returns 1. Asserting 0 is the deliberate error.
+      referee: {exit: 0}
+      substrate:
+        # Removed in this very phase. Asserting it still reads is the other one.
+        "ns=2;s=PR01.DieTemp": reading

@@ -396,3 +396,45 @@ class TestTheStatusParagraphCountsWhatExists:
         assert any(n in line.lower() for n in self.UPSTREAM)
         assert self.ANY_VERSION.search(line)
         assert not self.ANY_VERSION.search("the range this package declares")
+
+
+class TestTheLegTableListsEveryLeg:
+    """The table of legs, held to the legs that exist.
+
+    It listed sixteen while the battery ran eighteen: `engine` and
+    `orchestrator` were both added without a row, and the paragraph above the
+    table already named `orchestrator` as an addition. **The count guard could
+    not see this** -- the total said eighteen and was right; it was the
+    enumeration underneath that was short. A number and a list are two claims,
+    and checking the number does not check the list.
+    """
+
+    RUNNER = ROOT / "battery" / "run_battery.py"
+
+    def _legs(self) -> set[str]:
+        found = re.search(r"SELECTABLE\s*=\s*\((.*?)\)",
+                          self.RUNNER.read_text(encoding="utf-8"), re.S)
+        assert found, "no SELECTABLE tuple in the battery runner"
+        return set(re.findall(r'"([^"]+)"', found.group(1)))
+
+    def _tabled(self) -> set[str]:
+        """Leg names in the README's own table, read out of the first column."""
+        return set(re.findall(r"^\|\s*`([a-z-]+)`", _readme(), re.MULTILINE))
+
+    def test_there_is_a_table_to_read(self):
+        assert len(self._tabled()) >= 10, (
+            f"only {sorted(self._tabled())} parsed out of the README's table; "
+            f"the pattern is not finding it, so the rules below hold nothing")
+
+    def test_every_leg_has_a_row(self):
+        missing = sorted(self._legs() - self._tabled())
+        assert not missing, (
+            f"these legs run and the README's table does not list them: "
+            f"{missing}. A reader counting the table gets a different number "
+            f"from the one the paragraph above it states")
+
+    def test_no_row_names_a_leg_that_does_not_run(self):
+        """The other direction, and the cheaper mistake: a row for a leg that
+        was renamed or removed reads as coverage that is not there."""
+        extra = sorted(self._tabled() - self._legs())
+        assert not extra, f"the table lists legs the battery does not run: {extra}"

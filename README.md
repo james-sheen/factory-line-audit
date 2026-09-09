@@ -118,6 +118,7 @@ below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
 
 | Leg | Question |
 |---|---|
+| `engine` **added** | Does `probe_engine.py` still complete, and do the committed floors still describe the engine that resolves? |
 | `corpus` **added** | Is the corpus still inside the narrowest measured window? |
 | `live` | Can a live OPC UA surface be read at all, and how many nodes did it serve? |
 | `capture` **added** | Does the shipped verb print one OUTCOME line, a handle `sha256sum` agrees with, and a membership cache holding no reading? |
@@ -132,6 +133,7 @@ below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
 | `suite` | Does the suite pass from a directory that is not the repository? |
 | `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
 | `regression` **added** | Does a declared prefix move pair, and the same move undeclared get reported and not applied? |
+| `orchestrator` **added** | Does this package register as a `qa-orchestrator` vertical, hand back all three registries, refuse another vertical's entity, and does the wrong-on-purpose scenario still fail? |
 | `pin` | Does every release inside each declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 
