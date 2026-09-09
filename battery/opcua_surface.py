@@ -100,9 +100,12 @@ async def serve(port: int, walk_path: str, ready: str) -> None:
                     str(reading.get("t") or sample["t"]).replace("Z", "+00:00"))
                 if node == WITHHOLD_BAD:
                     quality, value = "Bad_DeviceFailure", None
-                status = (ua.StatusCode(ua.StatusCodes.Good)
-                          if quality.lower().startswith("good")
-                          else ua.StatusCode(ua.StatusCodes.BadDeviceFailure))
+                # THE WORD THE CORPUS ASKED FOR, not a two-way collapse. This
+                # served `Good` or `BadDeviceFailure` and nothing else, so the
+                # rung could not produce a substituted value at all -- and
+                # `Good_LocalOverride`, the case the substituted count exists
+                # for, lived only in the synthetic corpus.
+                status = ua.StatusCode(_status_code(quality))
                 if value is None:
                     variant = ua.Variant(None, ua.VariantType.Null)
                 elif isinstance(value, bool):
@@ -126,18 +129,28 @@ async def serve(port: int, walk_path: str, ready: str) -> None:
         await asyncio.sleep(3.0)
 
 
-def _quality_word(status) -> str:
-    """An OPC UA StatusCode -> the word this package's Stage 1 grades.
+def _status_code(word: str):
+    """A corpus status word -> the OPC UA code a real server would report.
 
-    Collapsing this to a bool here would move the decision Stage 1 exists to
-    make into the collector, where nothing can see it.
+    Nothing normalises on the way back any more. This file used to carry a
+    `_quality_word` that turned every code the client read into one of three
+    corpus spellings -- `Good`, `Good_LocalOverride`, `Bad_DeviceFailure` --
+    which meant Stage 1 never saw what `asyncua` actually reports and its
+    grader was never exercised against it. The grader now reads the real
+    spelling, so this serves the real code and the walk carries it through.
     """
-    name = getattr(status, "name", None) or str(status)
-    if "Good" in name:
-        return "Good_LocalOverride" if "Override" in name else "Good"
-    if "Uncertain" in name:
-        return "Uncertain"
-    return "Bad_DeviceFailure"
+    from asyncua import ua
+    flat = str(word or "Good").replace("_", "").replace("-", "").lower()
+    for name in dir(ua.StatusCodes):
+        if not name.startswith(("Good", "Bad", "Uncertain")):
+            continue
+        if name.lower() == flat:
+            return getattr(ua.StatusCodes, name)
+    if flat.startswith("good"):
+        return ua.StatusCodes.Good
+    if flat.startswith("uncertain"):
+        return ua.StatusCodes.Uncertain
+    return ua.StatusCodes.BadDeviceFailure
 
 
 async def collect(port: int, out: str, want: int, budget_s: float) -> int:

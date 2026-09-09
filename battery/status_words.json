@@ -1,0 +1,1392 @@
+{
+  "asyncua": "2.0.1",
+  "code": 0,
+  "codes": 274,
+  "graded": {
+    "Bad": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAggregateConfigurationRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAggregateInvalidInputs": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAggregateListMismatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAggregateNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAlreadyExists": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadApplicationSignatureInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadArgumentsMissing": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadAttributeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadBoundNotFound": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadBoundNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadBrowseDirectionInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadBrowseNameDuplicated": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadBrowseNameInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateChainIncomplete": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateHostNameInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateIssuerRevocationUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateIssuerRevoked": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateIssuerTimeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateIssuerUseNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificatePolicyCheckFailed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateRevocationUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateRevoked": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateTimeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateUntrusted": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateUriInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCertificateUseNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadCommunicationError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionAlreadyDisabled": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionAlreadyEnabled": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionAlreadyShelved": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionBranchAlreadyAcked": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionBranchAlreadyConfirmed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionDisabled": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConditionNotShelved": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConfigurationError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConnectionClosed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadConnectionRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadContentFilterInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadContinuationPointInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataEncodingInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataEncodingUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataLost": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataSetIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataTypeIdUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDataUnavailable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDeadbandFilterInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDecodingError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDependentValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDeviceFailure": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDialogNotActive": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDialogResponseInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDisconnect": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDiscoveryUrlMissing": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDominantValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadDuplicateReferenceNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEdited_OutOfRange": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEdited_OutOfRange_DominantValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEdited_OutOfRange_DominantValueChanged_DependentValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEncodingError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEncodingLimitsExceeded": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEndOfStream": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEntryExists": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEventFilterInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEventIdUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadEventNotAcknowledgeable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadExpectedStreamToBlock": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterElementInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterLiteralInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterOperandCountMismatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterOperandInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterOperatorInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadFilterOperatorUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadHistoryOperationInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadHistoryOperationUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIdentityChangeNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIdentityTokenInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIdentityTokenRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIndexRangeDataMismatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIndexRangeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadIndexRangeNoData": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInitialValue_OutOfRange": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInsufficientClientProfile": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInternalError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInvalidArgument": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInvalidSelfReference": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInvalidState": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInvalidTimestamp": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadInvalidTimestampArgument": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadLicenseExpired": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadLicenseLimitsExceeded": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadLicenseNotAvailable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadLocaleNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadLocked": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMaxAgeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMaxConnectionsReached": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMessageNotAvailable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMethodInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMonitoredItemFilterInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMonitoredItemFilterUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMonitoredItemIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadMonitoringModeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoCommunication": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoContinuationPoints": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoData": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoDataAvailable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoDeleteRights": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoEntryExists": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoMatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoSubscription": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoValidCertificates": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNoValue": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeAttributesInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeClassInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeIdExists": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeIdRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeIdUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNodeNotInView": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNonceInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotConnected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotExecutable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotFound": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotImplemented": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotReadable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotTypeDefinition": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNotWritable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNothingToDo": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadNumericOverflow": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadObjectDeleted": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOperationAbandoned": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOutOfMemory": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOutOfRange": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOutOfRange_DominantValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOutOfRange_DominantValueChanged_DependentValueChanged": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadOutOfService": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadParentNodeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadProtocolVersionUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadQueryTooComplex": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadReferenceLocalOnly": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadReferenceNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadReferenceTypeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRefreshInProgress": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestCancelledByClient": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestCancelledByRequest": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestHeaderInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestInterrupted": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestNotAllowed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestNotComplete": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestTimeout": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestTooLarge": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequestTypeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadRequiresLock": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadResourceUnavailable": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadResponseTooLarge": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecureChannelClosed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecureChannelIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecureChannelTokenUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecurityChecksFailed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecurityModeInsufficient": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecurityModeRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSecurityPolicyRejected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSemaphoreFileMissing": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSensorFailure": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSequenceNumberInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSequenceNumberUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerHalted": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerIndexInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerNameMissing": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerNotConnected": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerTooBusy": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServerUriInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadServiceUnsupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSessionClosed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSessionIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSessionNotActivated": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadShelvingTimeOutOfRange": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadShutdown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSourceNodeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadStateNotActive": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadStructureMissing": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSubscriptionIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadSyntaxError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTargetNodeIdInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpEndpointUrlInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpInternalError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpMessageTooLarge": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpMessageTypeInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpNotEnoughResources": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpSecureChannelUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTcpServerTooBusy": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTicketInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTicketRequired": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTimeout": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTimestampNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTimestampsToReturnInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManyArguments": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManyMatches": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManyMonitoredItems": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManyOperations": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManyPublishRequests": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManySessions": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTooManySubscriptions": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTransactionFailed": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTransactionPending": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTypeDefinitionInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadTypeMismatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadUnexpectedError": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadUnknownResponse": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadUserAccessDenied": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadUserSignatureInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadViewIdUnknown": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadViewParameterMismatch": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadViewTimestampInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadViewVersionInvalid": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadWaitingForInitialData": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadWaitingForResponse": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadWouldBlock": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "BadWriteNotSupported": {
+      "grade": "bad",
+      "substituted": false,
+      "usable": false
+    },
+    "Good": {
+      "grade": "good",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCallAgain": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCascade": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCascadeInitializationAcknowledged": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCascadeInitializationRequest": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCascadeNotInvited": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCascadeNotSelected": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodClamped": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCommunicationEvent": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodCompletesAsynchronously": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodDataIgnored": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodDependentValueChanged": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodEdited": {
+      "grade": "good_localoverride",
+      "substituted": true,
+      "usable": true
+    },
+    "GoodEdited_DependentValueChanged": {
+      "grade": "good_localoverride",
+      "substituted": true,
+      "usable": true
+    },
+    "GoodEdited_DominantValueChanged": {
+      "grade": "good_localoverride",
+      "substituted": true,
+      "usable": true
+    },
+    "GoodEdited_DominantValueChanged_DependentValueChanged": {
+      "grade": "good_localoverride",
+      "substituted": true,
+      "usable": true
+    },
+    "GoodEntryInserted": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodEntryReplaced": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodFaultStateActive": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodInitiateFaultState": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodLocalOverride": {
+      "grade": "good_localoverride",
+      "substituted": true,
+      "usable": true
+    },
+    "GoodMoreData": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodNoData": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodNonCriticalTimeout": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodOverload": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodPasswordChangeRequired": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodPostActionFailed": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodResultsMayBeIncomplete": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodRetransmissionQueueNotSupported": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodShutdownEvent": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodSubNormal": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "GoodSubscriptionTransferred": {
+      "grade": "good_subnormal",
+      "substituted": false,
+      "usable": true
+    },
+    "Uncertain": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainConfigurationError": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainDataSubNormal": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainDependentValueChanged": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainDominantValueChanged": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainEngineeringUnitsExceeded": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainInitialValue": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainLastUsableValue": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainNoCommunicationLastUsableValue": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainNotAllNodesAvailable": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainOverRange": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainReferenceNotDeleted": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainReferenceOutOfServer": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainSensorCalibration": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainSensorNotAccurate": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainSimulatedValue": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainSubNormal": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainSubstituteValue": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainTransducerInManual": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    },
+    "UncertainUnderRange": {
+      "grade": "uncertain",
+      "substituted": false,
+      "usable": false
+    }
+  },
+  "grades": {
+    "bad": 222,
+    "good": 1,
+    "good_localoverride": 5,
+    "good_subnormal": 26,
+    "uncertain": 20
+  },
+  "grades_declared": [
+    "bad",
+    "good",
+    "good_localoverride",
+    "good_subnormal",
+    "uncertain"
+  ],
+  "note": "asyncua 2.0.1: all 274 status codes grade into ['bad', 'good', 'good_localoverride', 'good_subnormal', 'uncertain'], every Good usable, every Bad and Uncertain not, and every code that names a substitution marked as one"
+}

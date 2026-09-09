@@ -139,7 +139,9 @@ every release in two ranges. Three legs are the exception and run in CI:
 only leg whose question is about software this package does not control; and
 `live` and `capture` on one, because the OPC UA surface is anonymous,
 localhost and over in seconds, and `capture` is the only verb here that talks
-to anything. A leg nothing triggers is a leg nobody reads, which is the same
+to anything. `probe_status_words.py` runs beside them: it grades every status
+word `asyncua` can report, which is the population a real PLC draws from
+rather than the three the corpus happens to carry. A leg nothing triggers is a leg nobody reads, which is the same
 argument the legs themselves are written from.
 
 ## Formats

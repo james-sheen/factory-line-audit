@@ -92,6 +92,14 @@ jobs:
       - name: A real server, read by the shipped client
         run: python3 battery/run_battery.py --only live --only capture
 
+      # P4. Every status word the client library can hand this package, graded.
+      # Written against the surface's three words this would measure the corpus;
+      # the population that matters is what a real PLC can produce. It found 36
+      # of 274 misgraded on the day it was written, including the one the
+      # substituted-sample count exists for.
+      - name: Every status word the client library can report
+        run: python3 battery/probe_status_words.py
+
   checks:
     runs-on: ubuntu-latest
     steps:

@@ -153,3 +153,57 @@ class TestStageOneNeedsNothingInstalled:
                     continue
                 for name in names:
                     assert "arbiter" not in name, f"{module.__name__} imports {name}"
+
+
+class TestTheSpellingARealServerUses:
+    """OPC UA names these codes without separators, and `asyncua` reports them
+    that way: `GoodLocalOverride`, `BadDeviceFailure`, `GoodSubNormal`. The
+    synthetic corpus writes `Good_LocalOverride`. Matching only the second
+    meant every compound word from a live server fell through to the
+    unknown-word branch -- 36 of the 274 codes `asyncua` defines.
+
+    It survived because the battery's collector translated into the corpus
+    spelling before Stage 1 saw it, so the fixture agreed with the grader
+    because a layer in between made them agree. `battery/probe_status_words.py`
+    now grades the whole library vocabulary; these are the cases that matter
+    stated where they can be read.
+    """
+
+    def test_both_spellings_grade_the_same(self):
+        from factory_line_audit.presence import grade
+        for camel, underscored in (("GoodLocalOverride", "Good_LocalOverride"),
+                                   ("BadDeviceFailure", "Bad_DeviceFailure"),
+                                   ("GoodSubNormal", "Good_SubNormal")):
+            assert grade(camel)[0] == grade(underscored)[0], camel
+
+    def test_a_qualified_good_is_still_reading(self):
+        """`GoodSubNormal` graded unusable, which inverts the three-state
+        answer for a tag that IS reading."""
+        from factory_line_audit.presence import grade
+        assert grade("GoodSubNormal")[1]["usable"] is True
+
+    def test_an_override_from_a_real_server_counts_as_substituted(self):
+        """The count exists to tell a value a person typed at an HMI apart from
+        one the process produced. Graded `uncertain`, it was always zero."""
+        from factory_line_audit.presence import grade
+        name, props = grade("GoodLocalOverride")
+        assert name == "good_localoverride"
+        assert props["substituted"] is True
+
+    def test_an_edited_value_is_substituted_too(self):
+        from factory_line_audit.presence import grade
+        assert grade("GoodEdited")[1]["substituted"] is True
+
+    def test_a_bad_code_grades_bad_and_not_merely_unknown(self):
+        """Both are unusable, so the state is the same and the REASON was not.
+        That is why the live rung passed while the grader was wrong."""
+        from factory_line_audit.presence import grade
+        assert grade("BadDeviceFailure")[0] == "bad"
+
+    def test_a_word_nobody_has_seen_is_still_uncertain(self):
+        """The conservative fallback stays: interpreting an unknown status
+        optimistically is how a substituted value gets judged as a measurement."""
+        from factory_line_audit.presence import grade
+        name, props = grade("SomethingNoServerHasEverSent")
+        assert name == "uncertain"
+        assert props["usable"] is False
