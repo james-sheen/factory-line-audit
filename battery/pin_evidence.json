@@ -1,67 +1,160 @@
 {
-  "declared_range": "arbiter-engine>=0.1.10,<0.2",
-  "lower": "0.1.10",
-  "upper": "0.2",
-  "published": [
-    "0.1.0",
-    "0.1.1",
-    "0.1.4",
-    "0.1.5",
-    "0.1.6",
-    "0.1.7",
-    "0.1.8",
-    "0.1.9",
-    "0.1.10"
-  ],
-  "inside_range": [
-    "0.1.10"
-  ],
-  "results": {
-    "0.1.7": {
-      "exit": 2,
-      "outcome": null,
-      "stderr": [
-        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+  "distributions": {
+    "arbiter-engine": {
+      "declared_range": "arbiter-engine>=0.1.10,<0.2",
+      "lower": "0.1.10",
+      "upper": "0.2",
+      "published": [
+        "0.1.0",
+        "0.1.1",
+        "0.1.4",
+        "0.1.5",
+        "0.1.6",
+        "0.1.7",
+        "0.1.8",
+        "0.1.9",
+        "0.1.10",
+        "0.1.11",
+        "0.1.12",
+        "0.1.13"
       ],
-      "installed": true,
-      "inside_range": false
-    },
-    "0.1.8": {
-      "exit": 2,
-      "outcome": null,
-      "stderr": [
-        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+      "inside_range": [
+        "0.1.10",
+        "0.1.11",
+        "0.1.12",
+        "0.1.13"
       ],
-      "installed": true,
-      "inside_range": false
+      "results": {
+        "0.1.7": {
+          "exit": 2,
+          "outcome": null,
+          "stderr": [
+            "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+          ],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.8": {
+          "exit": 2,
+          "outcome": null,
+          "stderr": [
+            "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+          ],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.9": {
+          "exit": 2,
+          "outcome": null,
+          "stderr": [
+            "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+          ],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.10": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.11": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.12": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.13": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        }
+      },
+      "every_release_in_range_runs_clean": true,
+      "floor_is_forced_by": {
+        "0.1.7": [
+          "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+        ],
+        "0.1.8": [
+          "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+        ],
+        "0.1.9": [
+          "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+        ]
+      }
     },
-    "0.1.9": {
-      "exit": 2,
-      "outcome": null,
-      "stderr": [
-        "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
+    "presence-audit": {
+      "declared_range": "presence-audit>=0.1.6,<0.2",
+      "lower": "0.1.6",
+      "upper": "0.2",
+      "published": [
+        "0.1.0",
+        "0.1.1",
+        "0.1.2",
+        "0.1.3",
+        "0.1.4",
+        "0.1.5",
+        "0.1.6",
+        "0.1.7"
       ],
-      "installed": true,
-      "inside_range": false
-    },
-    "0.1.10": {
-      "exit": 0,
-      "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=0 attempted=48",
-      "stderr": [],
-      "installed": true,
-      "inside_range": true
+      "inside_range": [
+        "0.1.6",
+        "0.1.7"
+      ],
+      "results": {
+        "0.1.3": {
+          "exit": 2,
+          "outcome": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
+          "stderr": [],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.4": {
+          "exit": 2,
+          "outcome": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
+          "stderr": [],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.5": {
+          "exit": 2,
+          "outcome": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'",
+          "stderr": [],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.6": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.6: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.7": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.7: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        }
+      },
+      "every_release_in_range_runs_clean": true,
+      "floor_is_forced_by": {
+        "0.1.3": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
+        "0.1.4": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
+        "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'"
+      }
     }
-  },
-  "every_release_in_range_runs_clean": true,
-  "floor_is_forced_by": {
-    "0.1.7": [
-      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
-    ],
-    "0.1.8": [
-      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
-    ],
-    "0.1.9": [
-      "HARD STOP unhandled: AttributeError: 'EngineSession' object has no attribute 'unread_properties'"
-    ]
   }
 }

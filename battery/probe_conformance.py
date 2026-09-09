@@ -48,17 +48,34 @@ class _TooShort:
 
 
 def measure() -> dict:
+    """Always one document, always a code. A traceback escaping here would
+    break both halves of that contract, and it did: run against a core older
+    than `vocabulary.using`, this raised, and `probe_pin.py` recorded the
+    frames -- absolute build paths and all -- into a file that ships. The
+    repository's own hygiene gate refused the commit, which is the gate working.
+    An older core is a fact about the range, not a crash."""
     try:
         from presence_audit.conformance import (check_a_vocabulary,
                                                 check_the_core)
         import presence_audit as core
         import presence_audit.vocabulary as vocabulary
         from factory_line_audit.vertical import FactoryLineVocabulary
-    except Exception as missing:                             # pragma: no cover
+    except Exception as missing:
         return {"code": 2,
                 "note": f"the [vertical] extra is not installed in this "
                         f"interpreter, so the core never judged this vertical: "
                         f"{type(missing).__name__}: {missing}"}
+    try:
+        return _measure(check_a_vocabulary, check_the_core, core, vocabulary,
+                        FactoryLineVocabulary)
+    except Exception as broke:
+        return {"code": 2, "presence_audit": getattr(core, "__version__", "?"),
+                "note": f"the core is installed and this probe could not put a "
+                        f"question to it: {type(broke).__name__}: {broke}"}
+
+
+def _measure(check_a_vocabulary, check_the_core, core, vocabulary,
+             FactoryLineVocabulary) -> dict:
 
     core_problems = _problems(check_the_core())
     mine = _problems(check_a_vocabulary(FactoryLineVocabulary()))

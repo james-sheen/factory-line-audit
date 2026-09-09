@@ -415,23 +415,47 @@ def leg_conformance(python):
 
 # ------------------------------------------------------------------------ pin
 def leg_pin():
+    """Every declared range, not the one that happened to be measured first.
+
+    This read a single range until 2026-09-09. The package declared two, and the
+    unmeasured one was where a floor went wrong: it named the release that first
+    carries the member an inventory asked about, and not the release where the
+    thing that uses it actually runs.
+    """
     if not os.path.exists(PIN):
         return leg("pin", 2, "pin_evidence.json absent; run probe_pin.py")
     with open(PIN, encoding="utf-8") as handle:
         evidence = json.load(handle)
+    if "distributions" not in evidence:
+        return leg("pin", 2, "pin_evidence.json predates the two-subject sweep "
+                             "and covers one range; re-run probe_pin.py")
     with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as handle:
-        declared = [line for line in handle if "arbiter-engine>=" in line]
-    if not declared or evidence["declared_range"] not in declared[0]:
-        return leg("pin", 2, f"the evidence was taken against "
-                             f"{evidence['declared_range']}, which is not the "
-                             f"range pyproject.toml now declares")
-    if not evidence["every_release_in_range_runs_clean"]:
-        return leg("pin", 1, "a release inside the declared range does not run "
-                             "clean; the range is a claim that is not true")
-    return leg("pin", 0, f"{evidence['declared_range']}: every release inside "
-                         f"it was installed and run "
-                         f"({evidence['inside_range']}); the floor is forced by "
-                         f"{sorted(evidence['floor_is_forced_by'])}")
+        pyproject = handle.read()
+    found = evidence["distributions"]
+    if not found:
+        return leg("pin", 2, "the evidence names no distribution, so it is an "
+                             "absence reported as a pass")
+    stale, red, notes = [], [], []
+    for dist, body in sorted(found.items()):
+        if body["declared_range"] not in pyproject:
+            stale.append(f"{dist} was measured against {body['declared_range']}, "
+                         f"which pyproject.toml no longer declares")
+            continue
+        if not body["results"]:
+            stale.append(f"{dist} has no results; nothing was installed or run")
+            continue
+        if not body["every_release_in_range_runs_clean"]:
+            red.append(dist)
+        notes.append(f"{body['declared_range']} ({len(body['inside_range'])} "
+                     f"inside, floor forced by "
+                     f"{sorted(body['floor_is_forced_by'])})")
+    if stale:
+        return leg("pin", 2, "; ".join(stale))
+    if red:
+        return leg("pin", 1, f"a release inside the declared range does not run "
+                             f"clean for {red}; the range is a claim that is "
+                             f"not true")
+    return leg("pin", 0, "; ".join(notes))
 
 
 # ----------------------------------------------------------------------- ship

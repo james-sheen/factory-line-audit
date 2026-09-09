@@ -90,7 +90,7 @@ python3 -m factory_line_audit.cli gate  --register examples/asset_register.json 
     --register examples/asset_register.json --walk battery/corpus/clean.json \
     --declarations examples/declarations/line1.fixture.json --attest-out /tmp/attest.json
 
-# C8 -- exercise the pin, floor included (installs each release; slow)
+# C8 -- exercise both declared ranges, floors included (installs each release; slow)
 python3 battery/probe_pin.py
 
 # does the core still accept this vertical? two imports, and CI runs it too
@@ -123,7 +123,7 @@ below. `corpus` and `conformance` still are.
 | `tool` | Is the tool surface closed, and does every entry construct? |
 | `suite` | Does the suite pass from a directory that is not the repository? |
 | `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
-| `pin` | Does every release inside the declared range actually run? |
+| `pin` | Does every release inside each declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 
 A leg that could not run reports `2` and is **named**, never skipped.
