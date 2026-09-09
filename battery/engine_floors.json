@@ -1,9 +1,38 @@
 {
-  "measured_on": "2026-09-03T12:00:00+00:00",
-  "engine_version": "0.1.10",
-  "engine_file": "/tmp/claude-0/-root-w/591c7f45-863b-4c41-868d-93b7c2e72686/scratchpad/envs/pristine/lib/python3.10/site-packages/arbiter_engine",
+  "measured_on": "2026-09-09T10:14:19.017696+00:00",
+  "engine_version": "0.1.13",
+  "engine_file": "/tmp/claude-0/-root-w/591c7f45-863b-4c41-868d-93b7c2e72686/scratchpad/both/lib/python3.10/site-packages/arbiter_engine",
   "python": "3.10.12",
   "probes": {
+    "D1": {
+      "question": "does a declared bad state fire on this engine",
+      "measured": {
+        "fires": [
+          [
+            "STABILITY",
+            "declared_bad_state:mode"
+          ]
+        ],
+        "quiet_when_not_bad": true,
+        "unread_fields": []
+      },
+      "note": "silent at 0.1.10 and 0.1.11, fires `declared_bad_state` from 0.1.12; `unread_fields` is empty either way, so nothing but this probe distinguishes the two"
+    },
+    "D2": {
+      "question": "can unread_fields report a key at all, on this engine",
+      "measured": [
+        {
+          "entity_type": "Station",
+          "indicator": "mode",
+          "field": "nonsense_field",
+          "reason": "unknown_key",
+          "read_by": [],
+          "did_you_mean": null,
+          "remedy": "`nonsense_field` is not a key this engine reads, so nothing will ever consume it"
+        }
+      ],
+      "note": "the non-vacuity control for D1: an empty answer there is only evidence if this one is not empty"
+    },
     "V1": {
       "question": "how many decline reasons does this engine define",
       "measured": {
@@ -28,7 +57,7 @@
     "V2": {
       "question": "is a misspelled axiom visible on check, or only on model_describe",
       "measured": {
-        "on_check": false,
+        "on_check": true,
         "on_model_describe": true,
         "invariants": 0
       },
@@ -115,36 +144,36 @@
           "severity": null
         },
         "0.1": {
-          "fired": true,
-          "severity": "warning"
+          "fired": false,
+          "severity": null
         },
         "0.11": {
-          "fired": true,
-          "severity": "warning"
+          "fired": false,
+          "severity": null
         },
         "0.4": {
-          "fired": true,
-          "severity": "warning"
+          "fired": false,
+          "severity": null
         },
         "0.49": {
-          "fired": true,
-          "severity": "warning"
+          "fired": false,
+          "severity": null
         },
         "0.5": {
-          "fired": true,
-          "severity": "critical"
+          "fired": false,
+          "severity": null
         },
         "0.51": {
-          "fired": true,
-          "severity": "critical"
+          "fired": false,
+          "severity": null
         },
         "1.0": {
-          "fired": true,
-          "severity": "critical"
+          "fired": false,
+          "severity": null
         },
         "50.0": {
-          "fired": true,
-          "severity": "critical"
+          "fired": false,
+          "severity": null
         }
       },
       "note": "a counter faster than this is a finding the model never asked for, answered from an engine default rather than declined no_threshold"
@@ -179,8 +208,7 @@
             "monotonicity_reset_storm:c"
           ],
           "4": [
-            "monotonicity_reset_storm:c",
-            "monotonicity_rate:c"
+            "monotonicity_reset_storm:c"
           ],
           "5": [
             "monotonicity_reset_storm:c"
@@ -203,8 +231,7 @@
             "monotonicity_reversal:c"
           ],
           "4": [
-            "monotonicity_reversal:c",
-            "monotonicity_rate:c"
+            "monotonicity_reversal:c"
           ]
         }
       },
@@ -466,12 +493,16 @@
           "missing_role"
         ],
         "no_threshold@34": {
-          "declined": [],
+          "declined": [
+            "no_threshold"
+          ],
           "findings": [],
           "invariants_attempted": 1
         },
         "no_threshold@10000000": {
-          "declined": [],
+          "declined": [
+            "no_threshold"
+          ],
           "findings": [],
           "invariants_attempted": 1
         }
@@ -652,7 +683,7 @@
       "measured": {
         "meta": {
           "schema_version": 1,
-          "engine_version": "0.1.10",
+          "engine_version": "0.1.13",
           "source": "live"
         },
         "invariants": 1,
@@ -674,7 +705,9 @@
           "loader_said": []
         },
         "RESPONSIVENESS role latency, no critical": {
-          "declined": [],
+          "declined": [
+            "no_threshold"
+          ],
           "findings": [],
           "invariants": 1,
           "loader_said": []
@@ -887,7 +920,9 @@
           "loader_said": []
         },
         "RESPONSIVENESS role latency, no critical": {
-          "declined": [],
+          "declined": [
+            "no_threshold"
+          ],
           "findings": [],
           "invariants": 1,
           "loader_said": []

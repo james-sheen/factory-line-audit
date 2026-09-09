@@ -30,7 +30,17 @@ import arbiter_engine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "engine_floors.json")
-NOW = _dt.datetime(2026, 9, 3, 12, 0, 0, tzinfo=_dt.timezone.utc)
+#: REAL now, and it has to be. Every series below is built backwards from this
+#: and every arm the engine counts inside a window measures backwards from the
+#: real clock -- so a frozen NOW is a probe with an expiry date.
+#:
+#: It was frozen at 2026-09-03T12:00Z, the day it last ran. Six days later the
+#: series all ended six days in the past, every window shorter than that saw
+#: nothing, S1 and K6 measured None where the committed evidence records 10 and
+#: a 300 s horizon, and the script died deriving a corpus size from a None. The
+#: file every number in this package comes from was a snapshot nobody could
+#: reproduce, and nothing went red because no leg runs this probe.
+NOW = _dt.datetime.now(_dt.timezone.utc)
 
 
 def model(indicators: str, entity_types="[A]", extra="") -> str:
@@ -101,6 +111,14 @@ RESULT = {
 
 
 def record(name, question, value, note=""):
+    # A DUPLICATE NAME IS REFUSED, because overwriting one is silent and its
+    # consequence is not. `S1` was recorded twice: the second answer replaced
+    # expect_variation's sample floor with a dict, and the derivation at the end
+    # raised a TypeError several hundred lines later. Getting the same collision
+    # twice in one sitting is what made this a guard rather than more care.
+    if name in RESULT["probes"]:
+        raise SystemExit(f"probe {name} is recorded twice; the first was "
+                         f"{RESULT['probes'][name]['question']!r}")
     RESULT["probes"][name] = {"question": question, "measured": value, "note": note}
     print(f"  {name:<6} {question}")
     print(f"         -> {value}")
@@ -110,12 +128,15 @@ def record(name, question, value, note=""):
 
 
 # ------------------------------------------------------------- state words
-# P5. A STATE indicator listing STABILITY and a reviewed `bad:`. The engine
+# P5. Named D. S is expect_variation and B is the property/history pair --
+# both were already taken, and both were taken by me in turn. `record` now
+# refuses a duplicate rather than overwriting one.
+#  A STATE indicator listing STABILITY and a reviewed `bad:`. The engine
 # fires from 0.1.12 and is SILENT below it -- accepted, no finding, and NOT
 # reported by `unread_fields`, which does report a key nobody reads. A
 # consumer cannot tell an inert declaration from a healthy machine, so the
 # manifest has to say so and this is where the claim comes from.
-print("S -- a declared bad state")
+print("D -- a declared bad state")
 _STATE_MODEL = model("""    Station:
       - name: mode
         type: STATE
@@ -124,7 +145,7 @@ _STATE_MODEL = model("""    Station:
 """, entity_types="[Station]")
 _bad = run(_STATE_MODEL, [("ST-01", "Station", {"mode": "Faulted"})])
 _ok = run(_STATE_MODEL, [("ST-01", "Station", {"mode": "Auto"})])
-record("S1", "does a declared bad state fire on this engine",
+record("D1", "does a declared bad state fire on this engine",
        {"fires": [(f.get("axiom"), f.get("problem_type"))
                   for f in _bad.get("findings") or []],
         "quiet_when_not_bad": not (_ok.get("findings") or []),
@@ -140,9 +161,9 @@ _UNKNOWN = model("""    Station:
         bad: [Faulted]
         nonsense_field: 7
 """, entity_types="[Station]")
-record("S2", "can unread_fields report a key at all, on this engine",
+record("D2", "can unread_fields report a key at all, on this engine",
        run(_UNKNOWN, [("ST-01", "Station", {"mode": "Faulted"})])["_unread_fields"],
-       "the non-vacuity control for S1: an empty answer there is only evidence "
+       "the non-vacuity control for D1: an empty answer there is only evidence "
        "if this one is not empty")
 
 # ---------------------------------------------------------------- vocabulary
