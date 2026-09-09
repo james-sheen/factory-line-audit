@@ -29,7 +29,12 @@ from arbiter_engine.types import NotEvaluatedReason
 import arbiter_engine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "engine_floors.json")
+#: Beside this file, unless a caller redirects it. The battery's `engine`
+#: leg does redirect it: a check must not rewrite the record it is checking,
+#: and refreshing this file is a deliberate act on a pin change rather than
+#: something a test does behind you.
+OUT = (os.environ.get("FLA_ENGINE_FLOORS_OUT")
+       or os.path.join(HERE, "engine_floors.json"))
 #: REAL now, and it has to be. Every series below is built backwards from this
 #: and every arm the engine counts inside a window measures backwards from the
 #: real clock -- so a frozen NOW is a probe with an expiry date.

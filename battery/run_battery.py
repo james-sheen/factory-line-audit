@@ -61,9 +61,9 @@ CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
 #: Every leg this battery runs, by the name it reports under. `--only` is
 #: validated against this: a mistyped leg name would otherwise select nothing,
 #: and a battery that ran nothing exits 0.
-SELECTABLE = ("corpus", "live", "draft", "gate", "clean", "fault", "absent",
-              "attest", "pipe", "tool", "suite", "conformance", "regression",
-              "capture", "pin", "ship")
+SELECTABLE = ("engine", "corpus", "live", "draft", "gate", "clean", "fault",
+              "absent", "attest", "pipe", "tool", "suite", "conformance",
+              "regression", "capture", "pin", "ship")
 
 RESULTS = []
 
@@ -86,6 +86,66 @@ def cli(python, argv, cwd=None, env=None, timeout=900):
 def detect_argv(walk, *extra):
     return (["detect", "--register", REGISTER, "--walk", walk,
              "--declarations", FIXTURE] + list(extra))
+
+
+# --------------------------------------------------------------------- engine
+def leg_engine(python, workdir):
+    """C3's own probe, RUN rather than mentioned.
+
+    `probe_engine.py` writes `engine_floors.json`, and every sample floor, every
+    window and the corpus size derive from it. Nothing ran it: its clock sat
+    frozen at the day it last ran, so six days later it could not complete at
+    all, and the file every number in this package rests on was a snapshot
+    nobody could reproduce. It was found by accident, reaching for one of its
+    numbers.
+
+    Two files NAME the probe -- a sentence in `pin.yml` and the message just
+    below in `leg_corpus` -- so a search for the filename reports it as covered.
+    Naming is not running, and that is the whole reason this leg exists.
+
+    Output is redirected: a check must not rewrite the record it is checking.
+    """
+    probe = os.path.join(HERE, "probe_engine.py")
+    fresh = os.path.join(workdir, "engine_floors.fresh.json")
+    proc = subprocess.run([python, probe], capture_output=True, text=True,
+                          cwd=ROOT, timeout=900,
+                          env=dict(os.environ, PYTHONPATH=SRC,
+                                   FLA_ENGINE_FLOORS_OUT=fresh))
+    if proc.returncode or not os.path.exists(fresh):
+        tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:]
+        return leg("engine", 2, f"probe_engine.py could not complete (exit "
+                                f"{proc.returncode}): {tail}", added=True)
+    with open(fresh, encoding="utf-8") as handle:
+        measured = json.load(handle)
+    with open(FLOORS, encoding="utf-8") as handle:
+        recorded = json.load(handle)
+
+    # NON-VACUITY. The comparison below is over keys, and two empty objects
+    # agree about everything. This is also the shape a probe that wrote a stub
+    # would produce.
+    substance = ("probes", "floors", "vocabulary", "reachability",
+                 "corpus_samples", "engine_version")
+    missing = [k for k in substance if k not in measured]
+    if missing:
+        return leg("engine", 2, f"the probe wrote a file with no {missing}; "
+                                f"there is nothing to compare", added=True)
+
+    # Environment rather than measurement: where the engine is installed, which
+    # interpreter ran, and when. Comparing those reports a difference on every
+    # machine and says nothing about the engine.
+    where = ("measured_on", "engine_file", "python")
+    drift = sorted(k for k in set(measured) | set(recorded)
+                   if k not in where and measured.get(k) != recorded.get(k))
+    if drift:
+        return leg("engine", 1, f"the committed engine_floors.json no longer "
+                                f"describes the engine that resolves here: "
+                                f"{drift} differ. Every sample floor, every "
+                                f"window and the corpus size derive from it, so "
+                                f"re-run probe_engine.py and commit what it "
+                                f"measures", added=True)
+    return leg("engine", 0, f"the probe completes against arbiter-engine "
+                            f"{measured['engine_version']}, and the committed "
+                            f"floors are exactly what it measures", added=True)
 
 
 # --------------------------------------------------------------------- corpus
@@ -713,6 +773,11 @@ def main() -> int:
     workdir = tempfile.mkdtemp(prefix="fla-battery-")
     try:
         drafted = None
+        # First: `corpus` reads the window out of `engine_floors.json`, so
+        # whether that file still describes the engine comes before anything
+        # derived from it.
+        if wanted("engine"):
+            leg_engine(args.python, workdir)
         if wanted("corpus"):
             leg_corpus()
         if wanted("live"):

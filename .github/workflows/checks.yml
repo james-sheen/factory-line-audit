@@ -102,14 +102,14 @@ jobs:
 
   # THE WHOLE BATTERY, not the two legs `live` above runs.
   #
-  # The README's headline claim is that all sixteen legs are green, and until
+  # The README's headline claim is that every leg is green, and until
   # now nothing checked it. The suite holds the COUNT against the battery's own
   # `SELECTABLE` tuple; the GREENNESS rested on somebody having run it by hand.
   # It had not been run in full for days, and when it finally was, the `suite`
   # leg was red -- six tests had come to assume the process starts in the
   # repository, which is the one thing that leg exists to catch.
   #
-  # Cheap enough to run on every push: the sixteen legs take under a minute,
+  # Cheap enough to run on every push: the whole battery takes under a minute,
   # because `pin` READS `pin_evidence.json` rather than sweeping. The sweep is
   # `pin.yml`, weekly; this leg only asserts the record is not stale against the
   # range `pyproject.toml` declares. So none of that job's work is repeated here.
@@ -117,7 +117,7 @@ jobs:
   # Separate from `live` on purpose, and not to be merged with it. That job
   # installs `[live]` ALONE so that it can say `capture` needs no axiom engine
   # to read a server. This one installs everything, which is the only way the
-  # other fourteen legs run at all. Folding them together would retire that
+  # rest of the legs run at all. Folding them together would retire that
   # claim without anybody deciding to.
   battery:
     runs-on: ubuntu-latest

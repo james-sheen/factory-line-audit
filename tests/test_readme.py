@@ -289,7 +289,18 @@ class TestTheStatusParagraphCountsWhatExists:
               "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
               "twenty": 20}
 
-    LEGS = re.compile(r"\b([A-Za-z]+|\d+)\s+battery legs\b", re.IGNORECASE)
+    FINDINGS = ROOT / "FINDINGS.md"
+
+    #: The three shapes a TOTAL claim takes in these documents. Deliberately not
+    #: a general `<number> legs`: *three legs also run a second time* is a true
+    #: sentence about a SUBSET, and a guard that forbade it would be one the next
+    #: person deletes. Written narrow, and held to that by the non-vacuity test
+    #: below -- the risk of a narrow pattern is that it silently matches nothing,
+    #: which is how the first version of this guard missed `Sixteen legs:` in the
+    #: same file it was checking.
+    TOTALS = (re.compile(r"\ball\s+([A-Za-z]+|\d+)\s+legs\b", re.IGNORECASE),
+              re.compile(r"\b([A-Za-z]+|\d+)\s+battery legs\b", re.IGNORECASE),
+              re.compile(r"\b([A-Za-z]+|\d+)\s+legs:", re.IGNORECASE))
 
     def _selectable(self) -> int:
         """The battery's own leg names, read rather than imported -- importing a
@@ -299,12 +310,21 @@ class TestTheStatusParagraphCountsWhatExists:
         assert found, "no SELECTABLE tuple in the battery runner"
         return len(re.findall(r'"[^"]+"', found.group(1)))
 
-    def _stated(self):
-        found = self.LEGS.search(_readme())
-        if not found:
-            return None
-        word = found.group(1).lower()
-        return self.NUMBER.get(word, int(word) if word.isdigit() else None)
+    def _claims(self, text: str):
+        """Every total-shaped leg count in one document, as integers."""
+        out = []
+        for pattern in self.TOTALS:
+            for word in pattern.findall(text):
+                word = word.lower()
+                value = self.NUMBER.get(word,
+                                        int(word) if word.isdigit() else None)
+                if value is not None:
+                    out.append(value)
+        return out
+
+    def _documents(self):
+        return {"README.md": _readme(),
+                "FINDINGS.md": self.FINDINGS.read_text(encoding="utf-8")}
 
     def test_the_battery_has_legs_to_count(self):
         """Non-vacuity: an empty tuple would satisfy any comparison below."""
@@ -313,15 +333,31 @@ class TestTheStatusParagraphCountsWhatExists:
             f"pattern is not finding the tuple, so the check below proves "
             f"nothing")
 
-    def test_the_stated_leg_count_is_the_number_that_exists(self):
-        stated = self._stated()
-        if stated is None:
-            return          # the paragraph names no leg count; nothing to hold
-        assert stated == self._selectable(), (
-            f"the README says {stated} battery legs and the battery defines "
-            f"{self._selectable()}. This is the shape that expired once already: "
-            f"the number was right when written and nothing could notice the "
-            f"next leg landing")
+    def test_every_document_states_a_total_this_guard_can_read(self):
+        """Non-vacuity, and it is the failure this guard has already had.
+
+        The first version matched only `N battery legs`. `README.md` also says
+        `Sixteen legs:` and `FINDINGS.md` says `green on all thirteen legs`, and
+        both went unchecked in the same change that was written to check them --
+        the pattern was narrower than the claim. So each document must yield at
+        least one reading, or this says so rather than passing.
+        """
+        for name, text in self._documents().items():
+            assert self._claims(text), (
+                f"{name} states no leg total this guard can read. Either the "
+                f"sentence was reworded out of the three shapes in TOTALS, or "
+                f"it was removed; both leave the count unheld")
+
+    def test_every_stated_leg_total_is_the_number_that_exists(self):
+        exists = self._selectable()
+        wrong = {name: [c for c in self._claims(text) if c != exists]
+                 for name, text in self._documents().items()}
+        wrong = {k: v for k, v in wrong.items() if v}
+        assert not wrong, (
+            f"these state a leg total the battery does not have ({exists}): "
+            f"{wrong}. This is the shape that expired twice already -- the "
+            f"number was right when written, and nothing could notice the next "
+            f"leg landing")
 
     def test_the_readme_does_not_name_a_resolved_engine_version(self):
         """A resolved version is a fact about one run and expires at the next

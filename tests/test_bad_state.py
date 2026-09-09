@@ -34,7 +34,7 @@ def reviewed(tmp_path, asset, tag, states, **extra):
 # path, which shadowed the shared fixture and made all six tests below depend on
 # the process starting in the repository -- the one thing `conftest.py` says the
 # suite must not do. The battery's `suite` leg exists to catch exactly this and
-# had been red; CI runs two of its sixteen legs, so nothing said so.
+# had been red, and at the time CI ran two of its legs, so nothing said so.
 
 
 @pytest.fixture

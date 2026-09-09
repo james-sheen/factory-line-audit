@@ -29,7 +29,7 @@ re-measurement did not reproduce them.
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
-named below.** Sixteen battery legs green, including a real OPC UA server read
+named below.** Seventeen battery legs green, including a real OPC UA server read
 by a real client, the built wheel installed into an empty environment, and a
 sweep of the whole `arbiter-engine` range this package declares. Nothing here has
 touched a plant. Every number in `examples/` is invented.
@@ -108,12 +108,12 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Sixteen legs: the twelve in `BRIDGES.md`'s verification battery, plus four added
-with the argument written down.
+Seventeen legs: the twelve in `BRIDGES.md`'s verification battery, plus the ones
+this package added, each with the argument written down.
 
-All five additions started here. `pin` was proposed by this package and is now a
+Every addition started here. `pin` was proposed by this package and is now a
 row in the guide's own table, so it is no longer an addition and is unmarked
-below. `corpus`, `conformance`, `regression` and `capture` still are.
+below. `corpus`, `conformance`, `regression`, `capture` and `engine` still are.
 
 | Leg | Question |
 |---|---|
@@ -139,13 +139,15 @@ A leg that could not run reports `2` and is **named**, never skipped.
 answered with an empty run, and the result file records the selection so a
 partial run cannot read as a full one.
 
-Most of the battery is run by hand, because it builds a wheel and installs
-every release in two ranges. Three legs are the exception and run in CI:
-`conformance` on every interpreter, because it costs two imports and is the
-only leg whose question is about software this package does not control; and
-`live` and `capture` on one, because the OPC UA surface is anonymous,
-localhost and over in seconds, and `capture` is the only verb here that talks
-to anything. `probe_status_words.py` runs beside them: it grades every status
+The whole battery runs in CI, on every push, in under a minute. It is that
+cheap because `pin` reads the evidence `probe_pin.py` wrote rather than
+sweeping: the sweep installs every release in two ranges and runs weekly in its
+own workflow. Three legs also run a second time on their own terms, and the
+duplication is the point: `conformance` on every interpreter, because it costs
+two imports and is the only leg whose question is about software this package
+does not control; and `live` and `capture` in a job that installs the OPC UA
+client and nothing else, which is the only way either can say `capture` needs no
+axiom engine to read a server. `probe_status_words.py` runs beside them: it grades every status
 word `asyncua` can report, which is the population a real PLC draws from
 rather than the three the corpus happens to carry. A leg nothing triggers is a leg nobody reads, which is the same
 argument the legs themselves are written from.
