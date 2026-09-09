@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """The verification battery. A re-runnable script, not a transcript.
 
-BRIDGES's verification battery. The twelve legs in its table are all here. One
-more is here as well, marked ADDED, with the argument written down.
+BRIDGES's verification battery. The twelve legs in its table are all here. Two
+more are here as well, marked ADDED, each with the argument written down.
 
-`pin` was the second addition and is no longer one: it was proposed from here and
-the guide's table now carries it. Kept in this file with its reasoning, because
-the argument for the leg is the same whoever owns the row.
+`pin` was an addition and is no longer one: it was proposed from here and the
+guide's table now carries it. Kept in this file with its reasoning, because the
+argument for the leg is the same whoever owns the row.
 
   corpus -- several axiom arms count inside a window measured backwards from
             now (probes M3, H2). A corpus on disk therefore expires, and a
@@ -18,6 +18,14 @@ the argument for the leg is the same whoever owns the row.
             floor must be exercised. Every other capability in the list had a leg
             in the table; the one that is a claim about software the bridge does
             not control had none. It does now.
+  conformance -- the core ships a kit that drives a vertical through the protocol
+            using stand-ins that implement it and nothing else. It exists because
+            the core once called a member the protocol did not declare, every
+            test passed because the only vertical happened to have that member,
+            and a second vertical found it months later. This package is that
+            second vertical. Every other leg here asks whether this bridge
+            satisfies itself; this one asks whether it still satisfies the core
+            it pins. It costs two imports.
 
 A leg that could not run reports 2 and is NAMED. Never skipped: an absent leg
 that leaves no trace reads as a leg that passed.
@@ -387,6 +395,88 @@ def leg_suite(python):
                            f"repository: {tail[0] if tail else ''}")
 
 
+# ---------------------------------------------------------------- conformance
+CONFORMANCE_PROBE = """
+import json, sys
+try:
+    from presence_audit.conformance import check_the_core, check_a_vocabulary
+    import presence_audit as _pa
+    import presence_audit.vocabulary as _voc
+    from factory_line_audit.vertical import FactoryLineVocabulary
+except Exception as missing:
+    print(json.dumps({"unavailable": f"{type(missing).__name__}: {missing}"}))
+    raise SystemExit(0)
+
+def problems(result):
+    return list(result[0] if isinstance(result, tuple) else result)
+
+# The kit's own answer about this vertical.
+core = problems(check_the_core())
+mine = problems(check_a_vocabulary(FactoryLineVocabulary()))
+
+# NON-VACUITY. Everything above is a negative claim, and a kit that stopped
+# checking would satisfy it by saying nothing. A stand-in that is deliberately
+# short must come back with something, or the clean answer means nothing.
+class TooShort:
+    kinds = ("measurement",)
+    count_keys = {}
+    def classify(self, declared_type):
+        return "measurement"
+control = problems(check_a_vocabulary(TooShort()))
+
+# The noun the core will actually USE, which is not what the kit checks. It is
+# read as an attribute and falls back silently, so a refactor from property to
+# method reinstates the defect this vertical already had once -- reports that
+# told a press cell about its sensors -- past a clean conformance run.
+with _voc.using(FactoryLineVocabulary()):
+    reached = list(_voc.noun())
+
+print(json.dumps({"presence_audit": _pa.__version__, "core": core,
+                  "vocabulary": mine, "control": len(control),
+                  "noun_reaching_the_core": reached}))
+"""
+
+
+def leg_conformance(python):
+    proc = subprocess.run([python, "-c", CONFORMANCE_PROBE], capture_output=True,
+                          text=True, cwd=ROOT, timeout=300,
+                          env=dict(os.environ, PYTHONPATH=SRC))
+    if proc.returncode or not proc.stdout.strip():
+        return leg("conformance", 2, f"the probe did not run: "
+                                     f"{(proc.stderr or proc.stdout)[-200:]}",
+                   added=True)
+    answer = json.loads(proc.stdout.strip().splitlines()[-1])
+    if "unavailable" in answer:
+        return leg("conformance", 2, f"the [vertical] extra is not installed in "
+                                     f"this interpreter, so the core never "
+                                     f"judged this vertical: "
+                                     f"{answer['unavailable']}", added=True)
+    if not answer["control"]:
+        return leg("conformance", 2, "the kit reported nothing against a "
+                                     "deliberately short vocabulary, so it is "
+                                     "not checking; a clean answer above would "
+                                     "mean nothing", added=True)
+    if answer["core"]:
+        return leg("conformance", 1, f"the core does not satisfy its own kit: "
+                                     f"{answer['core']}", added=True)
+    if answer["vocabulary"]:
+        return leg("conformance", 1, f"this vertical does not satisfy the "
+                                     f"core's kit: {answer['vocabulary']}",
+                   added=True)
+    reached = tuple(answer["noun_reaching_the_core"])
+    if reached != ("tag", "tags"):
+        return leg("conformance", 1, f"the core renders {reached}, not this "
+                                     f"vertical's noun; `noun` is read as an "
+                                     f"ATTRIBUTE and falls back silently, and "
+                                     f"the kit does not check it",
+                   added=True)
+    return leg("conformance", 0, f"presence-audit {answer['presence_audit']}: "
+                                 f"core clean, this vertical clean, the kit "
+                                 f"named {answer['control']} problem(s) against "
+                                 f"a short stand-in, and the core renders "
+                                 f"{reached}", added=True)
+
+
 # ------------------------------------------------------------------------ pin
 def leg_pin():
     if not os.path.exists(PIN):
@@ -497,6 +587,7 @@ def main() -> int:
         leg_pipe(args.python)
         leg_tool(args.python, workdir)
         leg_suite(args.python)
+        leg_conformance(args.python)
         leg_pin()
         if args.no_ship:
             leg("ship", 2, "NOT RUN: --no-ship. Every other leg ran against a "

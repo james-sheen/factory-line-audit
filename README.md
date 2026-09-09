@@ -99,12 +99,12 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Thirteen legs: the twelve in `BRIDGES.md`'s verification battery, plus one added
+Fourteen legs: the twelve in `BRIDGES.md`'s verification battery, plus two added
 with the argument written down.
 
-Both additions started here. `pin` was proposed by this package and is now a row
-in the guide's own table, so it is no longer an addition and is unmarked below.
-`corpus` still is one.
+All three additions started here. `pin` was proposed by this package and is now a
+row in the guide's own table, so it is no longer an addition and is unmarked
+below. `corpus` and `conformance` still are.
 
 | Leg | Question |
 |---|---|
@@ -119,6 +119,7 @@ in the guide's own table, so it is no longer an addition and is unmarked below.
 | `pipe` | Does a reader walking away change the verdict, or print anything? |
 | `tool` | Is the tool surface closed, and does every entry construct? |
 | `suite` | Does the suite pass from a directory that is not the repository? |
+| `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
 | `pin` | Does every release inside the declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 

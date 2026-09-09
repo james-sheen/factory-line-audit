@@ -62,7 +62,19 @@ live = ["asyncua>=1.0,<3"]
 # three-valued diff. Every symbol this vertical actually used is in
 # `presence-audit`, which has no dependencies of its own. Nothing about a BMC is
 # installed to run a factory line any more.
-vertical = ["presence-audit>=0.1.0,<0.2"]
+# 0.1.6 IS THE FLOOR AND NOT A PREFERENCE, and it moved on 2026-09-09 because
+# this package started calling something new, not because a newer release looked
+# better. `battery/run_battery.py`'s `conformance` leg needs two things:
+# `conformance.check_a_vocabulary`, which first exists at 0.1.5, and
+# `vocabulary.using`, which first exists at 0.1.6 and is how the leg asks what
+# noun the core would actually render for this vertical.
+# THE FLOOR WAS WRITTEN 0.1.5 FIRST, from the first of those two, and running
+# the leg against 0.1.5 refused it: the kit was there and `using` was not. Both
+# numbers were read off the same install sweep; only one of them had been
+# exercised. NOT 0.1.7, where the shared `exit_contract` arrives -- this package
+# keeps its own, because Stage 1 has no dependencies. A floor justified by a
+# member nobody calls is a floor nobody can check.
+vertical = ["presence-audit>=0.1.6,<0.2"]
 
 [project.scripts]
 factory-line-audit = "factory_line_audit.cli:main"
