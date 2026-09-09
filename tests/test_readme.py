@@ -359,18 +359,40 @@ class TestTheStatusParagraphCountsWhatExists:
             f"number was right when written, and nothing could notice the next "
             f"leg landing")
 
-    def test_the_readme_does_not_name_a_resolved_engine_version(self):
+    #: Names whose version is a fact about somebody else's software, and
+    #: therefore expires. `engine` is in here as a bare word on purpose: the
+    #: sentence that went stale said *the engine measured is `0.1.10`* and never
+    #: wrote the distribution's name at all.
+    UPSTREAM = ("arbiter-engine", "presence-audit", "asyncua", "engine")
+
+    ANY_VERSION = re.compile(r"\b\d+\.\d+(?:\.\d+)?(?:\.dev\d+)?\b")
+
+    def test_the_readme_names_no_resolved_upstream_version(self):
         """A resolved version is a fact about one run and expires at the next
-        engine release. The declared RANGE is a fact about this package, and it
-        is the honest thing for prose to carry -- `pin_evidence.json` is where
-        versions actually exercised are recorded, by a probe that re-runs."""
-        floor = re.search(r'arbiter-engine>=([\d.]+),<([\d.]+)',
-                          self.PYPROJECT.read_text(encoding="utf-8"))
-        assert floor, "no arbiter-engine range in pyproject; nothing to compare"
-        status = _readme().split("## The two stages")[0]
-        named = re.findall(r'arbiter-engine[` ]+(\d+\.\d+\.\d+)', status)
-        assert not named, (
-            f"the header names the engine version(s) {named}. That is a fact "
-            f"about one run: the declared range is >={floor.group(1)},"
-            f"<{floor.group(2)}, so a reader is told a number that goes stale at "
-            f"the next release with nothing to notice")
+        release of someone else's package. The declared RANGE is a fact about
+        this package; `engine_floors.json` and `pin_evidence.json` are where
+        versions actually exercised are recorded, by probes that re-run.
+
+        **This guard was twice as narrow as its own claim when written.** It read
+        only the header, and it required the literal `arbiter-engine` beside the
+        number. The stale sentence was in the last section and said *the engine*
+        — so it sat outside both halves of the predicate while this test passed.
+        Now: the whole page, and the bare word too.
+        """
+        offences = []
+        for number, line in enumerate(_readme().splitlines(), start=1):
+            if not any(name in line.lower() for name in self.UPSTREAM):
+                continue
+            if self.ANY_VERSION.search(line):
+                offences.append(f"line {number}: {line.strip()[:88]}")
+        assert not offences, (
+            "these name a resolved upstream version, which is a fact about one "
+            "run:\n  " + "\n  ".join(offences)
+            + "\nName the declared range, or point at the evidence file.")
+
+    def test_that_guard_would_catch_the_sentence_that_went_stale(self):
+        """The exact shape, so a narrowed pattern cannot pass quietly again."""
+        line = "- The engine measured is `0.1.10` from PyPI, and `0.1.11.dev0`"
+        assert any(n in line.lower() for n in self.UPSTREAM)
+        assert self.ANY_VERSION.search(line)
+        assert not self.ANY_VERSION.search("the range this package declares")

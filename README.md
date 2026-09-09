@@ -201,10 +201,20 @@ closure test asserts that absence.
 
 - No number in `examples/` is a fact about a real machine. The declaration file
   says so on its face and every `basis` string begins `FIXTURE`.
-- The engine measured is `0.1.10` from PyPI, and `0.1.11.dev0` from `master` was
-  run too. Any other pin needs `probe_engine.py` re-run, not re-read.
+- The engine measured is whichever one `battery/engine_floors.json` records, and
+  the `engine` battery leg goes red when that file stops describing the engine
+  that resolves here. Any other pin needs `probe_engine.py` re-run, not re-read.
+  This line named a version until 2026-09-09, by which time the file recorded a
+  later one.
 - Ten of the twelve decline reasons are reachable from a model this package could
   generate. `not_applicable` and `checker_error` are engine-side.
 - The learned-baseline warning arm has a measured false-positive rate of roughly
   one series in twelve. It is reported in full and floored at 0, and that is a
   judgement, written down in `exit_contract.py` with the measurement behind it.
+
+---
+
+Security reports go through [SECURITY.md](SECURITY.md), privately -- for the
+failure modes listed there, filing the report in public *is* the disclosure.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the one thing a fresh clone will not tell
+you: the hooks are per-clone and off until you enable them.
