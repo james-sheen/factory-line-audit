@@ -5,4 +5,4 @@ this bridge share an author, so it is a self-exam rather than the independent
 adoption BRIDGES.md asks for. What did not survive contact is recorded in
 FINDINGS.md rather than smoothed over here.
 """
-__version__ = "0.1.3"
+__version__ = "0.1.4"
