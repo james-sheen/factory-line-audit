@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -124,8 +125,49 @@ def measure() -> dict:
     except ValueError:
         pass
 
+    # THE CROSS-VERTICAL CONTROL. This is the part that checks the HARNESS
+    # rather than the bridge: another vertical's entity must be REFUSED by name,
+    # not answered. It was answered `absent` -- the same word this tier gives a
+    # node a verb removed -- so a BMC scenario, or one with a typo'd node id,
+    # would have had its `absent` expectation met by a tier that was never
+    # serving the thing at all.
+    try:
+        substrate.observe(tier, "Inlet")
+        problems.append("the tier answered for 'Inlet', a BMC sensor it has "
+                        "never served, instead of refusing by name")
+        foreign_refused = False
+    except Exception as refusal:
+        foreign_refused = "not one of them" in str(refusal)
+        if not foreign_refused:
+            problems.append(f"the tier refused a foreign entity for the wrong "
+                            f"reason: {type(refusal).__name__}: {refusal}")
+
+    # And the scenario end to end, when the tool and the client library are
+    # both here. A tier that registers and is never started is a declaration.
+    scenario = os.path.join(HERE, "scenarios", "tag-removed.yaml")
+    ran = "not attempted"
+    try:
+        import asyncua                                          # noqa: F401
+        environment = dict(os.environ)
+        environment["PATH"] = (os.path.dirname(sys.executable) + os.pathsep
+                               + environment.get("PATH", ""))
+        proc = subprocess.run(
+            [sys.executable, "-m", "qa_orchestrator.cli", "--plugin",
+             os.path.join(HERE, "qa_vertical.py"), "run", scenario],
+            capture_output=True, text=True, cwd=ROOT, env=environment,
+            timeout=900)
+        ran = f"exit {proc.returncode}"
+        if proc.returncode != 0 or "every expectation held" not in proc.stdout:
+            problems.append(f"the scenario did not hold: exit "
+                            f"{proc.returncode}: "
+                            f"{(proc.stdout or proc.stderr).strip()[-300:]}")
+    except ImportError:
+        ran = "asyncua absent, so the tier could not be started"
+
     answer = {"qa_orchestrator": qa_orchestrator.__version__,
               "tier_states": tier_states,
+              "foreign_entity_refused": foreign_refused,
+              "scenario": ran,
               "summary": summary, "added": added,
               "findings_path_reachable": reachable,
               "checked_path_reachable": denominator == 48}
@@ -133,10 +175,10 @@ def measure() -> dict:
         answer.update(code=1, note="; ".join(problems)[:400], problems=problems)
     else:
         answer.update(code=0, note=(
-            f"qa-orchestrator {qa_orchestrator.__version__}: register() added "
-            f"{added['substrates']} and {added['tools']} and no verbs, "
-            f"unregister() put all three registries back, and findings stay "
-            f"unreachable pending their #1"))
+            f"qa-orchestrator {qa_orchestrator.__version__}: registries come "
+            f"back ({added['substrates']} + {added['tools']}, no verbs); a "
+            f"foreign entity is refused by name; the scenario ran end to end "
+            f"({ran}); findings stay unreachable pending their #1"))
     return answer
 
 

@@ -88,6 +88,29 @@ class FactoryOpcUaSubstrate:
         self.register = str(setup.get("register", REGISTER))
         with open(setup.get("walk", CORPUS), encoding="utf-8") as handle:
             self._walk = json.load(handle)
+        # EVERY NODE THIS LINE DECLARES, captured before anything is withheld.
+        # A node a verb removed and a node this tier never heard of are
+        # different facts, and `state()` answered `absent` to both until the
+        # cross-vertical control asked it about a BMC sensor. A scenario from
+        # another vertical -- or one with a typo'd node id -- would then have
+        # its `absent` expectation met by a tier that was not serving the thing
+        # at all.
+        self._known = {node for sample in self._walk["samples"]
+                       for node in sample["nodes"]}
+
+        # THE SURFACE WITHHOLDS TWO NODES OF ITS OWN, so that the live rung
+        # exercises all three presence states instead of only the happy one.
+        # Apply that here, at construction, or this tier's `state()` answers
+        # from a walk that says one thing while its server serves another --
+        # which is what it did: `state()` called ROB01.Torque `reading` while
+        # the server never created the node. A substrate that cannot describe
+        # its own server is worse than none, because the expectation it fails
+        # reads as an injection that did not take.
+        sys.path.insert(0, HERE)
+        import opcua_surface
+
+        self.remove(opcua_surface.WITHHOLD_ABSENT)
+        self.disable(opcua_surface.WITHHOLD_BAD)
         self._workdir = tempfile.mkdtemp(prefix="fla-qa-tier-")
         self._server: subprocess.Popen | None = None
         self._port: int | None = None
@@ -172,6 +195,14 @@ class FactoryOpcUaSubstrate:
         sys.path.insert(0, os.path.join(ROOT, "src"))
         from factory_line_audit.presence import grade
 
+        if entity not in self._known:
+            from qa_orchestrator.vocabulary import SubstrateUnavailable
+            raise SubstrateUnavailable(
+                f"{self.NAME} serves the {len(self._known)} node(s) this line "
+                f"declares and {entity!r} is not one of them. That is not "
+                f"`absent`: absent means a node this line declares and the "
+                f"server is not serving. This scenario is asking about "
+                f"something else -- another vertical's entity, or a typo")
         seen = [sample["nodes"][entity] for sample in self._walk["samples"]
                 if entity in sample["nodes"]]
         if not seen:

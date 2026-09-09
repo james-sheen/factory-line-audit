@@ -1,0 +1,50 @@
+# A declared tag is taken off the line, and another stops reading.
+#
+# Both are Stage 1's whole subject: *absent* and *present but not reading* are
+# different conditions on a plant with different responses, and a tool that
+# collapses them to not-ok is the failure this package exists to prevent.
+#
+# Every phase carries a SUBSTRATE expectation beside the referee one. That is
+# not redundancy: if an injection silently failed, the substrate expectation is
+# the only thing that could show the referee was right to stay quiet. Without
+# it, a broken injector and a blind referee look identical from here.
+#
+# Config paths resolve against THIS FILE, not the working directory.
+format: qa-scenario/2
+name: a declared tag removed, then one that stops reading
+substrate: factory-opcua
+referee: factory-line-audit
+mode: presence
+config: ../../examples/asset_register.json
+
+phases:
+  # The rung-3 surface withholds two nodes on purpose, so that the live rung
+  # exercises all three presence states rather than only the happy one. So the
+  # baseline is exit 1 and not 0, and saying so here is the honest version --
+  # an expectation of 0 would have to be met by weakening the surface.
+  - note: the surface as it stands, already withholding two nodes
+    captures: 1
+    expect:
+      referee: {exit: 1}
+      substrate:
+        "ns=2;s=PR01.DieTemp": reading
+        "ns=2;s=ROB01.Torque": absent
+        "ns=2;s=PLC01.CpuLoad": disabled
+
+  - note: a press tag comes off the line entirely
+    captures: 1
+    action: {remove: "ns=2;s=PR01.DieTemp"}
+    expect:
+      referee: {exit: 1}
+      substrate:
+        "ns=2;s=PR01.DieTemp": absent
+        "ns=2;s=PR01.Strokes": reading
+
+  - note: and a second one stays declared while it stops reporting
+    captures: 1
+    action: {disable: "ns=2;s=PR01.Strokes"}
+    expect:
+      referee: {exit: 1}
+      substrate:
+        "ns=2;s=PR01.Strokes": disabled
+        "ns=2;s=PR01.DieTemp": absent
