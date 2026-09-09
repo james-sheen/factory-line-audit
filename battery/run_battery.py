@@ -396,86 +396,22 @@ def leg_suite(python):
 
 
 # ---------------------------------------------------------------- conformance
-CONFORMANCE_PROBE = """
-import json, sys
-try:
-    from presence_audit.conformance import check_the_core, check_a_vocabulary
-    import presence_audit as _pa
-    import presence_audit.vocabulary as _voc
-    from factory_line_audit.vertical import FactoryLineVocabulary
-except Exception as missing:
-    print(json.dumps({"unavailable": f"{type(missing).__name__}: {missing}"}))
-    raise SystemExit(0)
-
-def problems(result):
-    return list(result[0] if isinstance(result, tuple) else result)
-
-# The kit's own answer about this vertical.
-core = problems(check_the_core())
-mine = problems(check_a_vocabulary(FactoryLineVocabulary()))
-
-# NON-VACUITY. Everything above is a negative claim, and a kit that stopped
-# checking would satisfy it by saying nothing. A stand-in that is deliberately
-# short must come back with something, or the clean answer means nothing.
-class TooShort:
-    kinds = ("measurement",)
-    count_keys = {}
-    def classify(self, declared_type):
-        return "measurement"
-control = problems(check_a_vocabulary(TooShort()))
-
-# The noun the core will actually USE, which is not what the kit checks. It is
-# read as an attribute and falls back silently, so a refactor from property to
-# method reinstates the defect this vertical already had once -- reports that
-# told a press cell about its sensors -- past a clean conformance run.
-with _voc.using(FactoryLineVocabulary()):
-    reached = list(_voc.noun())
-
-print(json.dumps({"presence_audit": _pa.__version__, "core": core,
-                  "vocabulary": mine, "control": len(control),
-                  "noun_reaching_the_core": reached}))
-"""
-
-
 def leg_conformance(python):
-    proc = subprocess.run([python, "-c", CONFORMANCE_PROBE], capture_output=True,
-                          text=True, cwd=ROOT, timeout=300,
+    """Thin on purpose: the decision lives in `probe_conformance.py`, which CI
+    runs directly. Two copies of a verdict is two things to keep in step."""
+    probe = os.path.join(HERE, "probe_conformance.py")
+    proc = subprocess.run([python, probe], capture_output=True, text=True,
+                          cwd=ROOT, timeout=300,
                           env=dict(os.environ, PYTHONPATH=SRC))
-    if proc.returncode or not proc.stdout.strip():
-        return leg("conformance", 2, f"the probe did not run: "
-                                     f"{(proc.stderr or proc.stdout)[-200:]}",
-                   added=True)
-    answer = json.loads(proc.stdout.strip().splitlines()[-1])
-    if "unavailable" in answer:
-        return leg("conformance", 2, f"the [vertical] extra is not installed in "
-                                     f"this interpreter, so the core never "
-                                     f"judged this vertical: "
-                                     f"{answer['unavailable']}", added=True)
-    if not answer["control"]:
-        return leg("conformance", 2, "the kit reported nothing against a "
-                                     "deliberately short vocabulary, so it is "
-                                     "not checking; a clean answer above would "
-                                     "mean nothing", added=True)
-    if answer["core"]:
-        return leg("conformance", 1, f"the core does not satisfy its own kit: "
-                                     f"{answer['core']}", added=True)
-    if answer["vocabulary"]:
-        return leg("conformance", 1, f"this vertical does not satisfy the "
-                                     f"core's kit: {answer['vocabulary']}",
-                   added=True)
-    reached = tuple(answer["noun_reaching_the_core"])
-    if reached != ("tag", "tags"):
-        return leg("conformance", 1, f"the core renders {reached}, not this "
-                                     f"vertical's noun; `noun` is read as an "
-                                     f"ATTRIBUTE and falls back silently, and "
-                                     f"the kit does not check it",
-                   added=True)
-    return leg("conformance", 0, f"presence-audit {answer['presence_audit']}: "
-                                 f"core clean, this vertical clean, the kit "
-                                 f"named {answer['control']} problem(s) against "
-                                 f"a short stand-in, and the core renders "
-                                 f"{reached}", added=True)
-
+    if not proc.stdout.strip():
+        return leg("conformance", 2, f"the probe printed nothing: "
+                                     f"{(proc.stderr or '')[-200:]}", added=True)
+    answer = json.loads(proc.stdout)
+    if answer["code"] != proc.returncode:
+        return leg("conformance", 2, f"the probe reported {answer['code']} and "
+                                     f"exited {proc.returncode}; they are one "
+                                     f"verdict and disagree", added=True)
+    return leg("conformance", answer["code"], answer["note"], added=True)
 
 # ------------------------------------------------------------------------ pin
 def leg_pin():

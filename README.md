@@ -93,6 +93,9 @@ python3 -m factory_line_audit.cli gate  --register examples/asset_register.json 
 # C8 -- exercise the pin, floor included (installs each release; slow)
 python3 battery/probe_pin.py
 
+# does the core still accept this vertical? two imports, and CI runs it too
+/tmp/v/bin/python battery/probe_conformance.py
+
 # the whole battery
 /tmp/v/bin/python battery/run_battery.py --python /tmp/v/bin/python --live-python /tmp/v/bin/python
 ```
@@ -124,6 +127,13 @@ below. `corpus` and `conformance` still are.
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 
 A leg that could not run reports `2` and is **named**, never skipped.
+
+The battery is run by hand: it wants a live OPC UA server and it builds a
+wheel. `conformance` is the exception and runs in CI on every interpreter,
+because it costs two imports and it is the only leg whose question is about
+software this package does not control. A leg nothing triggers is a leg
+nobody reads, and that is the same argument the legs themselves are written
+from.
 
 ## Formats
 

@@ -47,6 +47,16 @@ jobs:
         run: python3 battery/make_corpus.py
       - name: The suite
         run: python3 -m pytest tests/ -q
+      # The one battery leg that asks the CORE whether it still accepts this
+      # vertical, rather than asking this package whether it agrees with itself.
+      # The rest of the battery stays a hand-run script -- it wants a live OPC UA
+      # server and builds a wheel. This leg costs two imports and the extra is
+      # already installed above, so there is no reason for it to wait for
+      # somebody to remember. It is run on every interpreter for the same reason
+      # the suite is: the answer comes from an installed dependency, and which
+      # release resolves can differ by interpreter.
+      - name: The core's own kit still accepts this vertical
+        run: python3 battery/probe_conformance.py
 
   checks:
     runs-on: ubuntu-latest
