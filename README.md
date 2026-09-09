@@ -25,8 +25,8 @@ against the engine and its modelling guide, and **both** of the findings the
 previous attempt at this bridge left to be filed upstream, withdrawn because
 re-measurement did not reproduce them.
 
-**Not yet released.** On no index and carrying no tags -- install it from a
-checkout, as [Quick start](#quick-start) below shows.
+**Released -- 0.1.0**, tagged `v0.1.0`, Apache-2.0, on PyPI as
+[`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
 named below.** Thirteen battery legs green against
@@ -65,6 +65,9 @@ as well as declines. The reason is measured and is in
 [FINDINGS.md A3](FINDINGS.md).
 
 ## Quick start
+
+To use it: `pip install 'factory-line-audit[detect,live]'`. To work on it, or to
+run the verification battery below, take a checkout instead:
 
 ```bash
 git clone https://github.com/james-sheen/factory-line-audit
