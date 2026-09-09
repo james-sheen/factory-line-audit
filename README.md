@@ -29,9 +29,9 @@ re-measurement did not reproduce them.
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
-named below.** Thirteen battery legs green against
-`arbiter-engine 0.1.10` from PyPI, including a real OPC UA server read by a real
-client and the built wheel installed into an empty environment. Nothing here has
+named below.** Sixteen battery legs green, including a real OPC UA server read
+by a real client, the built wheel installed into an empty environment, and a
+sweep of the whole `arbiter-engine` range this package declares. Nothing here has
 touched a plant. Every number in `examples/` is invented.
 
 ---

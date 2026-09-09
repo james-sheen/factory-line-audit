@@ -260,3 +260,81 @@ class TestTheMatchersCanProduceAPositive:
         assert RELEASED.search("**Released -- 0.2.0**, tagged").group(1) == "0.2.0"
         assert RELEASED.search("**Released 1.10.3**").group(1) == "1.10.3"
         assert RELEASED.search(f"**{UNRELEASED}**") is None
+
+
+class TestTheStatusParagraphCountsWhatExists:
+    """A count written into prose has no red.
+
+    The Status paragraph claimed *thirteen battery legs* while sixteen existed,
+    and *`arbiter-engine 0.1.10`* while the range this package declares resolves
+    to something later. Neither was wrong when written. Both expired when the
+    next leg and the next engine release landed, and prose is where that happens
+    silently -- there is no assertion to fail, so the sentence just quietly stops
+    being true.
+
+    So the numbers that stay in that paragraph are held against the tracked files
+    that define them. `battery_result.json` would be the natural subject for a
+    claim about a RUN, and it is gitignored, so it cannot be one: a guard reading
+    it would find nothing in CI and pass. These read the battery's own leg tuple
+    and the package's own dependency range instead, both of which are always
+    present.
+    """
+
+    RUNNER = ROOT / "battery" / "run_battery.py"
+    PYPROJECT = ROOT / "pyproject.toml"
+
+    NUMBER = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+              "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
+              "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+              "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+              "twenty": 20}
+
+    LEGS = re.compile(r"\b([A-Za-z]+|\d+)\s+battery legs\b", re.IGNORECASE)
+
+    def _selectable(self) -> int:
+        """The battery's own leg names, read rather than imported -- importing a
+        script for a constant runs whatever else it does at module level."""
+        found = re.search(r"SELECTABLE\s*=\s*\((.*?)\)",
+                          self.RUNNER.read_text(encoding="utf-8"), re.S)
+        assert found, "no SELECTABLE tuple in the battery runner"
+        return len(re.findall(r'"[^"]+"', found.group(1)))
+
+    def _stated(self):
+        found = self.LEGS.search(_readme())
+        if not found:
+            return None
+        word = found.group(1).lower()
+        return self.NUMBER.get(word, int(word) if word.isdigit() else None)
+
+    def test_the_battery_has_legs_to_count(self):
+        """Non-vacuity: an empty tuple would satisfy any comparison below."""
+        assert self._selectable() >= 10, (
+            f"only {self._selectable()} leg(s) parsed from the runner; the "
+            f"pattern is not finding the tuple, so the check below proves "
+            f"nothing")
+
+    def test_the_stated_leg_count_is_the_number_that_exists(self):
+        stated = self._stated()
+        if stated is None:
+            return          # the paragraph names no leg count; nothing to hold
+        assert stated == self._selectable(), (
+            f"the README says {stated} battery legs and the battery defines "
+            f"{self._selectable()}. This is the shape that expired once already: "
+            f"the number was right when written and nothing could notice the "
+            f"next leg landing")
+
+    def test_the_readme_does_not_name_a_resolved_engine_version(self):
+        """A resolved version is a fact about one run and expires at the next
+        engine release. The declared RANGE is a fact about this package, and it
+        is the honest thing for prose to carry -- `pin_evidence.json` is where
+        versions actually exercised are recorded, by a probe that re-runs."""
+        floor = re.search(r'arbiter-engine>=([\d.]+),<([\d.]+)',
+                          self.PYPROJECT.read_text(encoding="utf-8"))
+        assert floor, "no arbiter-engine range in pyproject; nothing to compare"
+        status = _readme().split("## The two stages")[0]
+        named = re.findall(r'arbiter-engine[` ]+(\d+\.\d+\.\d+)', status)
+        assert not named, (
+            f"the header names the engine version(s) {named}. That is a fact "
+            f"about one run: the declared range is >={floor.group(1)},"
+            f"<{floor.group(2)}, so a reader is told a number that goes stale at "
+            f"the next release with nothing to notice")
