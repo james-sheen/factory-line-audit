@@ -25,6 +25,9 @@ against the engine and its modelling guide, and **both** of the findings the
 previous attempt at this bridge left to be filed upstream, withdrawn because
 re-measurement did not reproduce them.
 
+**Not yet released.** On no index and carrying no tags -- install it from a
+checkout, as [Quick start](#quick-start) below shows.
+
 **Status: a live-but-safe surface read for real -- the third of the four rungs
 named below.** Thirteen battery legs green against
 `arbiter-engine 0.1.10` from PyPI, including a real OPC UA server read by a real
