@@ -92,8 +92,25 @@ DECLINE_CLASSES: Dict[str, Dict[str, Any]] = {
     "model_defect": {
         "floor": INCOMPLETE,
         "reasons": ("missing_role", "missing_config", "no_threshold",
-                    "wrong_indicator_type", "missing_entity_type"),
-        "why": "This package generated the model. Nothing else will notice.",
+                    "wrong_indicator_type", "missing_entity_type",
+                    "no_rule_for_role"),
+        "why": "This package generated the model. Nothing else will notice. "
+               "`no_rule_for_role` is classed here BEFORE any release emits "
+               "it. The engine splits it out of `missing_role` to say the "
+               "model is right and the axiom simply has no rule for that kind "
+               "of quantity -- for a hand-written model, nobody's fault. This "
+               "package generates its model from a closed set of pairs: "
+               "`latency` with RESPONSIVENESS, `percentage` and `count` with "
+               "CONSISTENCY, `counter` with MONOTONICITY, BOUNDEDNESS wherever "
+               "a reviewed declaration supplies a number. A pair the engine "
+               "has no rule for is a pair this package should never have "
+               "written, so the generator asked a question it did not mean. "
+               "Two-sided for the reason A2 gave for `missing_entity_type`. "
+               "WHAT THIS CHANGES IS THE REPORT, NOT THE VERDICT: an "
+               "unclassified reason already floors at 2, so the exit code was "
+               "right by accident. What was wrong was the sentence beside it "
+               "-- `unclassified` says the engine is newer than its reader, "
+               "which is false about a reason this package has considered.",
     },
     "declared_gap": {
         "floor": CLEAN,
@@ -136,6 +153,14 @@ DECLINE_CLASSES: Dict[str, Dict[str, Any]] = {
 #: and the battery fails on a difference, which is how a vocabulary that grew
 #: after this file was written becomes visible instead of falling into
 #: `unclassified` quietly.
+#:
+#: `no_rule_for_role` is DELIBERATELY NOT HERE, though `model_defect` above
+#: already classes it. This tuple records what was measured from a running
+#: engine, and no released engine emits it: 0.1.13 is the newest on the index
+#: and carries twelve reasons. Adding it here by hand would make this file
+#: claim a measurement nobody took, and the live-vocabulary comparison would
+#: refuse it anyway. It goes in the day a release emits it and a probe records
+#: it, with that version written beside it.
 VOCABULARY_AT_DESIGN_TIME = (
     "checker_error", "insufficient_samples", "missing_config",
     "missing_entity_type", "missing_property", "missing_role",

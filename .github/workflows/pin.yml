@@ -1,0 +1,86 @@
+# Every release inside every declared range, installed and RUN -- weekly.
+#
+# The pin is the one claim this package makes about software it does not
+# control, and a range is a claim about every release inside it, including ones
+# published after the claim was written. `checks.yml` cannot make that claim:
+# it installs whatever resolves today, so it says nothing about the floor and
+# nothing about a release that appears next week.
+#
+# THIS IS EXPECTED TO GO RED ON ITS OWN ONE DAY, and that is the design. The
+# engine has `no_rule_for_role` on its main line, unreleased at the time of
+# writing -- a thirteenth decline reason. `exit_contract.py` already classes it,
+# so the verdict will not move. But `VOCABULARY_AT_DESIGN_TIME` records twelve,
+# because twelve is what a running engine has ever emitted, and `feeder` floors
+# any run where the live vocabulary and the recorded one differ. So the day the
+# range resolves to that release, `detect` returns 2, this sweep returns 1, and
+# this workflow turns red having discovered a real fact rather than a failure.
+# The fix that day is to run `probe_engine.py` against it and record the
+# thirteenth reason with the version beside it -- measurement first, record
+# second. Verified on 2026-09-09 by making the recorded vocabulary one narrower
+# than the installed engine's: `OUTCOME exit=2 verdict=could-not-complete`.
+#
+# Weekly rather than per-push: it builds a throwaway environment per release,
+# and there are two ranges. Nothing here reads a secret and nothing is written
+# back to the repository.
+#
+# It also runs on a push that touches the pin, the sweep, or the file the sweep
+# is a claim about -- and on a push that touches this workflow, so that adding
+# it ran it once. A workflow that has never been green is a workflow nobody
+# reads, and a schedule is a long time to wait to find out it was broken on
+# arrival.
+
+name: pin
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/pin.yml"
+      - "pyproject.toml"
+      - "battery/probe_pin.py"
+      - "battery/probe_conformance.py"
+      - "src/factory_line_audit/exit_contract.py"
+
+permissions:
+  contents: read
+
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # `virtualenv` and not the standard library's `venv`: the sweep builds one
+      # environment per release and this is what it calls.
+      - name: The sweep's own tools
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet virtualenv
+
+      # DERIVED and expiring, so it is not committed: several axiom arms count
+      # inside a window measured backwards from now, and a corpus on disk goes
+      # stale. Built here so the engine sweep has a walk to judge -- without it
+      # every release would fail for the same reason and say nothing about any
+      # of them.
+      - name: The corpus, stamped now
+        run: python3 battery/make_corpus.py
+
+      - name: Every release inside every declared range, installed and run
+        run: python3 battery/probe_pin.py
+
+      # The evidence is what the claim rests on, and a red run is exactly when
+      # somebody wants to read it.
+      - name: The evidence, whatever the outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pin-evidence
+          path: battery/pin_evidence.json
+          if-no-files-found: warn

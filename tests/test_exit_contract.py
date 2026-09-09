@@ -59,6 +59,31 @@ class TestDeclineClassesAndTheirFloors:
         """An engine newer than its reader. Unmeasured never reads as clean."""
         assert floor_of(classify("some_future_reason")) == INCOMPLETE
 
+    def test_missing_role_and_no_rule_for_role_share_a_class(self):
+        """The engine splits `no_rule_for_role` out of `missing_role` in the
+        release after 0.1.13. Both say the same thing to a package that WROTE
+        its own model, so both land in `model_defect` and a consumer counting
+        one of them sees the total hold when the range resolves to that release.
+
+        The exit code would not have moved either way -- an unclassified reason
+        already floors at 2 -- so this pin is about the class and the sentence
+        it carries, not the verdict. `unclassified` says the engine is newer
+        than its reader, and that is false about a reason considered here.
+        """
+        assert classify("no_rule_for_role") == classify("missing_role")
+        assert classify("no_rule_for_role") == "model_defect"
+
+    def test_no_rule_for_role_is_not_in_the_recorded_vocabulary_yet(self):
+        """The classes are a DECISION and may run ahead of the engine; this
+        tuple is a MEASUREMENT and may not. No released engine emits this
+        reason, so recording it would be claiming a probe nobody ran.
+
+        This goes green again by running `probe_engine.py` against a release
+        that emits it, and adding it with that version beside it -- in that
+        order.
+        """
+        assert "no_rule_for_role" not in VOCABULARY_AT_DESIGN_TIME
+
     def test_the_ambiguous_pair_needs_stage_one(self):
         """`missing_property` means two different things and the engine cannot
         tell them apart. Without Stage 1's answer this must not guess."""
