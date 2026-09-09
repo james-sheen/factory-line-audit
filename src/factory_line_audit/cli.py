@@ -13,6 +13,7 @@ import sys
 from typing import Any, Dict, List, Optional, Sequence
 
 from . import formats
+from . import __version__
 from .exit_contract import CLEAN, FINDINGS, INCOMPLETE, MEANING
 
 #: Every refusal class this package defines, named. Enumerated rather than
@@ -348,6 +349,14 @@ def build_parser() -> argparse.ArgumentParser:
         prog="factory-line-audit",
         description="A bridge from a discrete-manufacturing line to "
                     "arbiter-engine. Stage 1 needs nothing installed.")
+    # A consumer resolves this tool on PATH and runs it as a SUBPROCESS, so the
+    # `>=` in its packaging metadata governs what pip put in the environment and
+    # not what actually answers. Until this existed there was no way to ask:
+    # the flag exited 2 with an argparse usage error, so a downstream floor
+    # could be declared and never checked. `bmc-sensor-audit` carries the same
+    # argument for the same reason.
+    parser.add_argument("--version", action="version",
+                        version=f"factory-line-audit {__version__}")
     subs = parser.add_subparsers(dest="verb")
 
     def register_arg(sub):

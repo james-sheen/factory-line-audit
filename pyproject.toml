@@ -4,7 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "factory-line-audit"
-version = "0.1.0"
+# Read from `src/factory_line_audit/__init__.py` rather than written here.
+# They were two literals that happened to agree, which is the arrangement
+# that drifts -- a bump in one place ships a wheel whose `__version__`
+# disagrees with its own metadata, and nothing notices. Both sibling
+# repositories were moved off it after exactly that.
+dynamic = ["version"]
 description = "A bridge from a discrete-manufacturing line to arbiter-engine"
 readme = "README.md"
 # Both extras below resolve only on 3.10 or later -- `arbiter-engine` and
@@ -84,6 +89,9 @@ factory-line-audit = "factory_line_audit.cli:main"
 # needs no edit to know this domain exists.
 [project.entry-points."presence_audit.plugins"]
 factory-line = "factory_line_audit.vertical:register"
+
+[tool.setuptools.dynamic]
+version = {attr = "factory_line_audit.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
