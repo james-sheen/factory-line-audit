@@ -283,7 +283,7 @@ def sensor_bad(walk):
     touched = 0
     for sample in walk["samples"]:
         cell = at(sample, "ROB-01.axis1_temp_c")
-        cell["q"] = "Bad_DeviceFailure"
+        cell["q"] = "BadDeviceFailure"
         cell["v"] = None
         touched += 1
     return touched
@@ -324,13 +324,13 @@ def heartbeat_runaway(walk):
 
 
 def hmi_override(walk):
-    """Stage 1, substituted. The conveyor speed reads Good_LocalOverride: a
+    """Stage 1, substituted. The conveyor speed reads GoodLocalOverride: a
     value somebody typed at a panel. The number is inside every bound, which is
     the point -- collapsing quality to Good/not-Good makes this invisible."""
     touched = 0
     for sample in walk["samples"][-30:]:
         cell = at(sample, "CNV-01.speed_mpm")
-        cell["q"] = "Good_LocalOverride"
+        cell["q"] = "GoodLocalOverride"
         cell["v"] = 12.0
         touched += 1
     return touched

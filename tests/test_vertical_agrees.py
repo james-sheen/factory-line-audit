@@ -107,7 +107,7 @@ def _a_walk(register):
     for node in nodes:
         if node == absent:
             continue
-        q = "Good_LocalOverride" if node == substituted else "Good"
+        q = "GoodLocalOverride" if node == substituted else "Good"
         sample[node] = {"v": 1.0, "q": q}
     bad = nodes[2]
     sample[bad] = {"v": None, "q": "Bad"}

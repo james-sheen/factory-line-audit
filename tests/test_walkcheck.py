@@ -38,7 +38,7 @@ class TestWhatAReadingMayBe:
             "ns=2;s=PR01.DieTemp": reading(198.4),          # a measurement
             "ns=2;s=ST01.Running": reading(True),           # a running flag
             "ns=2;s=ST01.Mode": reading("Auto"),            # an enumeration
-            "ns=2;s=ROB01.Ax1Temp": reading(None, "Bad_DeviceFailure"),
+            "ns=2;s=ROB01.Ax1Temp": reading(None, "BadDeviceFailure"),
         })
         assert validate_walk(subject) == []
 
@@ -97,7 +97,7 @@ class TestWhatItMustNotRefuse:
 
     def test_an_absent_value_is_legal(self):
         """Absent and null are both `the server would not vouch for it`."""
-        assert validate_walk(walk({"ns=2;s=A": {"q": "Bad_DeviceFailure"}})) == []
+        assert validate_walk(walk({"ns=2;s=A": {"q": "BadDeviceFailure"}})) == []
 
     def test_extra_fields_are_ignored(self):
         subject = walk({"ns=2;s=A": dict(reading(1.0), units="degC")})

@@ -99,7 +99,7 @@ async def serve(port: int, walk_path: str, ready: str) -> None:
                 when = _dt.datetime.fromisoformat(
                     str(reading.get("t") or sample["t"]).replace("Z", "+00:00"))
                 if node == WITHHOLD_BAD:
-                    quality, value = "Bad_DeviceFailure", None
+                    quality, value = "BadDeviceFailure", None
                 # THE WORD THE CORPUS ASKED FOR, not a two-way collapse. This
                 # served `Good` or `BadDeviceFailure` and nothing else, so the
                 # rung could not produce a substituted value at all -- and

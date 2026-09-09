@@ -121,7 +121,7 @@ class TestThreeStates:
         conveyor = next(a for a in register["assets"] if a["id"] == "CNV-01")
         node = conveyor["tags"]["speed_mpm"]["node"]
         for sample in clean_walk["samples"]:
-            sample["nodes"][node]["q"] = "Good_LocalOverride"
+            sample["nodes"][node]["q"] = "GoodLocalOverride"
         presence = classify(register, clean_walk)
         row = next(t for t in presence["tags"] if t["node"] == node)
         assert row["state"] == READING
@@ -158,15 +158,20 @@ class TestStageOneNeedsNothingInstalled:
 class TestTheSpellingARealServerUses:
     """OPC UA names these codes without separators, and `asyncua` reports them
     that way: `GoodLocalOverride`, `BadDeviceFailure`, `GoodSubNormal`. The
-    synthetic corpus writes `Good_LocalOverride`. Matching only the second
-    meant every compound word from a live server fell through to the
-    unknown-word branch -- 36 of the 274 codes `asyncua` defines.
+    synthetic corpus wrote `Good_LocalOverride`. Matching only the corpus meant
+    every compound word from a live server fell through to the unknown-word
+    branch -- 36 of the 274 codes `asyncua` defines.
 
     It survived because the battery's collector translated into the corpus
     spelling before Stage 1 saw it, so the fixture agreed with the grader
-    because a layer in between made them agree. `battery/probe_status_words.py`
-    now grades the whole library vocabulary; these are the cases that matter
-    stated where they can be read.
+    because a layer in between made them agree. Both are gone now: the
+    translator, and the corpus spelling it translated into.
+
+    **The tolerance below outlives the reason it was written.** A walk handed to
+    this package is written by whatever produced it, so grading must not depend
+    on the separator somebody chose. `battery/probe_status_words.py` grades the
+    whole library vocabulary; these are the cases that matter, stated where they
+    can be read.
     """
 
     def test_both_spellings_grade_the_same(self):

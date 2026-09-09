@@ -83,8 +83,9 @@ def grade(quality: Any) -> Tuple[str, Dict[str, Any]]:
 
     # SEPARATORS REMOVED, because the two spellings are two populations. OPC UA
     # names these codes `GoodLocalOverride` and `BadDeviceFailure`, and that is
-    # what `asyncua` reports; the synthetic corpus writes `Good_LocalOverride`
-    # and `Bad_DeviceFailure`. Matching on `good_` saw only the second, so every
+    # what `asyncua` reports; the synthetic corpus wrote `Good_LocalOverride`
+    # and `Bad_DeviceFailure` until it was moved onto the real spelling too.
+    # Matching on `good_` saw only the corpus, so every
     # compound word a real server returns fell through to the unknown-word
     # branch: `GoodSubNormal` graded unusable and a reading tag read as
     # `present_not_reading`, and `GoodLocalOverride` graded not-substituted, so
@@ -93,7 +94,10 @@ def grade(quality: Any) -> Tuple[str, Dict[str, Any]]:
     #
     # It survived because the battery's collector TRANSLATED into the corpus
     # spelling before Stage 1 saw it. The fixture agreed with the grader
-    # because something in between made it agree.
+    # because something in between made it agree. The translator and the corpus
+    # spelling are both gone; this stays, because a caller's walk is written by
+    # whatever produced it and this package should not care which separator
+    # that thing chose.
     flat = word.replace("_", "")
     if flat in ("good", "uncertain", "bad"):
         return flat, QUALITY_GRADES[flat]
