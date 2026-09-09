@@ -1,9 +1,33 @@
 {
-  "measured_on": "2026-09-09T10:14:19.017696+00:00",
+  "measured_on": "2026-09-09T10:16:34.535874+00:00",
   "engine_version": "0.1.13",
   "engine_file": "/tmp/claude-0/-root-w/591c7f45-863b-4c41-868d-93b7c2e72686/scratchpad/both/lib/python3.10/site-packages/arbiter_engine",
   "python": "3.10.12",
   "probes": {
+    "T1": {
+      "question": "one drop, varied cadence AND distance back: what bounds the reversal window",
+      "measured": {
+        "10s": {
+          "2 back": true,
+          "10 back": true,
+          "16 back": true,
+          "25 back": false
+        },
+        "60s": {
+          "2 back": true,
+          "10 back": true,
+          "16 back": true,
+          "25 back": false
+        },
+        "600s": {
+          "2 back": true,
+          "10 back": false,
+          "16 back": false,
+          "25 back": false
+        }
+      },
+      "note": "BOTH. At 10s and 60s the cut sits between 16 and 25 SAMPLES, identical in sample terms across a sixfold change in elapsed time; at 600s it is already quiet at 10 back, which 60s at 16 back is not. So a sample count and a duration each bound it and the shorter one bites. A scheduled shift reset is hours old and outside the duration bound at any cadence, so it cannot reach this arm -- a bridge withholding history to protect it is protecting nothing."
+    },
     "D1": {
       "question": "does a declared bad state fire on this engine",
       "measured": {

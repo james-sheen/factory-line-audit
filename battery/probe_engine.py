@@ -127,6 +127,48 @@ def record(name, question, value, note=""):
 
 
 
+
+# ------------------------------------------------- the reversal window, twice
+# P6. M3 varies how far back a reversal sits at ONE cadence, so it cannot tell a
+# window counted in samples from one counted in seconds. A scheduled shift reset
+# is hours old, and whether it can still reach the reversal arm decides whether
+# a bridge has to withhold history or merely record that it did not.
+print("T -- is the reversal window samples, seconds, or both")
+_T_MODEL = model("""    A:
+      - name: c
+        type: NUMERIC
+        role: count
+        axioms: [MONOTONICITY]
+        monotonicity:
+          expected_direction: increasing
+          allow_reset: false
+          reversal_tolerance: 1
+""")
+
+
+def _one_drop(cadence_s, back, n=40):
+    values, v = [], 100.0
+    for i in range(n):
+        v = v - 50.0 if i == n - 1 - back else v + 1.0
+        values.append(v)
+    env = run(_T_MODEL, [("a1", "A", {"c": values[-1]})],
+              series=[("a1", "c", ts(values, cadence_s))])
+    return bool([f for f in env.get("findings") or []
+                 if "reversal" in str(f.get("problem_type"))])
+
+
+_t = {f"{c}s": {f"{b} back": _one_drop(c, b) for b in (2, 10, 16, 25)}
+      for c in (10, 60, 600)}
+record("T1", "one drop, varied cadence AND distance back: what bounds the "
+             "reversal window", _t,
+       "BOTH. At 10s and 60s the cut sits between 16 and 25 SAMPLES, identical "
+       "in sample terms across a sixfold change in elapsed time; at 600s it is "
+       "already quiet at 10 back, which 60s at 16 back is not. So a sample "
+       "count and a duration each bound it and the shorter one bites. A "
+       "scheduled shift reset is hours old and outside the duration bound at "
+       "any cadence, so it cannot reach this arm -- a bridge withholding "
+       "history to protect it is protecting nothing.")
+
 # ------------------------------------------------------------- state words
 # P5. Named D. S is expect_variation and B is the property/history pair --
 # both were already taken, and both were taken by me in turn. `record` now
