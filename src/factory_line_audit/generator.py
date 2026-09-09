@@ -295,12 +295,36 @@ def _indicator(asset, tag, spec, by_key):
     gate_on = _statements(by_key, asset_id, tag, "gate_on")
 
     if cls == "state":
-        dropped.append({"scope": "tag", "asset": asset_id, "tag": tag,
-                        "reason": "state_tag_is_not_an_indicator",
-                        "detail": "fed as a property so other checks can be "
-                                  "gated on it; the engine has no axiom for a "
-                                  "machine state word"})
-        return None, dropped
+        bad_states = _statements(by_key, asset_id, tag, "bad_state")
+        if not bad_states:
+            dropped.append({"scope": "tag", "asset": asset_id, "tag": tag,
+                            "reason": "state_tag_is_not_an_indicator",
+                            "detail": "fed as a property so other checks can be "
+                                      "gated on it. STABILITY judges a state "
+                                      "word against a declared `bad:` from "
+                                      "0.1.12, so what is missing is a review: "
+                                      "no `bad_state` declaration names a word "
+                                      "for this tag. Until 2026-09-09 this line "
+                                      "gave the engine's capability as the "
+                                      "reason, which is a different claim and "
+                                      "was retired at that release."})
+            return None, dropped
+        words = list(bad_states[0]["states"])
+        row.update({"name": tag, "type": "STATE", "axioms": ["STABILITY"],
+                    "bad": words})
+        dropped.append({"scope": "axiom", "asset": asset_id, "tag": tag,
+                        "axiom": "STABILITY", "reason": "bad_state_is_pinned",
+                        "detail": f"{len(words)} reviewed word(s) declared bad. "
+                                  f"The engine fires `declared_bad_state` from "
+                                  f"0.1.12 and is SILENT below it -- accepted, "
+                                  f"no finding, and `unread_fields` does not "
+                                  f"report it. At a resolved engine under "
+                                  f"0.1.12 this declaration does nothing and "
+                                  f"nothing else will say so."})
+        # No `normal:` is emitted. Measured: `bad:` alone fires, and a word in
+        # neither list produces nothing either way -- so a `normal:` this
+        # package invented would be a claim nobody reviewed.
+        return row, dropped
 
     if cls in ("latency",):
         row["role"] = "latency"

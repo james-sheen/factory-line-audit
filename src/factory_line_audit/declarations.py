@@ -71,6 +71,21 @@ KINDS: Dict[str, Dict[str, Any]] = {
         "note": "the check means nothing unless the machine is in a state. "
                 "The engine will not say which way to read the gate.",
     },
+    "bad_state": {
+        "requires_tag": True,               # a `state`-class tag
+        "all_of": ("states",),
+        "answers": "(a finding the engine can make only if told which words "
+                   "mean broken)",
+        "note": "which words of this machine's state enumeration mean it is "
+                "broken. From the PLC alarm list or the SCADA state-machine "
+                "document, never from the spelling: `Fault` is a state on one "
+                "vendor and a menu on another. MEASURED across the declared "
+                "engine range: a STATE indicator listing STABILITY fires "
+                "`declared_bad_state` from 0.1.12, and is SILENT at 0.1.10 and "
+                "0.1.11 -- accepted, no finding, and not reported by "
+                "`unread_fields` either, which does report a key nobody reads. "
+                "So the manifest says so; nothing else can.",
+    },
     "exclusion": {
         "requires_tag": False, "all_of": ("reason",),
         "answers": "(pre-engine)",

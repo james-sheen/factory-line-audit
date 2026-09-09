@@ -108,6 +108,43 @@ def record(name, question, value, note=""):
         print(f"            {note}")
 
 
+
+# ------------------------------------------------------------- state words
+# P5. A STATE indicator listing STABILITY and a reviewed `bad:`. The engine
+# fires from 0.1.12 and is SILENT below it -- accepted, no finding, and NOT
+# reported by `unread_fields`, which does report a key nobody reads. A
+# consumer cannot tell an inert declaration from a healthy machine, so the
+# manifest has to say so and this is where the claim comes from.
+print("S -- a declared bad state")
+_STATE_MODEL = model("""    Station:
+      - name: mode
+        type: STATE
+        axioms: [STABILITY]
+        bad: [Faulted]
+""", entity_types="[Station]")
+_bad = run(_STATE_MODEL, [("ST-01", "Station", {"mode": "Faulted"})])
+_ok = run(_STATE_MODEL, [("ST-01", "Station", {"mode": "Auto"})])
+record("S1", "does a declared bad state fire on this engine",
+       {"fires": [(f.get("axiom"), f.get("problem_type"))
+                  for f in _bad.get("findings") or []],
+        "quiet_when_not_bad": not (_ok.get("findings") or []),
+        "unread_fields": _bad["_unread_fields"]},
+       "silent at 0.1.10 and 0.1.11, fires `declared_bad_state` from 0.1.12; "
+       "`unread_fields` is empty either way, so nothing but this probe "
+       "distinguishes the two")
+
+_UNKNOWN = model("""    Station:
+      - name: mode
+        type: STATE
+        axioms: [STABILITY]
+        bad: [Faulted]
+        nonsense_field: 7
+""", entity_types="[Station]")
+record("S2", "can unread_fields report a key at all, on this engine",
+       run(_UNKNOWN, [("ST-01", "Station", {"mode": "Faulted"})])["_unread_fields"],
+       "the non-vacuity control for S1: an empty answer there is only evidence "
+       "if this one is not empty")
+
 # ---------------------------------------------------------------- vocabulary
 print("V -- the decline vocabulary")
 vocab = sorted(r.value for r in NotEvaluatedReason)
