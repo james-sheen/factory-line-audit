@@ -204,7 +204,16 @@ jobs:
           fi
           # Non-vacuity: the comparison must be able to SEE an arrival, or a
           # clean result means only that the probe is blind.
-          /tmp/bare/bin/pip install --quiet 'arbiter-engine>=0.1.10,<0.2'
+          # THE RANGE IS NOT SPELLED HERE. `pyproject.toml` declares it for
+          # the `detect` extra, and this reads it back out of the metadata of
+          # the package just installed, so the two cannot part. This line used
+          # to carry the range itself; it AGREED on the day it was written,
+          # which is exactly why nothing would have noticed the floor moving.
+          # `cert-generator` carries the same guard, after the identical line
+          # spent a morning canary's whole signal on its own pin.
+          REQ="$(/tmp/bare/bin/python -c 'from importlib.metadata import requires; print(next(r.split(";")[0].strip() for r in requires("factory-line-audit") if r.split(";")[0].strip().startswith("arbiter-engine")))')"
+          echo "  the declared range, read back rather than restated: ${REQ}"
+          /tmp/bare/bin/pip install --quiet "${REQ}"
           SEEN=$(comm -13 <(echo "${BEFORE}") <(names) | grep -vx 'factory-line-audit' || true)
           if [ -z "${SEEN}" ]; then
             echo "::error::the check cannot see a dependency that IS there"
