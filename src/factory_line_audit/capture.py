@@ -127,7 +127,11 @@ async def _membership(endpoint: str, wanted: Sequence[str]) -> Dict[str, Any]:
 
 
 async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
-                budget_s: float, namespace: Optional[str]) -> Dict[str, Any]:
+                budget_s: float, namespace: Optional[str],
+                security: Optional[Dict[str, Any]] = None,
+                security_string: Optional[str] = None,
+                user: Optional[str] = None,
+                password: Optional[str] = None) -> Dict[str, Any]:
     import asyncio
 
     from asyncua import Client, ua
@@ -137,7 +141,14 @@ async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
     unreadable: Dict[str, str] = {}
     handles: Dict[str, Any] = {}
 
-    async with Client(url=endpoint) as client:
+    connection = Client(url=endpoint)
+    if security_string:
+        await connection.set_security_string(security_string)
+    if user:
+        connection.set_user(user)
+        if password:
+            connection.set_password(password)
+    async with connection as client:
         index = (await client.get_namespace_index(namespace)) if namespace else 2
         for node in wanted:
             try:
@@ -198,12 +209,12 @@ async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
             "endpoint": endpoint,
             "collected_by": "factory-line-audit capture (asyncua)",
             "captured_at": _now(),
-            # How it was taken, so a certificate can refuse a walk taken over an
-            # unverified connection. No flags are offered yet; saying so is the
-            # honest version of not offering them.
-            "security_policy": "None",
-            "security_mode": "None",
-            "pinned": False,
+            # How it was taken, so a certificate can refuse a walk taken over
+            # an unverified connection. Refused at construction rather than
+            # reported afterwards: see `security_from_flags`.
+            **(security or {"security_policy": "None", "security_mode": "None",
+                            "pinned": False, "insecure": False,
+                            "client_cert": False}),
             "nodes_requested": len(wanted),
             "nodes_served": len(handles),
             # The battery already used these names and they are the better
@@ -216,15 +227,30 @@ async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
 
 
 def capture(register: Dict[str, Any], endpoint: str, *, samples: int = 5,
-            budget_s: float = 30.0,
-            namespace: Optional[str] = None) -> Dict[str, Any]:
+            budget_s: float = 30.0, namespace: Optional[str] = None,
+            security: Optional[Dict[str, Any]] = None,
+            security_string: Optional[str] = None,
+            user: Optional[str] = None,
+            password: Optional[str] = None) -> Dict[str, Any]:
     """A walk, read from a live server. Raises nothing the CLI cannot describe."""
     import asyncio
     wanted = declared_nodes(register)
     if not wanted:
         raise formats.Refusal("register", "declares no node ids to capture")
     return asyncio.run(_walk(endpoint, wanted, samples=samples,
-                             budget_s=budget_s, namespace=namespace))
+                             budget_s=budget_s, namespace=namespace,
+                             security=security,
+                             security_string=security_string,
+                             user=user, password=password))
+
+
+def security_string(security: Dict[str, Any], cert: Optional[str],
+                    key: Optional[str]) -> Optional[str]:
+    """`asyncua`'s own form, built only once the flags have been accepted."""
+    if security["security_policy"] == "None":
+        return None
+    return (f"{security['security_policy']},{security['security_mode']},"
+            f"{cert},{key}")
 
 
 def membership(register: Dict[str, Any], endpoint: str) -> Dict[str, Any]:
@@ -249,3 +275,93 @@ def membership_unchanged(cached: Any, fresh: Dict[str, Any]) -> bool:
             and cached.get("present") == fresh["present"]
             and cached.get("absent") == fresh["absent"]
             and cached.get("namespaces") == fresh["namespaces"])
+
+
+# --------------------------------------------------------------- security
+#: Policies this verb offers, DERIVED from what the client library accepts and
+#: then narrowed, with the narrowing stated. `asyncua` also accepts
+#: `Basic128Rsa15` and `Basic256`; both are withdrawn in the OPC UA spec -- one
+#: for RSA-15 padding, the other for SHA-1 -- and offering a flag that looks
+#: like security and is not is the failure this whole family refuses. A server
+#: that offers only those is a finding about the server, not a mode to meet it
+#: in.
+WITHDRAWN_POLICIES = ("Basic128Rsa15", "Basic256")
+
+
+def offered_policies() -> List[str]:
+    """`None` plus every current policy the installed library can speak."""
+    from asyncua.crypto.security_policies import SecurityPolicyType
+    names = []
+    for member in SecurityPolicyType:
+        if member.name == "NoSecurity":
+            continue
+        policy = member.name.split("_")[0]
+        if policy in WITHDRAWN_POLICIES or policy in names:
+            continue
+        names.append(policy)
+    return ["None"] + names
+
+
+def security_from_flags(*, policy: str, mode: str, cert: Optional[str],
+                        key: Optional[str], pin: Optional[str],
+                        insecure: bool, endpoint: str) -> Dict[str, Any]:
+    """What to connect with, or a `Refusal` naming what cannot both be true.
+
+    REFUSED AT CONSTRUCTION, before anything is dialled. A flag that is accepted
+    and then ignored is worse than one that does not exist: the run reports
+    having been taken with a protection nothing applied.
+    """
+    policy = policy or "None"
+    mode = mode or ("None" if policy == "None" else "SignAndEncrypt")
+
+    if policy in WITHDRAWN_POLICIES:
+        raise formats.Refusal(endpoint, f"{policy} is withdrawn from the OPC UA "
+                                        f"spec and this verb does not offer it; "
+                                        f"a server that speaks only {policy} is "
+                                        f"a finding about the server")
+    if insecure and pin:
+        raise formats.Refusal(endpoint, "--insecure and --server-cert-pin-sha256 "
+                                        "ask for opposite things: one says do "
+                                        "not check the server, the other says "
+                                        "check it against this")
+    if insecure and policy != "None":
+        raise formats.Refusal(endpoint, f"--insecure beside --security-policy "
+                                        f"{policy} would negotiate a policy and "
+                                        f"then not verify who it negotiated it "
+                                        f"with, which is the shape of protection "
+                                        f"rather than the thing")
+    if pin and policy == "None":
+        raise formats.Refusal(endpoint, "a certificate pin on --security-policy "
+                                        "None has nothing to check: no "
+                                        "certificate is exchanged, so the pin "
+                                        "would be carried into the walk's "
+                                        "provenance having verified nothing")
+    if policy != "None" and not (cert and key):
+        raise formats.Refusal(endpoint, f"--security-policy {policy} needs a "
+                                        f"client --cert and --key; the server "
+                                        f"has to be able to identify what it is "
+                                        f"signing to")
+    if mode != "None" and policy == "None":
+        raise formats.Refusal(endpoint, f"--security-mode {mode} on "
+                                        f"--security-policy None cannot be "
+                                        f"honoured; there is no channel to sign")
+    if policy == "None" and not insecure and not _is_loopback(endpoint):
+        raise formats.Refusal(endpoint, "an unencrypted anonymous connection is "
+                                        "accepted on loopback, which is what the "
+                                        "evidence ladder's rung 3 is. Off "
+                                        "loopback it has to be asked for by "
+                                        "name with --insecure, so the walk can "
+                                        "record that somebody did")
+    return {"security_policy": policy, "security_mode": mode,
+            "pinned": bool(pin), "insecure": bool(insecure),
+            "client_cert": bool(cert)}
+
+
+def _is_loopback(endpoint: str) -> bool:
+    """Loopback by ADDRESS, never by name. `localhost` is whatever a resolver
+    says it is, and a walk taken over a resolved name is not evidence about the
+    machine somebody meant."""
+    import re
+    match = re.search(r"//([^:/]+)", endpoint or "")
+    host = match.group(1) if match else ""
+    return host in ("127.0.0.1", "::1", "[::1]")

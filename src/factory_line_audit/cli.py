@@ -90,6 +90,37 @@ def cmd_draft(args) -> int:
     return CLEAN
 
 
+def _password(args) -> Optional[str]:
+    """From the environment or a file, never from argv.
+
+    On a shared host any user can read the process table, and a collector walks
+    continuously, so the window is not brief. This is the same refusal
+    `bmc-sensor-audit` accepted for the same reason.
+    """
+    if args.password_env and args.password_file:
+        raise formats.Refusal(args.target, "--password-env and --password-file "
+                                           "both name a password; one of them "
+                                           "would be silently ignored")
+    if args.password_env:
+        value = os.environ.get(args.password_env)
+        if value is None:
+            raise formats.Refusal(args.target, f"${args.password_env} is not "
+                                               f"set, so no password was read")
+        return value
+    if args.password_file:
+        try:
+            with open(args.password_file, encoding="utf-8") as handle:
+                return handle.readline().rstrip("\n")
+        except OSError as unreadable:
+            raise formats.Refusal(args.target, f"cannot read the password file: "
+                                               f"{unreadable}") from None
+    if args.user:
+        raise formats.Refusal(args.target, "--user needs --password-env or "
+                                           "--password-file; this verb does not "
+                                           "take a password on the command line")
+    return None
+
+
 def cmd_capture(args) -> int:
     """One OUTCOME line is the contract; the rest of stdout is prose.
 
@@ -104,6 +135,20 @@ def cmd_capture(args) -> int:
         register = load_register(args.register)
     except formats.Refusal as refused:
         _out(f"  COULD NOT COMPLETE: {refused}")
+        _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
+        return INCOMPLETE
+
+    # REFUSED BEFORE ANYTHING IS DIALLED. A flag accepted and then ignored is
+    # worse than one that does not exist: the walk would record a protection
+    # nothing applied, and a certificate downstream would read that record.
+    try:
+        security = capture_module.security_from_flags(
+            policy=args.security_policy, mode=args.security_mode,
+            cert=args.cert, key=args.key, pin=args.server_cert_pin_sha256,
+            insecure=args.insecure, endpoint=args.target)
+        password = _password(args)
+    except formats.Refusal as refused:
+        _out(f"  REFUSED: {refused.message}")
         _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
         return INCOMPLETE
 
@@ -133,10 +178,13 @@ def cmd_capture(args) -> int:
                 json.dump(fresh, handle, indent=2)
                 handle.write("\n")
 
-        walk = capture_module.capture(register, args.target,
-                                      samples=args.samples,
-                                      budget_s=args.budget,
-                                      namespace=args.namespace)
+        walk = capture_module.capture(
+            register, args.target, samples=args.samples,
+            budget_s=args.budget, namespace=args.namespace,
+            security=security,
+            security_string=capture_module.security_string(
+                security, args.cert, args.key),
+            user=args.user, password=password)
     except formats.Refusal as refused:
         _out(f"  COULD NOT COMPLETE: {refused}")
         _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
@@ -343,6 +391,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--membership-cache", metavar="PATH",
                    help="ask only whether the address space still holds the "
                         "declared nodes. No value is read or stored")
+    p.add_argument("--security-policy", default="None",
+                   help="None, or a current OPC UA policy. Withdrawn policies "
+                        "are refused by name rather than offered")
+    p.add_argument("--security-mode", default="",
+                   help="None, Sign or SignAndEncrypt. Defaults to "
+                        "SignAndEncrypt whenever a policy is chosen")
+    p.add_argument("--cert", help="client certificate, required by any policy")
+    p.add_argument("--key", help="client private key, required by any policy")
+    p.add_argument("--server-cert-pin-sha256", metavar="HEX",
+                   help="refuse a server whose certificate is not this one")
+    p.add_argument("--insecure", action="store_true",
+                   help="connect unencrypted and anonymous off loopback. "
+                        "Recorded in the walk, because somebody chose it")
+    p.add_argument("--user", help="username; the password never crosses argv")
+    p.add_argument("--password-env", metavar="NAME",
+                   help="environment variable holding the password")
+    p.add_argument("--password-file", metavar="PATH",
+                   help="file holding the password, first line")
     p.set_defaults(fn=cmd_capture)
 
     p = subs.add_parser("validate-walk",
