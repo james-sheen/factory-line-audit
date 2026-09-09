@@ -15,9 +15,7 @@ import pytest
 from factory_line_audit import formats
 from factory_line_audit.declarations import KINDS, gate
 from factory_line_audit.generator import build
-from factory_line_audit.presence import load_register
 
-REGISTER = "examples/asset_register.json"
 
 
 def reviewed(tmp_path, asset, tag, states, **extra):
@@ -32,9 +30,11 @@ def reviewed(tmp_path, asset, tag, states, **extra):
     return str(path)
 
 
-@pytest.fixture
-def register():
-    return load_register(REGISTER)
+# `register` comes from `conftest.py`. It was redefined here over a RELATIVE
+# path, which shadowed the shared fixture and made all six tests below depend on
+# the process starting in the repository -- the one thing `conftest.py` says the
+# suite must not do. The battery's `suite` leg exists to catch exactly this and
+# had been red; CI runs two of its sixteen legs, so nothing said so.
 
 
 @pytest.fixture
