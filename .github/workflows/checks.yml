@@ -58,6 +58,40 @@ jobs:
       - name: The core's own kit still accepts this vertical
         run: python3 battery/probe_conformance.py
 
+  # The two legs that need a server. The rest of the battery stays a hand-run
+  # script: it builds a wheel and installs every release in two ranges. These
+  # two want an anonymous OPC UA server on localhost that plays the corpus once
+  # and stops, which a runner does in seconds -- and they cover the only verb
+  # here that talks to anything.
+  #
+  # Nothing ran them automatically until 2026-09-09. Every defect `capture`
+  # had on the day it was written -- a register read as the wrong shape, a
+  # membership cache that answered for a different server, an edit that left
+  # the old code live -- was found by running it, and none of them would have
+  # been caught by anything on this file.
+  #
+  # `[live]` alone, and not the other extras: `capture` is Stage 1 work and
+  # should not need an axiom engine to read a server. Installing one here would
+  # stop this job from being able to say so.
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install, with the OPC UA client and nothing else
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet -e '.[live]'
+          python3 -m pip show asyncua | sed -n 's/^Version: /  asyncua /p'
+      - name: The corpus, stamped now
+        run: python3 battery/make_corpus.py
+      - name: A real server, read by the shipped client
+        run: python3 battery/run_battery.py --only live --only capture
+
   checks:
     runs-on: ubuntu-latest
     steps:

@@ -129,13 +129,18 @@ below. `corpus`, `conformance`, `regression` and `capture` still are.
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 
 A leg that could not run reports `2` and is **named**, never skipped.
+`--only NAME` runs a subset; a name no leg carries is refused rather than
+answered with an empty run, and the result file records the selection so a
+partial run cannot read as a full one.
 
-The battery is run by hand: it wants a live OPC UA server and it builds a
-wheel. `conformance` is the exception and runs in CI on every interpreter,
-because it costs two imports and it is the only leg whose question is about
-software this package does not control. A leg nothing triggers is a leg
-nobody reads, and that is the same argument the legs themselves are written
-from.
+Most of the battery is run by hand, because it builds a wheel and installs
+every release in two ranges. Three legs are the exception and run in CI:
+`conformance` on every interpreter, because it costs two imports and is the
+only leg whose question is about software this package does not control; and
+`live` and `capture` on one, because the OPC UA surface is anonymous,
+localhost and over in seconds, and `capture` is the only verb here that talks
+to anything. A leg nothing triggers is a leg nobody reads, which is the same
+argument the legs themselves are written from.
 
 ## Formats
 

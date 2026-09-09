@@ -58,6 +58,13 @@ PIN = os.path.join(HERE, "pin_evidence.json")
 
 CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
 
+#: Every leg this battery runs, by the name it reports under. `--only` is
+#: validated against this: a mistyped leg name would otherwise select nothing,
+#: and a battery that ran nothing exits 0.
+SELECTABLE = ("corpus", "live", "draft", "gate", "clean", "fault", "absent",
+              "attest", "pipe", "tool", "suite", "conformance", "regression",
+              "capture", "pin", "ship")
+
 RESULTS = []
 
 
@@ -675,7 +682,29 @@ def main() -> int:
                              "purpose: an extra installed to make one leg run "
                              "can pull a transitive major into the others")
     parser.add_argument("--no-ship", action="store_true")
+    parser.add_argument("--only", action="append", metavar="LEG",
+                        help="run only these legs, by name. Repeatable. A name "
+                             "no leg carries is REFUSED rather than answered "
+                             "with an empty run, because a battery that ran "
+                             "nothing still exits 0 and reads like one that "
+                             "passed")
     args = parser.parse_args()
+
+    selected = None
+    if args.only:
+        unknown = [name for name in args.only if name not in SELECTABLE]
+        if unknown:
+            print(f"no leg named {unknown}; this battery runs "
+                  f"{sorted(SELECTABLE)}")
+            return INCOMPLETE
+        selected = set(args.only)
+        # `gate` refuses the file `draft` writes, so it cannot be asked for on
+        # its own. Running its predecessor is honest -- both get reported.
+        if "gate" in selected:
+            selected.add("draft")
+
+    def wanted(name):
+        return selected is None or name in selected
 
     print(f"factory-line-audit verification battery")
     print(f"  engine interpreter: {args.python}")
@@ -683,25 +712,41 @@ def main() -> int:
 
     workdir = tempfile.mkdtemp(prefix="fla-battery-")
     try:
-        leg_corpus()
-        leg_live(args.live_python)
-        _, drafted = leg_draft(args.python, workdir)
-        leg_gate(args.python, drafted)
-        leg_clean(args.python)
-        leg_faults(args.python)
-        leg_attest(args.python, workdir)
-        leg_pipe(args.python)
-        leg_tool(args.python, workdir)
-        leg_suite(args.python)
-        leg_conformance(args.python)
-        leg_regression(args.python, workdir)
-        leg_capture(args.live_python, workdir)
-        leg_pin()
-        if args.no_ship:
-            leg("ship", 2, "NOT RUN: --no-ship. Every other leg ran against a "
-                           "source tree no consumer will ever have")
-        else:
-            leg_ship(args.python)
+        drafted = None
+        if wanted("corpus"):
+            leg_corpus()
+        if wanted("live"):
+            leg_live(args.live_python)
+        if wanted("draft"):
+            _, drafted = leg_draft(args.python, workdir)
+        if wanted("gate"):
+            leg_gate(args.python, drafted)
+        if wanted("clean"):
+            leg_clean(args.python)
+        if wanted("fault") or wanted("absent"):
+            leg_faults(args.python)
+        if wanted("attest"):
+            leg_attest(args.python, workdir)
+        if wanted("pipe"):
+            leg_pipe(args.python)
+        if wanted("tool"):
+            leg_tool(args.python, workdir)
+        if wanted("suite"):
+            leg_suite(args.python)
+        if wanted("conformance"):
+            leg_conformance(args.python)
+        if wanted("regression"):
+            leg_regression(args.python, workdir)
+        if wanted("capture"):
+            leg_capture(args.live_python, workdir)
+        if wanted("pin"):
+            leg_pin()
+        if wanted("ship"):
+            if args.no_ship:
+                leg("ship", 2, "NOT RUN: --no-ship. Every other leg ran against "
+                               "a source tree no consumer will ever have")
+            else:
+                leg_ship(args.python)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -715,7 +760,10 @@ def main() -> int:
           f"findings={sum(1 for r in RESULTS if r['code'] == 1)} "
           f"incomplete={len(unrun)}")
     with open(os.path.join(HERE, "battery_result.json"), "w", encoding="utf-8") as h:
-        json.dump({"legs": RESULTS, "exit": worst}, h, indent=2)
+        # `only` is recorded even when it is null. A partial run whose result
+        # file looked like a full one would be a green nobody could question.
+        json.dump({"legs": RESULTS, "exit": worst,
+                   "only": sorted(selected) if selected else None}, h, indent=2)
         h.write("\n")
     return worst
 
