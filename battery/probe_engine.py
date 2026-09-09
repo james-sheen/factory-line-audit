@@ -459,6 +459,31 @@ record("A5", "how far back can six drops sit and still be counted", ages,
        "the reversal arm's window bit this package once already; the reset arm "
        "is counted by the same checker and is not assumed to differ")
 
+
+def reset_run_undeclared(values, cadence=60.0):
+    """The same series with NO `allow_reset` line at all.
+
+    A1 and A2 both DECLARE it, so between them they measure the switch and not
+    the default. The shipped declaration fixture sets a rate on two counters and
+    declares neither, so what a bridge actually produces today is this third
+    case -- and it was the one nobody had run.
+    """
+    return mono(values, cadence)
+
+
+record("A6", "with allow_reset ABSENT, which arm answers and at what count",
+       {"reversal_fires_at": first_n_where(0, 10, lambda k: bool(
+            arm(reset_run_undeclared(resets(k)), "reversal"))),
+        "reset_fires_at": first_n_where(0, 10, lambda k: bool(
+            arm(reset_run_undeclared(resets(k)), "reset"))),
+        "per_count": {k: [f["problem_type"] for f in
+                          fired(reset_run_undeclared(resets(k)), "MONOTONICITY")]
+                      for k in range(0, 5)}},
+       "A1 and A2 measure the SWITCH; this measures the DEFAULT, which is what a "
+       "bridge declaring neither is judged by. A counter that resets and says so "
+       "nowhere is routed to whichever arm this names, chosen by the engine "
+       "rather than by anybody in the plant")
+
 # --------------------------------------------------------------- HOMEOSTASIS
 print("\nH -- HOMEOSTASIS")
 

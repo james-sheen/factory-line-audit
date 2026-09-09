@@ -386,6 +386,30 @@ def _indicator(asset, tag, spec, by_key):
                           "this arm from its own default rather than declining, "
                           "so the arm runs against a number nobody in this "
                           "plant chose -- see probe R1 and finding 3"})
+        # NO SEGMENTATION HERE, and that is a decision rather than an omission.
+        #
+        # A `reset_schedule` was specified for this package: cut the series at
+        # each scheduled counter reset and feed only the last segment, so a shift
+        # reset could not fire the reversal arm. Measured (probes T1, A1-A4, A6)
+        # it protects against nothing that happens:
+        #
+        #   T1  the reversal window is bounded by a sample count AND a duration,
+        #       whichever is shorter. A scheduled reset is hours old and outside
+        #       the duration bound at any cadence, so it never reaches the arm.
+        #   A6  with `allow_reset` absent -- which is what a declaration that
+        #       says nothing produces -- a drop to near zero is routed to the
+        #       RESET arm and the reversal arm never fires at all.
+        #   A1  that arm needs THREE drops inside the window to say anything.
+        #
+        # So one reset inside the window is silent, and what does fire is three
+        # resets in a quarter of an hour -- which is not a shift change, it is
+        # `monotonicity_reset_storm`, and reporting it is the point.
+        #
+        # The alternative once written down here was `allow_reset: false` with
+        # `reversal_tolerance: 1`. A2 and A4 measure what that does: `false`
+        # ROUTES drops to the reversal arm, and a tolerance of 1 fires on the
+        # first one. It reads as the cautious option and would turn a silent
+        # non-event into a finding at every reset.
         if _statements(by_key, asset_id, tag, "rate") or True:
             reset = [s for s in _statements(by_key, asset_id, tag, "rate")
                      if s.get("allow_reset") is not None]

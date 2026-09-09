@@ -1,7 +1,7 @@
 {
-  "measured_on": "2026-09-09T10:16:34.535874+00:00",
+  "measured_on": "2026-09-09T19:49:25.195251+00:00",
   "engine_version": "0.1.13",
-  "engine_file": "/tmp/claude-0/-root-w/591c7f45-863b-4c41-868d-93b7c2e72686/scratchpad/both/lib/python3.10/site-packages/arbiter_engine",
+  "engine_file": "/tmp/fla-ci/lib/python3.10/site-packages/arbiter_engine",
   "python": "3.10.12",
   "probes": {
     "T1": {
@@ -290,6 +290,25 @@
         "25 samples back": false
       },
       "note": "the reversal arm's window bit this package once already; the reset arm is counted by the same checker and is not assumed to differ"
+    },
+    "A6": {
+      "question": "with allow_reset ABSENT, which arm answers and at what count",
+      "measured": {
+        "reversal_fires_at": null,
+        "reset_fires_at": 3,
+        "per_count": {
+          "0": [],
+          "1": [],
+          "2": [],
+          "3": [
+            "monotonicity_reset_storm:c"
+          ],
+          "4": [
+            "monotonicity_reset_storm:c"
+          ]
+        }
+      },
+      "note": "A1 and A2 measure the SWITCH; this measures the DEFAULT, which is what a bridge declaring neither is judged by. A counter that resets and says so nowhere is routed to whichever arm this names, chosen by the engine rather than by anybody in the plant"
     },
     "H1": {
       "question": "how many samples before learned HOMEOSTASIS stops declining",
