@@ -100,6 +100,72 @@ jobs:
       - name: Every status word the client library can report
         run: python3 battery/probe_status_words.py
 
+  # THE WHOLE BATTERY, not the two legs `live` above runs.
+  #
+  # The README's headline claim is that all sixteen legs are green, and until
+  # now nothing checked it. The suite holds the COUNT against the battery's own
+  # `SELECTABLE` tuple; the GREENNESS rested on somebody having run it by hand.
+  # It had not been run in full for days, and when it finally was, the `suite`
+  # leg was red -- six tests had come to assume the process starts in the
+  # repository, which is the one thing that leg exists to catch.
+  #
+  # Cheap enough to run on every push: the sixteen legs take under a minute,
+  # because `pin` READS `pin_evidence.json` rather than sweeping. The sweep is
+  # `pin.yml`, weekly; this leg only asserts the record is not stale against the
+  # range `pyproject.toml` declares. So none of that job's work is repeated here.
+  #
+  # Separate from `live` on purpose, and not to be merged with it. That job
+  # installs `[live]` ALONE so that it can say `capture` needs no axiom engine
+  # to read a server. This one installs everything, which is the only way the
+  # other fourteen legs run at all. Folding them together would retire that
+  # claim without anybody deciding to.
+  battery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # `virtualenv` and not the standard library's `venv`, because `ship` is
+      # what calls it -- it builds an empty environment and installs the wheel
+      # into it, and `build` is what makes the wheel. Missing either, `ship`
+      # reports 2 rather than passing quietly, so the battery would stop being
+      # able to say the artifact was ever installed clean.
+      - name: Install, with every extra and the tools the legs shell out to
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet -e '.[detect,live,vertical]' \
+            pytest build virtualenv
+
+      # DERIVED and expiring, so it is not committed. Several axiom arms count
+      # inside a window measured backwards from now, and a corpus on disk goes
+      # stale -- the `corpus` leg refuses one older than the narrowest measured
+      # window. A run against a stale corpus found 12 of 13 fault classes and
+      # read exactly like a defect in the tool.
+      - name: The corpus, stamped now
+        run: python3 battery/make_corpus.py
+
+      # No `--only`, so every leg runs, and no assertion here on HOW MANY were
+      # green. The battery already exits non-zero if any leg does, and pinning
+      # the number in this file would be a second record of it that expires the
+      # day a leg is added -- which is the defect this job was written after.
+      - name: Every leg
+        run: python3 battery/run_battery.py
+
+      # The evidence is what the claim rests on, and a red run is exactly when
+      # somebody wants to read it. The file records `only`, so a partial run can
+      # never be mistaken for this one.
+      - name: The result, whatever the outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: battery-result
+          path: battery/battery_result.json
+          if-no-files-found: warn
+
   checks:
     runs-on: ubuntu-latest
     steps:
