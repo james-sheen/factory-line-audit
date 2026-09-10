@@ -25,7 +25,7 @@ against the engine and its modelling guide, and **both** of the findings the
 previous attempt at this bridge left to be filed upstream, withdrawn because
 re-measurement did not reproduce them.
 
-**Released -- 0.1.8**, tagged `v0.1.8`, Apache-2.0, on PyPI as
+**Released -- 0.1.9**, tagged `v0.1.9`, Apache-2.0, on PyPI as
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
@@ -213,8 +213,9 @@ fixture passes only by disclosing itself on its face, never by naming a reviewer
 
 **Upgrading, if you keep declaration files.** Three refusals arrived in 0.1.6 and
 0.1.7, each replacing something that was accepted and then ignored; 0.1.8 then
-narrowed one of them back, because it refused a file the generator supports. The
-full history is in [CHANGELOG.md](CHANGELOG.md).
+narrowed one of them back, because it refused a file the generator supports.
+0.1.9 refuses nothing new about a FILE and adds one stop about a WALK. The full
+history is in [CHANGELOG.md](CHANGELOG.md).
 
 * `allow_reset` is a `reset` statement of its own (0.1.6). It used to be read off
   a `rate` statement and validated by nothing, so a misspelling read as a

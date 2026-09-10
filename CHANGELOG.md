@@ -12,7 +12,7 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
-## 0.1.9 -- unreleased
+## 0.1.9 -- 2026-09-10
 
 Answers the static re-verification of 0.1.8. Six items were raised and all six
 held; two of them are the halves a 0.1.8 fix left behind, and one is about a word
