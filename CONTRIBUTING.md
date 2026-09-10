@@ -64,9 +64,23 @@ By hand, and in this order:
    right, and it stays right: a later `ls-remote` is not evidence about an
    earlier one, so the finding was closed by pushing the tag rather than
    disputed. The window is the problem.
-5. Confirm from the simple index rather than the checkout — the JSON API and the
-   index disagree after an upload, in both directions, and which one is ahead is
-   not predictable.
+5. **Confirm by INSTALLING it, not by reading an index.** Every read of PyPI is a
+   read of a cache: the simple index is served `max-age=600, public` and
+   `vary: Accept`, so it can be ten minutes stale and the HTML a person reads is
+   a different cache entry from the representation a resolver asks for. The JSON
+   API is a third record again. All three have now been observed ahead of and
+   behind each other, including a plain read of the simple index reporting a
+   release absent that was already installable. So:
+   `pip install --no-cache-dir <dist>==<version>` into an empty environment, and
+   nothing else counts as confirmation.
+
+   `--no-cache-dir` is pip's own cache, which is a fourth one and the only cache
+   any flag here controls. **A request header does not help**: `Cache-Control:
+   no-cache` was tried against the simple index across six paired requests and
+   changed nothing measurable. It was written into this step first and taken
+   back out on measuring it, which is the more useful half of the story — an
+   upload propagates on its own schedule and the only lever you hold is asking
+   for the thing itself.
 
 ## What this project is
 
