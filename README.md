@@ -56,6 +56,29 @@ declarations ──┤       └────────┐  (only reading tags 
                                                                         exit {0,1,2}
 ```
 
+## The verbs
+
+Nine, and the page names all nine because a verb nobody documents is a verb
+nobody runs.
+
+* **`presence`** -- Stage 1: what the register declares against what the walk
+  served, classified three ways. No dependencies.
+* **`validate-walk`** -- everything wrong with a walk file, or nothing. A
+  receiver checking a file: no engine, no core, no server. A malformed walk is
+  *could not complete*, never a finding, because a file that would not read is
+  not a finding about the line.
+* **`draft`** -- propose the declarations a person would have to make, every
+  basis empty and every number null. Exits clean; `gate` refuses what it wrote.
+* **`gate`** -- refuse unreviewed declarations, naming the file.
+* **`generate`** -- the model and the manifest, as a pair.
+* **`detect`** -- Stage 2: feed the engine what Stage 1 saw reading, report, and
+  exit on the contract above.
+* **`attest`** -- re-report a stored attestation through the same front door,
+  and reach the same verdict.
+* **`capture`** -- read a live OPC UA server and write a walk.
+* **`regression`** -- two walks of one line, oldest first. An undeclared prefix
+  shift is reported, never applied.
+
 ## Exit codes
 
 `0` clean, `1` findings, `2` could-not-complete. `2` never reads as clean and `2`
@@ -184,6 +207,14 @@ default and says nothing about having done so.
 
 A file becomes usable when a person adds their name **and** the date. A test
 fixture passes only by disclosing itself on its face, never by naming a reviewer.
+
+**Upgrading to 0.1.6, if you keep declaration files.** `allow_reset` used to be
+read off a `rate` statement and was validated by nothing, so a misspelling of it
+read as a declaration while the engine routed from its own default. It is now a
+`reset` statement of its own, where the key is required -- and a `rate` statement
+still carrying it is **refused by name**, pointing at where it moved. Every
+counter with no `reset` statement is recorded in the manifest as running on the
+engine's routing, which is a line in a report rather than an error.
 
 ## The evidence ladder
 

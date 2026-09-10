@@ -417,9 +417,21 @@ class TestTheLegTableListsEveryLeg:
         assert found, "no SELECTABLE tuple in the battery runner"
         return set(re.findall(r'"([^"]+)"', found.group(1)))
 
+    SECTION = "## The verification battery"
+
     def _tabled(self) -> set[str]:
-        """Leg names in the README's own table, read out of the first column."""
-        return set(re.findall(r"^\|\s*`([a-z-]+)`", _readme(), re.MULTILINE))
+        """Leg names in the README's own table, read out of the first column.
+
+        Scoped to the battery's own section. Read across the whole page this
+        collects the first column of EVERY table, so a new table of verbs --
+        which shares three names with the legs and differs on the rest -- would
+        have reported legs that do not exist and verbs that are not legs. The
+        guard would have gone red at the document rather than at its subject.
+        """
+        page = _readme()
+        start = page.index(self.SECTION)
+        end = page.index("\n## ", start + len(self.SECTION))
+        return set(re.findall(r"^\|\s*`([a-z-]+)`", page[start:end], re.MULTILINE))
 
     def test_there_is_a_table_to_read(self):
         assert len(self._tabled()) >= 10, (
@@ -474,4 +486,63 @@ class TestTheKindsParagraphNamesEveryKind:
         from factory_line_audit.declarations import KINDS
         extra = sorted(self._named() - set(KINDS))
         assert not extra, (f"the README names these kinds and `gate` refuses "
+                           f"them: {extra}")
+
+
+class TestEveryVerbIsOnThePage:
+    """Plan-2 A.3, which this document asked for and never built.
+
+    The accept clause was *each verb the release adds appears in the README's
+    own words, and a test asserts every `add_parser` name appears there*. It did
+    not exist, and `validate-walk` was on no page at all -- nine verbs shipped
+    and eight were documented. The third enumeration in this repository found
+    short: sixteen legs of eighteen in the table, nine declaration kinds of ten
+    in the prose, eight verbs of nine here.
+
+    Held against the PARSER rather than the source text: what argparse accepts
+    is the claim, and a `add_parser` call inside a branch that never runs is not.
+    """
+
+    SECTION = "## The verbs"
+
+    def _verbs(self) -> set[str]:
+        import argparse
+
+        from factory_line_audit.cli import build_parser
+        subs = [action for action in build_parser()._actions
+                if isinstance(action, argparse._SubParsersAction)]
+        assert len(subs) == 1, "the CLI has no single subparser group to read"
+        return set(subs[0].choices)
+
+    def _listed(self) -> set[str]:
+        """Verb names in the verbs section only.
+
+        NOT the whole page. Three battery legs are named after the verb they
+        run -- `draft`, `gate`, `capture` -- and `regression` and `capture` are
+        also leg rows. A document-wide search would find those rows and report
+        the verb as documented on the strength of a table about something else.
+        """
+        page = _readme()
+        start = page.index(self.SECTION)
+        end = page.index("\n## ", start + len(self.SECTION))
+        return set(re.findall(r"\*\*`([a-z-]+)`\*\*", page[start:end]))
+
+    def test_there_is_a_section_to_read(self):
+        assert len(self._listed()) >= 5, (
+            f"only {sorted(self._listed())} parsed out of the verbs section; "
+            f"the rules below hold nothing")
+
+    def test_the_cli_has_verbs_to_document(self):
+        assert len(self._verbs()) >= 5, self._verbs()
+
+    def test_every_verb_is_documented(self):
+        missing = sorted(self._verbs() - self._listed())
+        assert not missing, (f"the CLI accepts these verbs and the README does "
+                             f"not name them: {missing}")
+
+    def test_no_verb_is_documented_that_the_cli_does_not_accept(self):
+        """The cheaper mistake: a verb renamed or removed leaves a paragraph
+        telling a reader to run something that exits 2."""
+        extra = sorted(self._listed() - self._verbs())
+        assert not extra, (f"the README names these verbs and the CLI refuses "
                            f"them: {extra}")
