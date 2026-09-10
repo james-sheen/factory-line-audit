@@ -119,7 +119,10 @@ class _Pin:
     """
 
     def __init__(self, expected: str, endpoint: str):
-        self.expected = expected.replace(":", "").replace(" ", "").lower()
+        # One normaliser, shared with the flag check, so the value this compares
+        # is the value that was validated. Two copies of this rule would be two
+        # places for the prefix handling to disagree.
+        self.expected = normalise_pin(expected)
         self.endpoint = endpoint
         self.checked = False
         self.digest: Optional[str] = None
@@ -172,11 +175,20 @@ async def _membership(endpoint: str, wanted: Sequence[str], *,
                       security_string: Optional[str] = None,
                       user: Optional[str] = None,
                       password: Optional[str] = None,
-                      namespace: Optional[str] = None) -> Dict[str, Any]:
+                      namespace: Optional[str] = None,
+                      pin: Optional[str] = None) -> Dict[str, Any]:
     """Namespaces, and which declared nodes the address space still holds.
 
     No value is read. This is the only question OPC UA can answer cheaply, and
     answering a different one would be worse than answering none.
+
+    THE PIN APPLIES HERE TOO, and it did not until 0.1.8. The 0.1.7 fix gave
+    `_walk` the certificate check and stopped there, so `--membership-cache`
+    beside `--server-cert-pin-sha256` dialled an unchecked peer, answered
+    `unchanged`, exited clean and wrote no walk -- and because the walk is the
+    only artifact that records `pinned`, nothing recorded that the pin had not
+    been applied. The half of a verb that exits without writing evidence is
+    exactly the half a reader cannot audit afterwards.
     """
     from asyncua import Client
 
@@ -192,7 +204,17 @@ async def _membership(endpoint: str, wanted: Sequence[str], *,
         connection.set_user(user)
         if password:
             connection.set_password(password)
+    pinned = _Pin(pin, endpoint) if pin else None
+    if pinned is not None:
+        connection.certificate_validator = pinned
     async with connection as client:
+        if pinned is not None and not pinned.checked:
+            raise formats.Refusal(
+                endpoint, "a certificate pin was given and no certificate was "
+                          "checked on the membership pass: this server offered "
+                          "none on the negotiated channel, so the pin verified "
+                          "nothing. A cache must not be trusted against a peer "
+                          "nobody identified")
         namespaces = list(await client.get_namespace_array())
         index = (await client.get_namespace_index(namespace)) if namespace else None
         for node in wanted:
@@ -206,6 +228,10 @@ async def _membership(endpoint: str, wanted: Sequence[str], *,
             "endpoint": endpoint, "checked_at": _now(),
             "namespaces": namespaces,
             "present": sorted(present), "absent": sorted(absent),
+            # What the cache was taken over, so a later `unchanged` can be read
+            # against the channel that produced it rather than assumed.
+            "pinned": pinned is not None,
+            "server_cert_sha256": pinned.digest if pinned is not None else None,
             "note": "membership only. No value was read and none is stored: "
                     "OPC UA has no per-node ETag, so this cannot say whether a "
                     "reading changed and does not pretend to."}
@@ -270,7 +296,9 @@ async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
                 unreadable[node] = f"{type(broke).__name__}: {broke}"
 
         deadline = asyncio.get_event_loop().time() + budget_s
+        polls = 0
         while len(seen) < samples and asyncio.get_event_loop().time() < deadline:
+            polls += 1
             nodes: Dict[str, Any] = {}
             stamp = None
             for node, handle in handles.items():
@@ -332,6 +360,16 @@ async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
             # weakest and is recorded as such rather than presented as the
             # server's.
             "timestamps_from": sorted(clocks),
+            # HOW MANY TIMES THE SERVER WAS ASKED, which is not how many
+            # samples came back. Samples are keyed on the first node's
+            # timestamp, so a server whose values and stamps do not advance
+            # yields exactly one sample however long the budget runs -- and the
+            # walk then looked identical to a server that was asked once. The
+            # engine declines `insufficient_samples` either way; only this
+            # number says which of the two happened, and a reader sent to a
+            # plant deserves to know it was the server and not the capture.
+            "polls": polls,
+            "samples_budget_s": budget_s,
             # The digest that was actually compared, so a certificate reading
             # this walk can check the pin rather than read the word `pinned`.
             **({"server_cert_sha256": pinned.digest} if pinned else {}),
@@ -371,17 +409,19 @@ def security_string(security: Dict[str, Any], cert: Optional[str],
 def membership(register: Dict[str, Any], endpoint: str, *,
                security_string: Optional[str] = None,
                user: Optional[str] = None, password: Optional[str] = None,
-               namespace: Optional[str] = None) -> Dict[str, Any]:
+               namespace: Optional[str] = None,
+               pin: Optional[str] = None) -> Dict[str, Any]:
     """The same channel and the same namespace resolution as the walk.
 
     This took the endpoint and nothing else, so `--membership-cache` with a
     security policy and credentials dialled the server anonymously and in clear
     -- and compared membership at namespace index 2 whatever `--namespace` said.
+    `pin` was the last of those to arrive: see `_membership`.
     """
     import asyncio
     return asyncio.run(_membership(
         endpoint, declared_nodes(register), security_string=security_string,
-        user=user, password=password, namespace=namespace))
+        user=user, password=password, namespace=namespace, pin=pin))
 
 
 def membership_unchanged(cached: Any, fresh: Dict[str, Any]) -> bool:
@@ -394,8 +434,22 @@ def membership_unchanged(cached: Any, fresh: Dict[str, Any]) -> bool:
     walk justified by another machine's address space is worse than no cache.
 
     Nothing here is about values. It cannot be: OPC UA has no per-node ETag.
+
+    THE CHANNEL IS PART OF IT TOO. A cache taken over a pinned channel and
+    reused over an unpinned one would let the protection lapse without anything
+    saying so -- the run that drops `--server-cert-pin-sha256` is the one that
+    skips the walk, and the skipped walk is the only artifact that would have
+    recorded the posture. Two different pins whose digests disagree are two
+    different peers, whatever the address space says. A 0.1.7 cache carries
+    neither field and is read exactly as before.
     """
     if not isinstance(cached, dict):
+        return False
+    if cached.get("pinned") and not fresh.get("pinned"):
+        return False
+    was, now = (cached.get("server_cert_sha256"),
+                fresh.get("server_cert_sha256"))
+    if was and now and was != now:
         return False
     return (cached.get("endpoint") == fresh["endpoint"]
             and cached.get("present") == fresh["present"]
@@ -412,6 +466,40 @@ def membership_unchanged(cached: Any, fresh: Dict[str, Any]) -> bool:
 #: that offers only those is a finding about the server, not a mode to meet it
 #: in.
 WITHDRAWN_POLICIES = ("Basic128Rsa15", "Basic256")
+
+
+def normalise_pin(raw: str) -> str:
+    """A pasted SHA-256 digest, reduced to the sixty-four hex characters.
+
+    `openssl x509 -fingerprint -sha256` prints `SHA256 Fingerprint=AB:CD:...`,
+    this package's own `digest()` prints `sha256:<hex>` over a FILE, and a
+    person pasting either is doing the obvious thing. All of those normalise
+    here; anything that is not a SHA-256 digest raises, and that is the point.
+
+    Until 0.1.8 nothing validated the value: `security_from_flags` tested it for
+    truthiness and `_Pin` stripped separators, so a `sha256:`-prefixed pin
+    became a seventy-character string that could never equal a digest. The
+    channel was refused -- safely -- with a message that blamed the SERVER for
+    presenting the wrong certificate. A malformed flag must be refused as a
+    malformed flag, before anything is dialled, because the run that reads that
+    message goes and looks at the plant.
+    """
+    text = str(raw).strip()
+    for prefix in ("sha256:", "sha-256:", "sha256 fingerprint=", "sha256="):
+        if text.lower().startswith(prefix):
+            text = text[len(prefix):]
+            break
+    text = text.replace(":", "").replace(" ", "").replace("-", "").lower()
+    if len(text) != 64 or any(c not in "0123456789abcdef" for c in text):
+        raise formats.Refusal(
+            "--server-cert-pin-sha256",
+            f"{raw!r} is not a SHA-256 certificate digest: after stripping an "
+            f"optional sha256: prefix and any : or space separators it is "
+            f"{len(text)} characters, and a digest is 64 hex. Nothing was "
+            f"dialled. Take the digest with: openssl s_client -connect "
+            f"HOST:PORT 2>/dev/null </dev/null | openssl x509 -fingerprint "
+            f"-sha256 -noout")
+    return text
 
 
 def offered_policies() -> List[str]:
@@ -478,6 +566,13 @@ def security_from_flags(*, policy: str, mode: str, cert: Optional[str],
                                         "loopback it has to be asked for by "
                                         "name with --insecure, so the walk can "
                                         "record that somebody did")
+    # LAST of the pin rules, deliberately. The two contradictions above are
+    # about what was asked for and name it; this one is about the value, and a
+    # reader told their digest is malformed when the real problem is
+    # `--insecure` beside it has been told the less useful of two true things.
+    # Before the return, because the dict is what claims `pinned`.
+    if pin:
+        normalise_pin(pin)
     return {"security_policy": policy, "security_mode": mode,
             "pinned": bool(pin), "insecure": bool(insecure),
             "client_cert": bool(cert)}

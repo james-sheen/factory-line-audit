@@ -17,11 +17,20 @@ What it is genuinely evidence for, and what it is not:
              as the bool this package might have assumed; source timestamps are
              what the engine's windows get fed; a node that is not there fails
              the way Stage 1 says it does.
-  IT IS NOT -- security, certificates, authentication, a vendor's address-space
-             layout, a PLC's actual update semantics, or anything about load. An
-             anonymous unencrypted localhost server is the safe surface, and
-             calling it a rehearsal for a plant would be the lie this rung
-             exists to avoid.
+  IT IS NOT -- authentication, a vendor's address-space layout, a PLC's actual
+             update semantics, or anything about load. Calling this a rehearsal
+             for a plant would be the lie this rung exists to avoid.
+  SINCE 0.1.8, ALSO IS -- a SIGNED AND ENCRYPTED channel with a server
+             certificate, under `serve --certificate`. Narrowly, and the
+             narrowness is the point: it is a self-signed certificate this
+             script generates, so it proves that `--server-cert-pin-sha256`
+             reaches `asyncua`'s `certificate_validator` hook, that a matching
+             digest passes and a wrong one refuses by name. It proves nothing
+             about a plant's PKI. Before it existed, the pin was exercised only
+             by tests that called `_Pin` directly and by a grep of `_walk` for
+             the hook's name -- so whether the LIBRARY ever called it was
+             unmeasured, and a hook the library never calls would pass a wrong
+             digest and record the walk as pinned.
 
 Two entry points, run as separate processes:
     python3 opcua_surface.py serve   --port N --walk clean.json
@@ -35,6 +44,7 @@ import datetime as _dt
 import json
 import os
 import sys
+from typing import Optional
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -56,8 +66,66 @@ def node_ids():
             for spec in asset["tags"].values()]
 
 
+def make_certificate(directory: str):
+    """A self-signed server certificate, and its SHA-256 over the DER.
+
+    Generated rather than committed: a private key in a public repository is a
+    private key in a public repository, whatever it is for. The digest is
+    returned so the caller can pass the RIGHT pin without parsing anything --
+    the test is whether the client checks it, not whether a shell can extract
+    it.
+    """
+    import datetime as dt
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,
+                                         "factory-line-audit rung 3")])
+    now = dt.datetime.now(dt.timezone.utc)
+    cert = (x509.CertificateBuilder()
+            .subject_name(name).issuer_name(name)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - dt.timedelta(days=1))
+            .not_valid_after(now + dt.timedelta(days=1))
+            .add_extension(x509.SubjectAlternativeName([
+                x509.UniformResourceIdentifier("urn:factory-line-audit:rung3"),
+                x509.DNSName("127.0.0.1")]), critical=False)
+            .add_extension(x509.BasicConstraints(ca=False, path_length=None),
+                           critical=True)
+            .add_extension(x509.KeyUsage(
+                digital_signature=True, content_commitment=False,
+                key_encipherment=True, data_encipherment=True,
+                key_agreement=False, key_cert_sign=False, crl_sign=False,
+                encipher_only=False, decipher_only=False), critical=True)
+            .add_extension(x509.ExtendedKeyUsage([
+                x509.oid.ExtendedKeyUsageOID.SERVER_AUTH,
+                x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH]), critical=False)
+            .sign(key, hashes.SHA256()))
+
+    cert_path = os.path.join(directory, "server-cert.der")
+    key_path = os.path.join(directory, "server-key.pem")
+    with open(cert_path, "wb") as handle:
+        handle.write(cert.public_bytes(serialization.Encoding.DER))
+    with open(key_path, "wb") as handle:
+        handle.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()))
+    import hashlib
+    digest = hashlib.sha256(
+        cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+    return cert_path, key_path, digest
+
+
 async def serve(port: int, walk_path: str, ready: str,
-                no_source: bool = False) -> None:
+                no_source: bool = False,
+                certificate: Optional[str] = None,
+                repeat: bool = False) -> None:
     from asyncua import Server, ua
 
     with open(walk_path, encoding="utf-8") as handle:
@@ -68,6 +136,20 @@ async def serve(port: int, walk_path: str, ready: str,
     await server.init()
     server.set_endpoint(f"opc.tcp://127.0.0.1:{port}/factory-line-audit/")
     server.set_server_name("factory-line-audit rung 3")
+    digest = None
+    if certificate:
+        # SIGNED AND ENCRYPTED, with the server holding a certificate. The
+        # policy list is set EXPLICITLY: left at the default this server also
+        # offers `NoSecurity`, and a client that quietly fell back to it would
+        # produce a walk recording `pinned: true` over a channel where no
+        # certificate was ever exchanged -- the precise claim the pin exists to
+        # make impossible, arrived at by the back door.
+        os.makedirs(certificate, exist_ok=True)
+        cert_path, key_path, digest = make_certificate(certificate)
+        await server.load_certificate(cert_path)
+        await server.load_private_key(key_path)
+        server.set_security_policy([
+            ua.SecurityPolicyType.Basic256Sha256_SignAndEncrypt])
     idx = await server.register_namespace(NAMESPACE)
     folder = await server.nodes.objects.add_folder(idx, "Line1")
 
@@ -84,58 +166,93 @@ async def serve(port: int, walk_path: str, ready: str,
         if node == WITHHOLD_ABSENT:
             continue
         seed = (first.get(node) or {}).get("v")
-        initial = bool(seed) if isinstance(seed, bool) else 0.0
+        # THE SEED'S TYPE, all three of them. A string seed used to fall to
+        # `0.0`, so `state_running` was created as a Double and every write of a
+        # state WORD was refused for the rest of the run -- `asyncua` logs
+        # `Write refused` and carries on, so the server stayed up, the node
+        # served its initial `0.0` forever, and the leg stayed green. The write
+        # side of this had already been fixed when the corpus moved to real state
+        # words; the creation side had not, and the two sides are four lines
+        # apart under a comment that says a node's datatype is fixed when it is
+        # created. Found by running a walk against this server and reading what
+        # came back, which is the only thing that could have found it.
+        if isinstance(seed, bool):
+            initial = seed
+        elif isinstance(seed, str):
+            initial = seed
+        else:
+            initial = 0.0
         variables[node] = await folder.add_variable(
             ua.NodeId(node.split(";s=", 1)[1], idx), node.split(";s=", 1)[1],
             initial)
 
     async with server:
         announced = False
-        for sample in samples:
-            for node, variable in variables.items():
-                reading = (sample.get("nodes") or {}).get(node)
-                if reading is None:
-                    continue
-                value = reading.get("v")
-                quality = str(reading.get("q") or "Good")
-                when = _dt.datetime.fromisoformat(
-                    str(reading.get("t") or sample["t"]).replace("Z", "+00:00"))
-                if node == WITHHOLD_BAD:
-                    quality, value = "BadDeviceFailure", None
-                # THE WORD THE CORPUS ASKED FOR, not a two-way collapse. This
-                # served `Good` or `BadDeviceFailure` and nothing else, so the
-                # rung could not produce a substituted value at all -- and
-                # `Good_LocalOverride`, the case the substituted count exists
-                # for, lived only in the synthetic corpus.
-                status = ua.StatusCode(_status_code(quality))
-                if value is None:
-                    variant = ua.Variant(None, ua.VariantType.Null)
-                elif isinstance(value, bool):
-                    variant = ua.Variant(value, ua.VariantType.Boolean)
-                elif isinstance(value, str):
-                    # A machine state is an enumeration WORD on a real server.
-                    # This branch did not exist while the corpus fed booleans for
-                    # `state_running`, and `float("Running")` raises -- so the
-                    # corpus change to real state words would have taken the live
-                    # leg down, which is the leg's whole purpose.
-                    variant = ua.Variant(value, ua.VariantType.String)
-                else:
-                    variant = ua.Variant(float(value), ua.VariantType.Double)
-                await server.write_attribute_value(
-                    variable.nodeid,
-                    ua.DataValue(variant, StatusCode=status,
-                                 SourceTimestamp=None if no_source else when,
-                                 ServerTimestamp=when if no_source else None))
-            if not announced:
-                # After the first full pass, not before it. A readiness marker
-                # written at startup says the process began, and a collector
-                # that trusts it races a server that is about to raise.
-                with open(ready, "w", encoding="utf-8") as handle:
-                    handle.write(json.dumps({"port": port,
-                                             "served": len(variables),
-                                             "samples": len(samples)}))
-                announced = True
-            await asyncio.sleep(0.12)
+        # REPEAT, for a caller that needs the surface to outlive one pass. One
+        # pass is fifty samples at 0.12 s plus three: about nine seconds, which
+        # is enough for one `collect` started the moment the readiness marker
+        # appears, and not enough for a leg that runs TWO clients against one
+        # server -- which the pin leg does, by construction, because a right pin
+        # and a wrong one are two connections.
+        while True:
+            for sample in samples:
+                for node, variable in variables.items():
+                    reading = (sample.get("nodes") or {}).get(node)
+                    if reading is None:
+                        continue
+                    value = reading.get("v")
+                    quality = str(reading.get("q") or "Good")
+                    when = _dt.datetime.fromisoformat(
+                        str(reading.get("t") or sample["t"]).replace("Z", "+00:00"))
+                    if node == WITHHOLD_BAD:
+                        quality, value = "BadDeviceFailure", None
+                    # THE WORD THE CORPUS ASKED FOR, not a two-way collapse. This
+                    # served `Good` or `BadDeviceFailure` and nothing else, so the
+                    # rung could not produce a substituted value at all -- and
+                    # `Good_LocalOverride`, the case the substituted count exists
+                    # for, lived only in the synthetic corpus.
+                    status = ua.StatusCode(_status_code(quality))
+                    if value is None:
+                        variant = ua.Variant(None, ua.VariantType.Null)
+                    elif isinstance(value, bool):
+                        variant = ua.Variant(value, ua.VariantType.Boolean)
+                    elif isinstance(value, str):
+                        # A machine state is an enumeration WORD on a real
+                        # server. This branch did not exist while the corpus fed
+                        # booleans for `state_running`, and `float("Running")`
+                        # raises -- so the corpus change to real state words
+                        # would have taken the live leg down, which is the leg's
+                        # whole purpose. The node's CREATION type is the other
+                        # half of it, and was missed: see above.
+                        variant = ua.Variant(value, ua.VariantType.String)
+                    else:
+                        variant = ua.Variant(float(value), ua.VariantType.Double)
+                    await server.write_attribute_value(
+                        variable.nodeid,
+                        ua.DataValue(variant, StatusCode=status,
+                                     SourceTimestamp=None if no_source else when,
+                                     ServerTimestamp=when if no_source else None))
+                if not announced:
+                    # After the first full pass, not before it. A readiness
+                    # marker written at startup says the process began, and a
+                    # collector that trusts it races a server about to raise.
+                    with open(ready, "w", encoding="utf-8") as handle:
+                        handle.write(json.dumps({
+                            "port": port,
+                            "served": len(variables),
+                            "samples": len(samples),
+                            # The digest of the certificate THIS process holds,
+                            # so a caller can pass the right pin without
+                            # extracting it. What is under test is whether the
+                            # client checks the certificate, not whether a shell
+                            # can read one.
+                            "server_cert_sha256": digest,
+                            "security": ("Basic256Sha256/SignAndEncrypt"
+                                         if digest else "None/None")}))
+                    announced = True
+                await asyncio.sleep(0.12)
+            if not repeat:
+                break
         await asyncio.sleep(3.0)
 
 
@@ -225,6 +342,18 @@ def main() -> int:
     # while the same file's `nodes_served` said they had been read. The fallback
     # is in `capture`; this is what can exercise it.
     p.add_argument("--no-source-timestamp", action="store_true")
+    # A SERVER THAT HOLDS A CERTIFICATE, so the pin has something to check. The
+    # directory is where the generated certificate and key are written; nothing
+    # is committed, because a private key in a public repository is a private
+    # key in a public repository whatever it is for.
+    p.add_argument("--certificate", metavar="DIR",
+                   help="serve Basic256Sha256/SignAndEncrypt with a "
+                        "self-signed certificate generated into DIR")
+    p.add_argument("--repeat", action="store_true",
+                   help="cycle the corpus until terminated. One pass is about "
+                        "nine seconds, which is enough for one collector "
+                        "started at the readiness marker and not enough for a "
+                        "caller that runs two clients against one server")
     p = subs.add_parser("collect")
     p.add_argument("--port", type=int, default=48401)
     p.add_argument("--out", required=True)
@@ -233,7 +362,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.mode == "serve":
         asyncio.run(serve(args.port, args.walk, args.ready,
-                          no_source=args.no_source_timestamp))
+                          no_source=args.no_source_timestamp,
+                          certificate=args.certificate,
+                          repeat=args.repeat))
         return 0
     return asyncio.run(collect(args.port, args.out, args.want, args.budget))
 

@@ -246,3 +246,64 @@ class TestEveryScriptTheReadmeNamesExists:
     def test_every_named_script_is_there(self):
         missing = [s for s in self._scripts() if not (Path(ROOT) / s).exists()]
         assert not missing, f"the README names scripts that do not exist: {missing}"
+
+
+#: Top-level directories this repository actually has. A backticked token whose
+#: first segment is one of these is a claim ABOUT THIS REPOSITORY; `out/walk.json`
+#: and `~/line1/` are not, and are left alone.
+TRACKED_ROOTS = ("battery", "src", "tests", "examples", "tools", ".github")
+_SUFFIXES = (".py", ".json", ".md", ".yml", ".yaml", ".toml", ".cfg", ".txt")
+
+
+class TestEveryRepositoryPathTheDocumentsNameExists:
+    """R5 from the 0.1.7 review: `engine_floars.json` moved into the package and
+    two documents went on naming the old place.
+
+    The sibling class above parses RUNNABLE lines for `.py` tokens, so neither
+    stale line was reachable by it: one was prose, and both named a `.json`. A
+    rule is only as wide as the surfaces it is run against.
+
+    Both documents, because the two stale lines were one in each.
+    """
+
+    DOCS = ("README.md", "FINDINGS.md")
+
+    def _named(self, doc):
+        body = (Path(ROOT) / doc).read_text(encoding="utf-8")
+        found = set()
+        for token in re.findall(r"`([^`\n]+)`", body):
+            token = token.strip().rstrip(".,;:)")
+            if "/" not in token or token.startswith(("http", "~", "/")):
+                continue
+            if not token.startswith(TRACKED_ROOTS):
+                continue
+            if token.endswith("/") or token.endswith(_SUFFIXES):
+                found.add(token)
+        return sorted(found)
+
+    @pytest.mark.parametrize("doc", DOCS)
+    def test_it_found_paths_to_check(self, doc):
+        """Non-vacuity, per document. An empty set satisfies the rule below."""
+        assert len(self._named(doc)) >= 2, (
+            f"{doc}: only {self._named(doc)} parsed as repository paths")
+
+    @pytest.mark.parametrize("doc", DOCS)
+    def test_every_named_path_is_there(self, doc):
+        missing = [p for p in self._named(doc)
+                   if not (Path(ROOT) / p.rstrip("/")).exists()]
+        assert not missing, f"{doc} names paths that do not exist: {missing}"
+
+    def test_the_floors_file_is_named_where_it_lives(self):
+        """The instance, held by behaviour rather than by the absence of a
+        string: the file the battery reads and the file the documents name have
+        to be one file."""
+        from factory_line_audit.cli import _floors
+        for doc in self.DOCS:
+            body = (Path(ROOT) / doc).read_text(encoding="utf-8")
+            if "engine_floors.json" not in body:
+                continue
+            named = {p for p in self._named(doc) if p.endswith("engine_floors.json")}
+            assert named, f"{doc} names engine_floors.json by an untracked path"
+            for path in named:
+                assert (Path(ROOT) / path).exists(), path
+        assert _floors(None)["floors"], "the package copy carries no floors"

@@ -98,7 +98,26 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
 
     out: Dict[Tuple[str, str], List[Tuple]] = {}
     withheld: Dict[Tuple[str, str], int] = {}
+    #: Per gated tag: did ANY sample serve a state that a declared word could
+    #: have equalled, and what types were actually served. Both are whole-walk
+    #: facts, so both are settled after the loop.
+    comparable: Dict[Tuple[str, str], bool] = {}
+    observed: Dict[Tuple[str, str], Dict[str, Any]] = {}
     from .presence import grade
+
+    def _comparable(state: Any, word: Any) -> bool:
+        """Could `state == word` ever be true, on type alone?
+
+        Strings compare with strings; numbers and booleans compare with each
+        other, because a PLC `BOOL` arrives as `True` and a declaration may
+        legitimately write `1` for it. Nothing else is asserted: whether the
+        word is the RIGHT one is the declaration's claim, not this function's.
+        """
+        if isinstance(state, str) or isinstance(word, str):
+            return isinstance(state, str) and isinstance(word, str)
+        return isinstance(state, (int, float, bool)) and \
+            isinstance(word, (int, float, bool))
+
     for sample in walk.get("samples") or []:
         when = _parse(sample.get("t"))
         nodes = sample.get("nodes") or {}
@@ -121,6 +140,24 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
                 state = gate_row.get("v")
                 words = open_when.get(key)
                 if words is not None:
+                    # WHETHER THIS DECLARATION COULD EVER APPLY, recorded per
+                    # gated tag and judged after the walk rather than here. `1
+                    # in ["1"]` is false, so a PLC serving Int16 0/1 against
+                    # `open_when: ["1"]` withheld every sample, fed nothing, and
+                    # the engine then declined `missing_property` -- which this
+                    # package classes as its own defect, reported against the
+                    # wrong subject.
+                    #
+                    # Per-SAMPLE is the wrong scope and that was measured: one
+                    # odd reading of a different type is not a declaration that
+                    # cannot apply, and a station that really is stopped serves
+                    # a word of the declared type and must withhold quietly. The
+                    # claim is about the WALK -- no sample in it could ever have
+                    # opened this gate -- so it is settled once, below, where
+                    # the whole walk has been seen.
+                    comparable[key] = comparable.get(key, False) or \
+                        any(_comparable(state, word) for word in words)
+                    observed.setdefault(key, {})[type(state).__name__] = state
                     gate_ok = state in words
                 elif isinstance(state, bool):
                     gate_ok = state
@@ -142,6 +179,27 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
                     continue
             when_row = _parse(reading_row.get("t")) or when
             out.setdefault(key, []).append((when_row, reading_row["v"]))
+
+    # A gate that was evaluated and could never once have opened, on type
+    # alone. Settled here because it is a claim about the walk: the loop sees
+    # one sample at a time and cannot tell a mixed reading from a declaration
+    # written against the wrong data type.
+    for key, ever in sorted(comparable.items()):
+        if ever:
+            continue
+        words = open_when.get(key) or []
+        served = observed.get(key) or {}
+        raise HardStop(
+            "gate_type_mismatch",
+            f"{key[0]}.{key[1]} is gated on {gate_of.get(key)}, which served "
+            f"only "
+            f"{', '.join(f'{v!r} ({t})' for t, v in sorted(served.items()))} "
+            f"across this walk, and open_when lists "
+            f"{', '.join(f'{w!r} ({type(w).__name__})' for w in words)}. No "
+            f"declared value can equal any value served, so every sample was "
+            f"withheld and the engine would decline for a missing property "
+            f"instead -- a defect this package would have reported against the "
+            f"wrong subject. Declare the state in the type the server serves")
     return out, withheld, gate_of
 
 

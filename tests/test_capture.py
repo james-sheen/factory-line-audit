@@ -7,7 +7,10 @@ surface. Faking a server here would test the fake.
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 
+from conftest import CORPUS
 from factory_line_audit.capture import (declared_nodes, digest,
                                         membership_unchanged)
 
@@ -106,3 +109,45 @@ class TestItStaysOutOfStageOne:
             elif isinstance(node, ast.ImportFrom) and node.module:
                 top.add(node.module.split(".")[0])
         assert "asyncua" not in top, top
+
+
+class TestAWalkSaysHowManyTimesTheServerWasAsked:
+    """R10, carried from M6 in the 0.1.6 review.
+
+    Samples are keyed on the first node's timestamp, so a server whose values
+    and stamps do not advance yields exactly ONE sample however long `--budget`
+    runs. The walk then looked identical to a server that had been asked once:
+    the engine declines `insufficient_samples` either way, and nothing in the
+    artifact said which of the two had happened. A reader sent to a plant on
+    that evidence is being sent on a guess.
+
+    `polls` is not `len(samples)`. That is the whole point of recording it.
+    """
+
+    def test_the_source_block_records_the_poll_count(self):
+        import inspect
+
+        from factory_line_audit import capture as module
+        source = inspect.getsource(module._walk)
+        assert '"polls": polls' in source
+        assert "polls += 1" in source
+
+    def test_the_budget_is_recorded_beside_it(self):
+        """A poll count without the budget it ran against is a number nobody can
+        read: four polls in 0.2 s and four in 30 s are different facts."""
+        import inspect
+
+        from factory_line_audit import capture as module
+        assert '"samples_budget_s"' in inspect.getsource(module._walk)
+
+    def test_a_walk_carrying_the_field_still_validates(self):
+        """The walk format did not move, so every existing reader must accept
+        the new key. Held through the loader rather than assumed."""
+        from factory_line_audit import formats
+        from factory_line_audit.walkcheck import validate_walk
+        with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+            walk = json.load(handle)
+        walk["source"]["polls"] = 412
+        walk["source"]["samples_budget_s"] = 30.0
+        assert validate_walk(walk) == []
+        assert formats.split(walk["format"])[1] == formats.split(formats.WALK)[1]

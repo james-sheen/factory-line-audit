@@ -11,9 +11,11 @@ the core's conformance kit -- which accepts this vertical with no problems.
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
+from conftest import CORPUS
 from factory_line_audit.exit_contract import CLEAN, FINDINGS, INCOMPLETE
 
 core = pytest.importorskip("presence_audit",
@@ -191,3 +193,68 @@ class TestItNeedsNoRegistration:
         before = written(tmp_path, "before.json", walk(NODES))
         after = written(tmp_path, "after.json", walk(NODES[:-1]))
         assert compare(before, after)[0] == FINDINGS
+
+
+class TestTheReceiverSideShapeCheckIsActuallyCalled:
+    """R6 from the 0.1.7 review: a decision whose stated reason was false.
+
+    0.1.7's docstring said `validate_walk` was not called because the
+    declared-rename leg compares a walk whose node ids carry a prefix this
+    package did not write, and a shape check on that copy *would refuse the one
+    input the verb exists to accept*. Measured: `validate_walk` requires node
+    keys to be non-empty strings, `L1.ns=2;s=...` is one, and the prefixed walk
+    produces no problems at all -- nor do any of the corpus walks. The decision
+    cost nothing and the reason was wrong, which is the worse half: a reader who
+    believed it would not have tried.
+    """
+
+    def test_a_prefixed_walk_is_not_refused(self, tmp_path):
+        """The claim the old reason rested on, held directly."""
+        from factory_line_audit.walkcheck import validate_walk
+        with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+            walk = json.load(handle)
+        for sample in walk["samples"]:
+            sample["nodes"] = {f"L1.{node}": row
+                               for node, row in sample["nodes"].items()}
+        assert validate_walk(walk) == []
+
+    def test_the_declared_rename_still_pairs_end_to_end(self, tmp_path):
+        """The behaviour the old reason was protecting. Held through `compare`,
+        so the shape check being in the path is exercised rather than read."""
+        from factory_line_audit.regression import compare
+        before = os.path.join(CORPUS, "clean.json")
+        with open(before, encoding="utf-8") as handle:
+            walk = json.load(handle)
+        for sample in walk["samples"]:
+            sample["nodes"] = {f"L1.{node}": row
+                               for node, row in sample["nodes"].items()}
+        after = os.path.join(str(tmp_path), "moved.json")
+        with open(after, "w", encoding="utf-8") as handle:
+            json.dump(walk, handle)
+        code, _ = compare(before, after, [("ns=2;s=", "L1.ns=2;s=")])
+        assert code == CLEAN
+
+    def test_a_malformed_walk_is_now_refused_rather_than_compared(self, tmp_path):
+        """What calling it buys. A walk that loads and is not a walk used to be
+        compared anyway."""
+        from factory_line_audit.regression import compare
+        with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+            walk = json.load(handle)
+        walk["samples"][3]["nodes"] = "not an object"
+        broken = os.path.join(str(tmp_path), "broken.json")
+        with open(broken, "w", encoding="utf-8") as handle:
+            json.dump(walk, handle)
+        code, body = compare(os.path.join(CORPUS, "clean.json"), broken, [])
+        assert code == INCOMPLETE
+        assert any("well-formed walk" in p
+                   for p in body["could_not_complete"]), body
+
+    def test_the_false_reason_is_gone_from_the_source(self):
+        """Pinned to the ARTIFACT, not the diff: prose describing a decision
+        outlives the decision."""
+        import inspect
+
+        from factory_line_audit import regression
+        source = inspect.getsource(regression._walk)
+        assert "would refuse the one input" not in source
+        assert "validate_walk" in source

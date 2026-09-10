@@ -107,3 +107,144 @@ class TestStatementsAreCheckedMechanically:
             for statement in statements:
                 assert statement["_from"].endswith(".json")
                 assert statement["_review"] == "fixture"
+
+
+class TestWhatCountsAsTheSameStatementTwice:
+    """R4 from the 0.1.7 review, and a regression the M3 fix introduced.
+
+    The duplicate rule keyed on `(asset, tag, kind)` and said, in its own
+    refusal message, that *the generator reads the first and ignores the rest*.
+    That is true of the kinds read at `[0]` and false of `conservation`, which
+    `generator.build` ITERATES, emitting one derived balance per statement.
+    `conservation` is asset-scoped and carries `tag: None`, so two balances on
+    one station collided on one key: a declaration that was legal in 0.1.6, and
+    that the generator still supports, refused by the 0.1.7 gate with a message
+    asserting the opposite. Measured both ways -- the refusal, and two
+    CONSERVATION axioms out of the generator for two statements.
+    """
+
+    SECOND_BALANCE = {"kind": "conservation", "asset": "ST-02",
+                      "input_tag": "parts_in", "output_tags": ["parts_out_mes"],
+                      "basis": "TEST -- a second, independent balance on one "
+                               "station: the MES count is the other side of the "
+                               "same input"}
+
+    @staticmethod
+    def _fixture():
+        with open(FIXTURE, encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def _with(self, tmp_path, *extra):
+        body = self._fixture()
+        body["statements"] = list(body["statements"]) + list(extra)
+        return write(tmp_path, "dup.json", body)
+
+    def test_two_different_balances_on_one_asset_are_accepted(self, register,
+                                                              tmp_path):
+        gate([self._with(tmp_path, self.SECOND_BALANCE)], register)
+
+    def test_the_generator_really_does_emit_both(self, register, tmp_path):
+        """The non-vacuity control for the rule above. If the generator read
+        `[0]` after all, allowing two would be allowing one to be ignored --
+        exactly what the rule exists to prevent."""
+        from factory_line_audit.generator import build
+
+        def axioms_for(*extra):
+            path = self._with(tmp_path, *extra)
+            with open(path, encoding="utf-8") as handle:
+                body = json.load(handle)
+            body["_path"] = path
+            body["_review"] = {"reviewer": "test", "date": "2026-09-10"}
+            text, _ = build(register, {"accepted": [body], "reviews": []})
+            return text.count("CONSERVATION")
+
+        one = axioms_for()
+        two = axioms_for(self.SECOND_BALANCE)
+        assert two == one + 1, (one, two)
+
+    def test_the_same_balance_restated_is_still_a_duplicate(self, register,
+                                                           tmp_path):
+        same = next(s for s in self._fixture()["statements"]
+                    if s["kind"] == "conservation")
+        with pytest.raises(formats.Refusal) as caught:
+            gate([self._with(tmp_path, dict(same, basis="TEST -- restated"))],
+                 register)
+        assert "declared 2 times" in caught.value.message
+        assert "two DIFFERENT ones on this asset are legal" in caught.value.message
+
+    def test_the_order_of_output_tags_does_not_make_a_new_balance(self, register,
+                                                                 tmp_path):
+        same = next(s for s in self._fixture()["statements"]
+                    if s["kind"] == "conservation")
+        flipped = dict(same, output_tags=list(reversed(same["output_tags"])),
+                       basis="TEST -- the same balance, outputs reordered")
+        with pytest.raises(formats.Refusal):
+            gate([self._with(tmp_path, flipped)], register)
+
+    def test_a_single_valued_kind_is_still_refused_twice(self, register,
+                                                         tmp_path):
+        """No strictness was traded away. A second `setpoint` on one tag is the
+        contradiction the rule was written for."""
+        first = next(s for s in self._fixture()["statements"]
+                     if s["kind"] == "setpoint" and s["asset"] == "ST-02")
+        second = dict(first, setpoint=first["setpoint"] + 1,
+                      basis="TEST -- a second setpoint on one tag")
+        with pytest.raises(formats.Refusal) as caught:
+            gate([self._with(tmp_path, second)], register)
+        assert "reads the first and ignores the rest" in caught.value.message
+
+    def test_two_exclusions_differ_by_reason(self, register, tmp_path):
+        excl = next(s for s in self._fixture()["statements"]
+                    if s["kind"] == "exclusion")
+        gate([self._with(tmp_path, dict(excl, reason="TEST -- a different "
+                                                     "scope decision"))],
+             register)
+        with pytest.raises(formats.Refusal):
+            gate([self._with(tmp_path, dict(excl, basis="TEST -- restated"))],
+                 register)
+
+    def test_every_iterated_kind_really_is_iterated(self, register, tmp_path):
+        """`ITERATED_KINDS` is a claim about `generator.build`, so it is held
+        against the generator's OUTPUT, one member at a time.
+
+        The first version of this test regexed the generator source for a
+        `for ... in _statements(...)` loop. That form finds `conservation` and
+        not `exclusion` -- which is iterated through a different construct -- so
+        it asserted `{conservation} <= {conservation, exclusion}` and passed
+        while measuring half of what it claimed. The predicate was cheaper than
+        the claim.
+        """
+        from factory_line_audit.declarations import ITERATED_KINDS
+        from factory_line_audit.generator import build
+
+        def manifest_for(*extra):
+            path = self._with(tmp_path, *extra)
+            with open(path, encoding="utf-8") as handle:
+                body = json.load(handle)
+            body["_path"] = path
+            body["_review"] = {"reviewer": "test", "date": "2026-09-10"}
+            return build(register, {"accepted": [body], "reviews": []})
+
+        base_text, base_manifest = manifest_for()
+        base_exclusions = len(base_manifest["exclusions"])
+
+        exercised = set()
+
+        # conservation: a second balance must add a second CONSERVATION axiom.
+        text, _ = manifest_for(self.SECOND_BALANCE)
+        assert text.count("CONSERVATION") == base_text.count("CONSERVATION") + 1
+        exercised.add("conservation")
+
+        # exclusion: a second asset-scope exclusion, with its own reason, must
+        # reach the manifest as its own row rather than replacing the first.
+        excl = next(s for s in self._fixture()["statements"]
+                    if s["kind"] == "exclusion")
+        _, second = manifest_for(dict(excl, reason="TEST -- a second, different "
+                                                  "scope decision"))
+        assert len(second["exclusions"]) == base_exclusions + 1
+        exercised.add("exclusion")
+
+        assert exercised == set(ITERATED_KINDS), (
+            f"{sorted(set(ITERATED_KINDS) - exercised)} is declared iterated and "
+            f"no case here shows it; a kind in this set that is really read at "
+            f"[0] lets a second statement be silently ignored")

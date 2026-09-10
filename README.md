@@ -29,7 +29,7 @@ re-measurement did not reproduce them.
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
-named below.** Eighteen battery legs green, including a real OPC UA server read
+named below.** Nineteen battery legs green, including a real OPC UA server read
 by a real client, the built wheel installed into an empty environment, and a
 sweep of the whole `arbiter-engine` range this package declares. Nothing here has
 touched a plant. Every number in `examples/` is invented.
@@ -131,13 +131,13 @@ python3 battery/probe_pin.py
 
 ## The verification battery
 
-Eighteen legs: the twelve in `BRIDGES.md`'s verification battery, plus the ones
+Nineteen legs: the twelve in `BRIDGES.md`'s verification battery, plus the ones
 this package added, each with the argument written down.
 
 Every addition started here. `pin` was proposed by this package and is now a
 row in the guide's own table, so it is no longer an addition and is unmarked
-below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
-`orchestrator` still are.
+below. `corpus`, `conformance`, `regression`, `capture`, `engine`,
+`pin_channel` and `orchestrator` still are.
 
 | Leg | Question |
 |---|---|
@@ -157,6 +157,7 @@ below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
 | `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
 | `regression` **added** | Does a declared prefix move pair, and the same move undeclared get reported and not applied? |
 | `orchestrator` **added** | Does this package register as a `qa-orchestrator` vertical, hand back all three registries, refuse another vertical's entity, and does the wrong-on-purpose scenario still fail? |
+| `pin_channel` **added** | Over a channel that has a certificate, does the client library actually call the pin -- does a right digest walk and a wrong one refuse, naming both? |
 | `pin` | Does every release inside each declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
 
@@ -211,7 +212,9 @@ A file becomes usable when a person adds their name **and** the date. A test
 fixture passes only by disclosing itself on its face, never by naming a reviewer.
 
 **Upgrading, if you keep declaration files.** Three refusals arrived in 0.1.6 and
-0.1.7, each replacing something that was accepted and then ignored.
+0.1.7, each replacing something that was accepted and then ignored; 0.1.8 then
+narrowed one of them back, because it refused a file the generator supports. The
+full history is in [CHANGELOG.md](CHANGELOG.md).
 
 * `allow_reset` is a `reset` statement of its own (0.1.6). It used to be read off
   a `rate` statement and validated by nothing, so a misspelling read as a
@@ -227,10 +230,23 @@ fixture passes only by disclosing itself on its face, never by naming a reviewer
   guesses. `required_property` must also name a `state`-class tag on the same
   asset.
 * A statement declared twice is refused (0.1.7), across every accepted file. The
-  generator reads the first of each kind, so the second was accepted and ignored
+  generator reads the first of MOST kinds, so the second was accepted and ignored
   -- and across two files the earlier file won, an ordering nobody declared.
   An `exclusion` naming a tag the register does not have is refused for the same
   reason: it excluded nothing and was recorded as an exclusion.
+* **0.1.8 narrows that rule back.** `conservation` and `exclusion` are ITERATED
+  by the generator, not read at `[0]`, so two balances on one asset are legal and
+  both take effect -- and 0.1.7 refused them, telling you the generator would
+  ignore one. Two statements of those kinds now collide only when they are the
+  same statement: the same balance over the same tags, or the same exclusion for
+  the same reason.
+* **0.1.8 widens `open_when`** to accept integer state codes. A PLC serving its
+  running flag as Int16 or Byte `0/1` had no legal declaration in 0.1.7: no
+  `open_when` hard stopped, `[1]` was refused as malformed, and `["1"]` was
+  accepted and then withheld every sample, because `1 in ["1"]` is false. Where
+  the declared values could never equal what the server serves, `detect` now
+  stops and says so instead of withholding everything and letting the engine
+  report a missing property.
 
 ## The evidence ladder
 
@@ -243,8 +259,16 @@ fixture passes only by disclosing itself on its face, never by naming a reviewer
 
 Rung 3 is evidence that the walk format survives a real client, that node ids
 resolve, that a status word comes back as a status word, and that a node which is
-not there fails the way Stage 1 says it does. It is **not** evidence about
-security, certificates, a vendor's address space, or load.
+not there fails the way Stage 1 says it does. Since 0.1.8 it also serves
+Basic256Sha256/SignAndEncrypt with a self-signed certificate, so it is evidence
+that `--server-cert-pin-sha256` reaches the client library's validator hook: a
+matching digest walks and records the certificate the server presented, and a
+wrong one refuses naming both. That line was previously *not evidence about
+security, certificates, ...*, and the half about this package's own pin was the
+half that stopped being true.
+
+It is still **not** evidence about a plant's PKI, a certificate anybody else
+signed, authentication, a vendor's address space, or load.
 
 First contact is deliberately absent from the tool surface as well, and the
 closure test asserts that absence.
@@ -253,7 +277,8 @@ closure test asserts that absence.
 
 - No number in `examples/` is a fact about a real machine. The declaration file
   says so on its face and every `basis` string begins `FIXTURE`.
-- The engine measured is whichever one `battery/engine_floors.json` records, and
+- The engine measured is whichever one `src/factory_line_audit/engine_floors.json`
+  records, and
   the `engine` battery leg goes red when that file stops describing the engine
   that resolves here. Any other pin needs `probe_engine.py` re-run, not re-read.
   This line named a version until 2026-09-09, by which time the file recorded a

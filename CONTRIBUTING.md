@@ -48,6 +48,25 @@ A leg that could not run reports `2` and says so by name — it is never skipped
 the result file records the selection, so a partial run cannot be mistaken for a
 full one.
 
+## Releasing
+
+By hand, and in this order:
+
+1. Bump the version literal in the package; `pyproject.toml` reads it from there.
+2. Add the `CHANGELOG.md` entry. A test holds the declared version to an entry,
+   so a release with nothing to say about itself will not pass.
+3. Run the battery.
+4. **Push the tag, then upload the wheel.** In that order. Done the other way
+   round there is a window where a public artifact exists and nothing on the
+   remote binds it to a commit, and `README.md` claims a tag that no fresh clone
+   can resolve. An outside review of 0.1.7 landed inside that window and reported
+   the missing tag as a defect; the tag was pushed minutes later, so the report
+   was right about the window and wrong by the time it was read. The window is
+   the problem, not the report.
+5. Confirm from the simple index rather than the checkout — the JSON API and the
+   index disagree after an upload, in both directions, and which one is ahead is
+   not predictable.
+
 ## What this project is
 
 An exam of a method as much as a tool, and **the engine it bridges to shares an

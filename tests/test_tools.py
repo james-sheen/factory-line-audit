@@ -175,3 +175,101 @@ class TestTheSurfaceIsClosedOverTheCli:
         capability, not a verb: if one ever collides with a verb the surface
         would be offering and refusing the same thing."""
         assert not (set(WITHHELD) & self._verbs())
+
+
+class TestAnAbsentExtraIsNotABrokenEntry:
+    """R8 from the 0.1.7 review.
+
+    `compare_walks` routes to `regression`, which asks the core to judge the two
+    walks and returns 2 without `[vertical]`. `leg_tool` treats any entry
+    answering 2 as an entry that could not construct, and the answer carries no
+    `error` for a verb that ran -- so the leg reported `('compare_walks', None)`:
+    a red naming neither the extra nor a reason, against a table that was fine.
+    The leg still goes red, because it could not ask its question; what changed
+    is that it can now say which install would let it.
+    """
+
+    def test_the_requirement_is_declared_beside_the_table(self):
+        from factory_line_audit.tools import REQUIRES_EXTRA, SPEC
+        assert REQUIRES_EXTRA, "no entry declares an extra; the map is inert"
+        for name in REQUIRES_EXTRA:
+            assert name in SPEC, f"{name} declares an extra and is not offered"
+
+    def test_the_probe_measures_rather_than_declares(self):
+        """`missing_extras` must answer about THIS interpreter. The suite's own
+        environment has `[vertical]`, so the reachable assertion is that the
+        probe agrees with a real import."""
+        import importlib
+
+        from factory_line_audit.tools import EXTRA_PROBE, missing_extras
+        absent = missing_extras()
+        for extra, module in EXTRA_PROBE.items():
+            try:
+                importlib.import_module(module)
+            except ImportError:
+                assert extra in absent, f"{extra} is not importable and not reported"
+            else:
+                assert extra not in absent, f"{extra} imports and is reported absent"
+
+    def test_every_declared_extra_names_a_module_to_probe(self):
+        from factory_line_audit.tools import EXTRA_PROBE, REQUIRES_EXTRA
+        for name, extra in REQUIRES_EXTRA.items():
+            assert extra in EXTRA_PROBE, (
+                f"{name} needs [{extra}] and nothing says how to detect it, so "
+                f"a caller cannot tell a missing install from a broken entry")
+
+    def test_the_declared_extras_are_ones_the_package_offers(self):
+        """Held against `pyproject.toml`, so a renamed extra reddens here."""
+        import re
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "pyproject.toml"), encoding="utf-8") as handle:
+            body = handle.read()
+        section = body.split("[project.optional-dependencies]")[1].split("\n[")[0]
+        declared = set(re.findall(r"^(\w+)\s*=", section, re.MULTILINE))
+        from factory_line_audit.tools import EXTRA_PROBE
+        assert set(EXTRA_PROBE) <= declared, (set(EXTRA_PROBE) - declared)
+
+    @staticmethod
+    def _decide(*args):
+        """`blocked_by_extras` from the battery, which is not importable as a
+        package: the battery is scripts, run by path."""
+        import importlib.util
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        spec = importlib.util.spec_from_file_location(
+            "fla_run_battery", os.path.join(root, "battery", "run_battery.py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.blocked_by_extras(*args)
+
+    def test_a_failure_whose_extra_is_absent_names_the_extra(self):
+        said = self._decide(["compare_walks"], {"compare_walks": "vertical"},
+                            {"vertical": "presence_audit"})
+        assert "compare_walks needs [vertical]" in said
+        assert "not a verdict about them" in said
+
+    def test_a_failure_with_every_extra_present_is_a_real_failure(self):
+        """The control. Without this, a function that always blamed an extra
+        would satisfy the rule above and hide every genuine break."""
+        assert self._decide(["compare_walks"], {"compare_walks": "vertical"},
+                            {}) == ""
+
+    def test_a_failure_that_needs_no_extra_is_a_real_failure(self):
+        assert self._decide(["presence"], {"compare_walks": "vertical"},
+                            {"vertical": "presence_audit"}) == ""
+
+    def test_nothing_failed_is_not_an_excuse_either(self):
+        assert self._decide([], {"compare_walks": "vertical"},
+                            {"vertical": "presence_audit"}) == ""
+
+    def test_the_leg_reads_the_map_rather_than_listing_it(self):
+        """The lesson `WITHHELD` already taught here: a copy in the leg is a
+        copy that drifts the day the map grows an entry. Held in addition to the
+        behavioural cases above, not instead of them."""
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "battery", "run_battery.py"),
+                  encoding="utf-8") as handle:
+            source = handle.read()
+        leg = source.split("def leg_tool(")[1].split("\ndef ")[0]
+        assert "REQUIRES_EXTRA" in leg and "missing_extras" in leg
+        assert '"vertical"' not in leg and "'vertical'" not in leg, (
+            "the leg names an extra literally; it must read the map")

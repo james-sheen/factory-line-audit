@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The verification battery. A re-runnable script, not a transcript.
 
-BRIDGES's verification battery. The twelve legs in its table are all here. Two
+BRIDGES's verification battery. The twelve legs in its table are all here. Three
 more are here as well, marked ADDED, each with the argument written down.
 
 `pin` was an addition and is no longer one: it was proposed from here and the
@@ -18,6 +18,13 @@ argument for the leg is the same whoever owns the row.
             floor must be exercised. Every other capability in the list had a leg
             in the table; the one that is a claim about software the bridge does
             not control had none. It does now.
+  pin_channel -- the pin was the one protection this package offered that nothing
+            had ever exercised END TO END. Five tests constructed `_Pin` and
+            called it; one grepped `_walk` for the hook's name. All six pass if
+            the client library never calls the hook, and the anonymous rung-3
+            surface had no certificate to check, so there was nowhere to find
+            out. Serving one makes the question answerable, and the answer is
+            recorded rather than assumed.
   conformance -- the core ships a kit that drives a vertical through the protocol
             using stand-ins that implement it and nothing else. It exists because
             the core once called a member the protocol did not declare, every
@@ -63,7 +70,8 @@ CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
 #: and a battery that ran nothing exits 0.
 SELECTABLE = ("engine", "corpus", "live", "draft", "gate", "clean", "fault",
               "absent", "attest", "pipe", "tool", "suite", "conformance",
-              "regression", "capture", "orchestrator", "pin", "ship")
+              "regression", "capture", "pin_channel", "orchestrator", "pin",
+              "ship")
 
 RESULTS = []
 
@@ -174,8 +182,14 @@ def leg_corpus():
                    f"the corpus is {int(age)}s old and the narrowest measured "
                    f"window is {narrowest}s; every arm that counts inside it "
                    f"would go quiet. Re-run make_corpus.py", added=True)
+    # The window is the ENGINE's tolerance, not every leg's. `fault` needs a
+    # corpus younger than `FAULT_AGE_FLOOR_S` and builds its own; saying both
+    # numbers here stops this leg's green from being read as a warrant for the
+    # rest of the battery.
     return leg("corpus", 0, f"built {int(age)}s ago, inside the narrowest "
-                            f"measured window ({narrowest}s)", added=True)
+                            f"measured window ({narrowest}s). The `fault` leg "
+                            f"needs {FAULT_AGE_FLOOR_S}s and rebuilds for "
+                            f"itself", added=True)
 
 
 # ----------------------------------------------------------------------- live
@@ -229,6 +243,41 @@ def leg_live(live_python):
                               f"SourceTimestamp and the walk records "
                               f"{source.get('timestamps_from')}; the control "
                               f"below is only evidence if this is the control")
+
+    # DID A VALUE COME BACK AS THE TYPE IT WENT OUT AS? Derived from the corpus,
+    # per node, rather than named: a check that looked for `state_running` would
+    # stop being a check the day a second string tag arrived.
+    #
+    # This leg could not fail on this, and the gap was found by running a walk
+    # and reading it. A node's OPC UA datatype is fixed when the node is created,
+    # so a string seed that fell back to `0.0` created a Double -- and every
+    # write of a state word was then refused for the whole run. `asyncua` logs
+    # `Write refused` and carries on, so the server stayed up, the node served
+    # its initial `0.0` forever, 26 of 27 nodes still read, every count here
+    # still matched, and the leg reported green about a surface that was not
+    # serving the one value `state_running` exists to serve.
+    with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+        seeded = (json.load(handle)["samples"][0].get("nodes") or {})
+    wanted_text = {node for node, row in seeded.items()
+                   if isinstance(row.get("v"), str)}
+    if not wanted_text:
+        return leg("live", 2, "no node in the corpus carries a string value, so "
+                              "the type check below asserts nothing; a state tag "
+                              "that stopped being a word would pass it")
+    coerced = {}
+    for node in sorted(wanted_text):
+        seen = {type(sample.get("nodes", {}).get(node, {}).get("v")).__name__
+                for sample in walk["samples"]
+                if node in (sample.get("nodes") or {})}
+        if seen and seen != {"str"}:
+            coerced[node] = sorted(seen)
+    if coerced:
+        return leg("live", 1, f"the corpus serves these as state WORDS and the "
+                              f"live walk read them back as {coerced}. A node's "
+                              f"datatype is fixed when it is created, so the "
+                              f"server refused every write and served its "
+                              f"initial value: the surface is not serving what "
+                              f"this leg reports on")
 
     # A SERVER THAT STAMPS ONLY `ServerTimestamp`, which real ones do. `capture`
     # skipped any reading whose SourceTimestamp was None, so against such a
@@ -336,11 +385,70 @@ def leg_clean(python):
 
 
 # ---------------------------------------------------------- fault and absent
+#: The corpus age past which at least one fault stops being found, MEASURED by
+#: sweeping every fault class against a corpus aged by shifting its timestamps.
+#: Thirteen of fourteen survive 900 s unchanged; `parts_vanish` loses its
+#: CONSERVATION finding at 120 s, is found again at 240 s, and is gone from 300 s
+#: on -- not monotonic, which is why an eyeballed margin would not have found it.
+#:
+#: `leg_corpus` checks 900 s, MONOTONICITY's reversal window, and that is the
+#: widest window the engine declares rather than the narrowest thing any leg
+#: needs. So the battery could report `corpus 0  built 209s ago, inside the
+#: narrowest measured window` and `fault 2  13/14` in the same run, and the red
+#: one read as a detection regression. It was a fixture that had expired between
+#: two legs of one battery: bisected by reverting the source to 0.1.7, which
+#: produced byte-identical output against the same corpus.
+FAULT_AGE_FLOOR_S = 120
+
+
+def _corpus_age_s():
+    """Seconds since the corpus was built, or None if it cannot say.
+
+    `built_at` is under `source`, not at the top level, and reading the top level
+    returns `None` silently -- which would have made the guard below report that
+    the rebuild failed on every run. `leg_corpus` already knew where it lives;
+    this is the second reader of one field, so it reads it the same way.
+    """
+    clean = os.path.join(CORPUS, "clean.json")
+    if not os.path.exists(clean):
+        return None
+    with open(clean, encoding="utf-8") as handle:
+        built = (json.load(handle).get("source") or {}).get("built_at")
+    if not built:
+        return None
+    stamp = _dt.datetime.fromisoformat(built.replace("Z", "+00:00"))
+    return (_dt.datetime.now(_dt.timezone.utc) - stamp).total_seconds()
+
+
 def leg_faults(python):
     expect_path = os.path.join(CORPUS, "EXPECT.json")
     if not os.path.exists(expect_path):
         leg("fault", 2, "EXPECT.json absent; run make_corpus.py")
         return leg("absent", 2, "EXPECT.json absent; run make_corpus.py")
+
+    # THIS LEG BUILDS ITS OWN FIXTURE. Every leg before it costs wall-clock --
+    # `live` alone runs two OPC UA servers -- so by the time this one is reached
+    # the corpus is routinely older than `FAULT_AGE_FLOOR_S`, and the question
+    # *was the injected thing found?* is then being asked of evidence that has
+    # expired. Rebuilding costs under two seconds and is the only way the leg can
+    # answer its own question; the guard below is the backstop, because a rebuild
+    # that silently failed would leave this reading the old files.
+    rebuilt = subprocess.run([python, os.path.join(HERE, "make_corpus.py")],
+                             capture_output=True, text=True, cwd=ROOT,
+                             timeout=900, env=dict(os.environ, PYTHONPATH=SRC))
+    age = _corpus_age_s()
+    if rebuilt.returncode or age is None:
+        leg("fault", 2, f"could not rebuild the corpus this leg judges "
+                        f"({rebuilt.stderr.strip()[-140:]}); the files on disk "
+                        f"may predate the floor and a miss would read as a "
+                        f"detection regression")
+        return leg("absent", 2, "the corpus could not be rebuilt")
+    if age > FAULT_AGE_FLOOR_S:
+        leg("fault", 2, f"the corpus is {int(age)}s old, past the measured "
+                        f"{FAULT_AGE_FLOOR_S}s floor, and the rebuild did not "
+                        f"refresh it. At least one fault class stops being found "
+                        f"here, so a pass would be a false negative")
+        return leg("absent", 2, "the corpus is past the measured fault floor")
     with open(expect_path, encoding="utf-8") as handle:
         expect = json.load(handle)
     worst, checked, absent_code = 0, [], None
@@ -357,7 +465,9 @@ def leg_faults(python):
             absent_code = 0 if note is None else 2
     good = sum(1 for _, note in checked if note is None)
     leg("fault", worst, f"{good}/{len(checked)} fault classes found for the "
-                        f"injected reason, not just with the right exit code")
+                        f"injected reason, not just with the right exit code, "
+                        f"against a corpus this leg rebuilt {int(age)}s before "
+                        f"judging (floor {FAULT_AGE_FLOOR_S}s)")
     leg("absent", absent_code if absent_code is not None else 2,
         "a declared-but-absent source is a finding, not an incompleteness"
         if absent_code == 0 else "asset_absent did not behave as declared")
@@ -433,6 +543,25 @@ def leg_pipe(python):
 
 
 # ----------------------------------------------------------------------- tool
+def blocked_by_extras(failed, requires, absent):
+    """Why the table could not be walked, when the reason is a missing install.
+
+    `""` when every failure is a real one. A separate function because the leg
+    that used to decide this inline could only be held by a test that GREPPED
+    the leg for the names it reads -- and that test stayed green when the
+    decision was removed, because the names still appeared in the subprocess
+    script above. Inspecting, not exercising.
+    """
+    blocked = {name: requires[name] for name in failed
+               if requires.get(name) in absent}
+    if not blocked:
+        return ""
+    pairs = ", ".join(f"{n} needs [{x}]" for n, x in sorted(blocked.items()))
+    return (f"this interpreter is short of an extra, so the table could not be "
+            f"walked end to end: {pairs}. Absent: {sorted(absent)}. The entries "
+            f"themselves were not exercised, so this is not a verdict about them")
+
+
 def leg_tool(python, workdir):
     """Walk the whole table, through a subprocess, so the dispatcher under test
     is the one the protocol would advertise.
@@ -472,7 +601,13 @@ def leg_tool(python, workdir):
         # as a literal tuple, so the day `WITHHELD` grew a third entry the leg
         # counted it as a table entry that could not complete -- a check firing
         # precisely, against the wrong subject.
-        "print(json.dumps({'answers': answers, 'withheld': sorted(WITHHELD)}))\n")
+        # WHAT THIS ENVIRONMENT IS SHORT OF, measured in the same interpreter
+        # that answered. Read from the module for the same reason `WITHHELD` is:
+        # a list of extras kept here would be a second copy to drift.
+        "from factory_line_audit.tools import REQUIRES_EXTRA, missing_extras\n"
+        "print(json.dumps({'answers': answers, 'withheld': sorted(WITHHELD),\n"
+        "                  'requires_extra': REQUIRES_EXTRA,\n"
+        "                  'missing_extras': missing_extras()}))\n")
     proc = subprocess.run([python, "-c", script], capture_output=True, text=True,
                           cwd=ROOT, env=dict(os.environ, PYTHONPATH=SRC),
                           timeout=900)
@@ -496,6 +631,15 @@ def leg_tool(python, workdir):
                               f"test that skips an entry is the gap it exists "
                               f"to close")
     failed = [n for n in ran if answers[n]["exit"] == 2]
+    # AN ABSENT EXTRA IS NOT A BROKEN ENTRY. `compare_walks` answers 2 with no
+    # `error` when `[vertical]` is not installed, so this leg reported
+    # `('compare_walks', None)` -- a red naming neither the extra nor a reason,
+    # against a table that was fine. Still 2, because the leg could not ask its
+    # question; now it says which install would let it.
+    short = blocked_by_extras(failed, reported["requires_extra"],
+                              reported["missing_extras"])
+    if short:
+        return leg("tool", 2, short)
     if failed:
         return leg("tool", 2, f"these entries could not complete: "
                               f"{[(n, answers[n].get('error')) for n in failed]}")
@@ -722,6 +866,159 @@ def leg_orchestrator(python):
     return leg("orchestrator", answer["code"], answer["note"], added=True)
 
 
+def leg_pin_channel(live_python, workdir):
+    """Does the CLIENT LIBRARY call the pin, over a channel that has a
+    certificate? Nothing in this repository could answer that until 0.1.8.
+
+    The 0.1.7 pin was exercised by five tests that constructed `_Pin` and called
+    it directly, plus one that grepped `_walk` for `certificate_validator` and
+    `pinned.checked`. Every one of those passes if `asyncua` never calls the hook
+    at all -- and the rung-3 surface was anonymous on loopback, where a pin is
+    refused by policy, so there was no channel to find out on. The 0.1.6 review
+    called this the right design and still Unrun; it was right on both counts.
+
+    Two connections against one server, which is why the surface needed
+    `--repeat`: a right pin must WALK and record the digest the server actually
+    presented, and a wrong one must refuse naming both digests. Both halves,
+    because either alone passes for the wrong reason -- a client that refused
+    everything would satisfy the second, and one that checked nothing would
+    satisfy the first.
+    """
+    surface = os.path.join(HERE, "opcua_surface.py")
+    probe = [live_python, "-c", "import asyncua, cryptography"]
+    try:
+        if subprocess.run(probe, capture_output=True, timeout=120).returncode:
+            return leg("pin_channel", 2, "asyncua and cryptography are needed "
+                                         "to serve a certificate; install the "
+                                         "[live] extra", added=True)
+    except Exception as exc:
+        return leg("pin_channel", 2, f"could not start the live interpreter: "
+                                     f"{exc}", added=True)
+
+    ready = os.path.join(workdir, "pin-channel-ready.json")
+    certs = os.path.join(workdir, "server-cert")
+    client = os.path.join(workdir, "client-cert")
+    os.makedirs(client, exist_ok=True)
+    try:
+        sys.path.insert(0, HERE)
+        from opcua_surface import make_certificate
+        raw, key, _ = make_certificate(client)
+        from cryptography import x509
+        from cryptography.hazmat.primitives import serialization
+        with open(raw, "rb") as handle:
+            parsed = x509.load_der_x509_certificate(handle.read())
+        client_cert = os.path.join(client, "client-cert.pem")
+        with open(client_cert, "wb") as handle:
+            handle.write(parsed.public_bytes(serialization.Encoding.PEM))
+    except Exception as exc:
+        return leg("pin_channel", 2, f"could not make a client certificate: "
+                                     f"{exc}", added=True)
+
+    server = subprocess.Popen(
+        [live_python, surface, "serve", "--port", "48415", "--ready", ready,
+         "--certificate", certs, "--repeat"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    try:
+        for _ in range(120):
+            if os.path.exists(ready):
+                break
+            time.sleep(0.5)
+        else:
+            return leg("pin_channel", 2, "the certificate-bearing server never "
+                                         "announced a working pass", added=True)
+        with open(ready, encoding="utf-8") as handle:
+            announced = json.load(handle)
+        served_digest = announced.get("server_cert_sha256")
+        if not served_digest:
+            return leg("pin_channel", 2, "the server announced no certificate "
+                                         "digest, so there is no right pin to "
+                                         "pass", added=True)
+        if announced.get("security") == "None/None":
+            return leg("pin_channel", 2, "the server came up unsecured; a pin "
+                                         "against it would be refused by policy "
+                                         "and prove nothing", added=True)
+
+        def walk_with(pin, name):
+            out = os.path.join(workdir, name)
+            return subprocess.run(
+                [live_python, "-c",
+                 "import sys; from factory_line_audit.cli import main;"
+                 " sys.exit(main(sys.argv[1:]))",
+                 "capture", "--register", REGISTER,
+                 "--target", "opc.tcp://127.0.0.1:48415/factory-line-audit/",
+                 "--out", out, "--samples", "3", "--budget", "15",
+                 "--namespace", "urn:factory-line-audit:rung3",
+                 "--security-policy", "Basic256Sha256",
+                 "--security-mode", "SignAndEncrypt",
+                 "--cert", client_cert, "--key", os.path.join(client, "server-key.pem"),
+                 "--server-cert-pin-sha256", pin],
+                capture_output=True, text=True, timeout=300, cwd=ROOT,
+                env=dict(os.environ, PYTHONPATH=SRC)), out
+
+        right, right_out = walk_with(served_digest, "pinned.json")
+        if right.returncode != CLEAN:
+            return leg("pin_channel", 1,
+                       f"the RIGHT pin did not walk (exit {right.returncode}): "
+                       f"{right.stdout.strip()[-200:]}. If this says no "
+                       f"certificate was checked, the library does not call the "
+                       f"hook where capture.py assumes", added=True)
+        with open(right_out, encoding="utf-8") as handle:
+            source = json.load(handle)["source"]
+        if source.get("server_cert_sha256") != served_digest:
+            return leg("pin_channel", 1,
+                       f"the walk recorded {source.get('server_cert_sha256')} "
+                       f"and the server presented {served_digest}; the digest in "
+                       f"the provenance is not the one that was compared",
+                       added=True)
+        if not source.get("pinned"):
+            return leg("pin_channel", 1, "the walk does not record itself as "
+                                         "pinned over a pinned channel",
+                       added=True)
+
+        wrong, _ = walk_with("00" * 32, "unpinned.json")
+        if wrong.returncode != INCOMPLETE:
+            return leg("pin_channel", 1,
+                       f"a WRONG pin exited {wrong.returncode}, not "
+                       f"{INCOMPLETE}; a pin that does not refuse is a pin that "
+                       f"records a channel nobody checked", added=True)
+        if "does not match the pin" not in wrong.stdout:
+            return leg("pin_channel", 1,
+                       f"a wrong pin refused without naming the mismatch: "
+                       f"{wrong.stdout.strip()[-200:]}", added=True)
+        if served_digest not in wrong.stdout:
+            return leg("pin_channel", 1, "the refusal does not print the digest "
+                                         "the server presented, so nobody can "
+                                         "tell a wrong pin from a wrong server",
+                       added=True)
+        return leg("pin_channel", 0,
+                   f"asyncua calls the validator: a matching pin walked and "
+                   f"recorded the presented digest, and {'00' * 2}... refused "
+                   f"naming both. Basic256Sha256/SignAndEncrypt, self-signed, "
+                   f"loopback -- nothing here is about a plant's PKI",
+                   added=True)
+    finally:
+        server.terminate()
+        try:
+            server.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            server.kill()
+
+
+def _installed_version(dist):
+    """What this interpreter has, or `None` if the distribution is absent.
+
+    `None` is not a failure: `leg_pin` reads a committed file and must still
+    answer in an environment where neither pinned distribution is installed.
+    """
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+        return version(dist)
+    except PackageNotFoundError:
+        return None
+    except Exception:
+        return None
+
+
 # ------------------------------------------------------------------------ pin
 def leg_pin():
     """Every declared range, not the one that happened to be measured first.
@@ -776,6 +1073,22 @@ def leg_pin():
             continue
         if not body["results"]:
             stale.append(f"{dist} has no results; nothing was installed or run")
+            continue
+        # WHETHER THE EVIDENCE DESCRIBES WHAT RUNS HERE. The engine leg catches
+        # this by re-running its probe and diffing `engine_version`; the other
+        # pinned distribution had no leg that would notice a release appearing
+        # inside the range, so until the weekly sweep ran, a green `pin` leg was
+        # a claim about a set of releases that no longer had the same members.
+        #
+        # Measured, not dated: an age bound would redden because a week passed,
+        # which is a guard with an expiry date rather than a guard. This
+        # reddens when the thing it describes actually changes.
+        here = _installed_version(dist)
+        if here and here not in (body["published"] or []):
+            stale.append(f"{dist} {here} is installed here and the evidence "
+                         f"swept {body['published'][-3:]}...; the range claim "
+                         f"rests on a sweep that never saw this release. "
+                         f"Re-run probe_pin.py")
             continue
         if not body["every_release_in_range_runs_clean"]:
             red.append(dist)
@@ -968,6 +1281,8 @@ def main() -> int:
             leg_regression(args.python, workdir)
         if wanted("capture"):
             leg_capture(args.live_python, workdir)
+        if wanted("pin_channel"):
+            leg_pin_channel(args.live_python, workdir)
         if wanted("orchestrator"):
             leg_orchestrator(args.python)
         if wanted("pin"):

@@ -26,6 +26,14 @@ have to argue with something.
   enforcement promise nobody is positioned to keep is worse than not making it.
   Revisit the day issues open to anyone.
 
+`CHANGELOG.md` arrived in 0.1.8, carried for a reason worth writing down: the
+answers to two static reviews lived only in commit messages and code comments,
+and a user of 0.1.6 reading the repository had no single place to learn that the
+meaning of `pinned` in a walk had changed under them. A commit message is the
+least findable record there is. The test below holds the newest entry to the
+version the package declares, so a release that ships without a line reddens --
+an unmaintained changelog is worse than none, because it reads as complete.
+
 Both refusals are cheap to reverse. Changing the decision means changing this
 docstring and the test below, in that order.
 """
@@ -39,7 +47,7 @@ import pytest
 
 from conftest import ROOT
 
-CARRIED = ("SECURITY.md", "CONTRIBUTING.md")
+CARRIED = ("SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md")
 REFUSED = ("CITATION.cff", "CODE_OF_CONDUCT.md")
 
 #: Anything a reader could take for a released version.
@@ -104,3 +112,41 @@ class TestTheSecurityPolicyCarriesNoVersion:
         text = self._text().lower()
         assert "private" in text and "report" in text, (
             "SECURITY.md does not tell a reporter where to send anything")
+
+
+class TestTheChangelogKeepsUpWithTheVersion:
+    """A changelog nobody updates reads as complete, which is the failure. So the
+    pin is behavioural: it reddens on the next release, not after an interval."""
+
+    @staticmethod
+    def _headings():
+        body = (Path(ROOT) / "CHANGELOG.md").read_text(encoding="utf-8")
+        return re.findall(r"^## (\S+)", body, re.MULTILINE)
+
+    def test_it_found_release_headings(self):
+        """Non-vacuity: an empty list satisfies every rule below."""
+        assert len(self._headings()) >= 3, self._headings()
+
+    def test_the_declared_version_has_an_entry(self):
+        """The claim is that a RELEASE did not ship without a line. An entry
+        above the declared version is work in progress and is allowed, provided
+        it says so -- otherwise a reader cannot tell a shipped release from a
+        draft."""
+        from factory_line_audit import __version__
+        headings = self._headings()
+        assert __version__ in headings, (
+            f"the package declares {__version__!r} and CHANGELOG.md has entries "
+            f"for {headings}. A release without a line reads as a release that "
+            f"changed nothing")
+        body = (Path(ROOT) / "CHANGELOG.md").read_text(encoding="utf-8")
+        for ahead in headings[:headings.index(__version__)]:
+            section = body.split(f"## {ahead}")[1].split("\n## ")[0]
+            first = section.splitlines()[0].lower()
+            assert "unreleased" in first, (
+                f"CHANGELOG.md carries {ahead!r} above the declared "
+                f"{__version__!r} and does not mark it unreleased")
+
+    def test_every_heading_is_a_version(self):
+        odd = [h for h in self._headings() if not re.fullmatch(r"\d+\.\d+(\.\d+)?", h)
+               and "--" not in h]
+        assert not odd, f"these headings are not versions: {odd}"

@@ -210,10 +210,21 @@ def check_statements(body: Dict[str, Any], register: Dict[str, Any],
                                 f"{tags[wanted].get('class')!r}, not `state`. "
                                 f"A gate reads a machine state")
             words = stmt.get("open_when")
-            if words is not None and (not isinstance(words, list) or not words
-                                      or not all(isinstance(w, str) for w in words)):
+            # `str | int | bool`, and that breadth was found by getting it
+            # wrong. 0.1.7 required every member to be a `str`, which left a
+            # PLC serving its running flag as Int16/Byte 0/1 -- the common
+            # case -- with no legal declaration at all: no `open_when` hard
+            # stops as undecidable, `[1]` was refused here as malformed, and
+            # `["1"]` was accepted and then withheld every sample, because
+            # `1 in ["1"]` is false. Three shapes, three ways to lose, and the
+            # only one the gate described as wrong was the one that would
+            # have worked. A float is still refused: equality on a float is a
+            # question about the PLC's scaling, not about the state machine.
+            if words is not None and (
+                    not isinstance(words, list) or not words
+                    or not all(isinstance(w, (str, int, bool)) for w in words)):
                 problems.append(f"{where}.{tag}): open_when must be a non-empty "
-                                f"list of state words")
+                                f"list of state words or integer state codes")
         if kind == "redundant":
             for other in stmt.get("agrees_with") or []:
                 if other not in assets[asset_id]["tags"]:
@@ -263,29 +274,67 @@ def gate(paths: List[str], register: Dict[str, Any]) -> Dict[str, Any]:
     return {"accepted": accepted, "reviews": reviews}
 
 
-def _duplicates(accepted: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Every `(asset, tag, kind)` declared more than once, across all files.
+#: The kinds the generator ITERATES rather than reading `[0]` of. A second
+#: statement of one of these is not ignored -- both are in force -- so the
+#: duplicate rule must key on what distinguishes two of them, not merely on
+#: the kind. Derived here from the two call sites in `generator.build`, and
+#: `test_declarations` holds this set against them.
+ITERATED_KINDS = ("conservation", "exclusion")
 
-    The generator reads `[0]` of each kind, so a second statement about one tag
-    was accepted and then silently ignored -- and across two files the earlier
-    file won, which is an ordering nobody declared. A contradiction between two
-    reviewed numbers is the one thing a review gate must not resolve by itself.
+
+def _identity(stmt: Dict[str, Any]) -> Tuple:
+    """What makes two statements of one kind THE SAME statement.
+
+    For a kind read at `[0]`, the asset and tag are the whole identity: a
+    second one is silently dropped. For an ITERATED kind both are in force, so
+    the identity has to include what the generator derives from -- otherwise
+    the rule refuses a declaration the generator supports. It did: two
+    CONSERVATION balances on one station are legal, emit one derived pair each,
+    and 0.1.7 refused them as a duplicate with a message that said the
+    generator reads the first and ignores the rest. Measured against the
+    generator, which emitted both.
     """
-    seen: Dict[Tuple[Optional[str], Optional[str], Optional[str]],
-               List[str]] = {}
+    kind, asset, tag = stmt.get("kind"), stmt.get("asset"), stmt.get("tag")
+    if kind == "conservation":
+        outputs = tuple(sorted(str(t) for t in stmt.get("output_tags") or ()))
+        return (asset, tag, kind, stmt.get("input_tag"), outputs)
+    if kind == "exclusion":
+        return (asset, tag, kind, stmt.get("reason"))
+    return (asset, tag, kind)
+
+
+def _duplicates(accepted: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Every statement declared more than once, across all files.
+
+    The generator reads `[0]` of most kinds, so a second statement about one
+    tag was accepted and then silently ignored -- and across two files the
+    earlier file won, which is an ordering nobody declared. A contradiction
+    between two reviewed numbers is the one thing a review gate must not
+    resolve by itself. What counts as *the same statement* is `_identity`,
+    because the kinds in `ITERATED_KINDS` can legally appear twice.
+    """
+    seen: Dict[Tuple, List[str]] = {}
     for body in accepted:
         for stmt in body.get("statements") or []:
-            key = (stmt.get("asset"), stmt.get("tag"), stmt.get("kind"))
-            seen.setdefault(key, []).append(body.get("_path") or "?")
+            seen.setdefault(_identity(stmt), []).append(body.get("_path") or "?")
     out = []
-    for (asset, tag, kind), paths in seen.items():
+    for identity, paths in seen.items():
         if len(paths) > 1:
+            asset, tag, kind = identity[0], identity[1], identity[2]
             where = tag and f"{asset}.{tag}" or asset
+            detail = ""
+            if kind in ITERATED_KINDS:
+                # This kind MAY appear twice, so say which one repeated --
+                # otherwise the message reads as the blanket rule and sends a
+                # reader to delete a statement that was allowed.
+                detail = (f" The same {kind} is declared twice over the same "
+                          f"tags; two DIFFERENT ones on this asset are legal.")
             out.append({"paths": paths, "said":
                         f"{kind} on {where} is declared {len(paths)} times "
-                        f"({', '.join(sorted(set(paths)))}). The generator reads "
-                        f"the first and ignores the rest, so one of these "
-                        f"numbers is in force and nothing says which"})
+                        f"({', '.join(sorted(set(paths)))})." + (detail or
+                        " The generator reads the first and ignores the rest, "
+                        "so one of these numbers is in force and nothing says "
+                        "which")})
     return out
 
 

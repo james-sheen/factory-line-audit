@@ -14,12 +14,15 @@ asks for. This paragraph claimed independence until it was checked. Section E
 already said the engine is *not somebody else's*, two hundred lines further
 down, which is where the true half of this was sitting the whole time.
 
-The verification battery is green on all eighteen legs. Everything below is a
+The verification battery is green on all nineteen legs. Everything below is a
 place where following the document produced a wrong answer, or where a
 measurement contradicted something the surrounding documents say.
 
 Every claim here names the probe that produced it. `battery/probe_engine.py` is
-code that re-runs; `battery/engine_floors.json` is its output.
+code that re-runs; `src/factory_line_audit/engine_floors.json` is its output.
+It moved there in 0.1.7 so the installed wheel carries it; both documents went
+on naming the old path, which is why every repository path either of them names
+is now held by a test.
 
 **Which engine each claim is about.** The exam measured `arbiter-engine 0.1.10`,
 which is still this package's range floor. Engine fixes recorded below as *fixed
@@ -144,6 +147,43 @@ reversal* over fifty samples.
 **Remedy**: an eighth rule -- a corpus for a windowed engine has a shelf life,
 and the battery should refuse a stale one rather than run against it. This
 package added a `corpus` leg that does exactly that.
+
+#### A4 extended, 2026-09-10: the shelf life is not the engine's window
+
+The `corpus` leg above checks the corpus against the narrowest window the ENGINE
+declares, 900 s. That is the wrong tolerance, and the gap was found by a battery
+run that reported `corpus 0  built 209s ago, inside the narrowest measured
+window` and `fault 2  13/14` in the same run. The red leg read as a detection
+regression; reverting the source to the previous release produced byte-identical
+output against the same corpus, so it was not one.
+
+**Measured** by ageing the corpus -- shifting every timestamp back, which is
+exactly a corpus built that much earlier -- and sweeping all fourteen fault
+classes at nine ages from 0 to 900 s. Thirteen survive 900 s unchanged. One does
+not:
+
+| age | `parts_vanish` |
+|---|---|
+| 0, 60 s | found |
+| 120, 180 s | **lost** -- the CONSERVATION finding is gone, nothing declines |
+| 240 s | found again |
+| 300 s and beyond | **lost** -- CONSERVATION declines `insufficient_samples` |
+
+Not monotonic, and two different failure modes. A margin chosen by eye would
+have been chosen from the 300 s case and would have called 240 s safe.
+
+So the rule needs a second half: **the shelf life belongs to the leg that
+depends on it, not to the engine's widest window.** Every leg before `fault`
+costs wall-clock -- `live` alone runs two OPC UA servers -- so the corpus is
+routinely past 120 s by the time the faults are judged, and the battery was
+relying on being fast enough. `fault` now builds its own corpus immediately
+before judging and reports the age it judged at, and refuses rather than
+reporting a miss if the rebuild did not take.
+
+The general shape, which is not about corpora: a fixture can expire between two
+legs of one battery, and the leg that checks the fixture can be green while the
+leg that needs it is red. **Whichever leg is strictest about the fixture owns
+rebuilding it.**
 
 ### A5. The battery table has no leg for C8
 
@@ -458,7 +498,17 @@ appended after this section had closed, and the labels stay as they are because
 three documents and a module comment cite them: a citation that resolves is worth
 more than a letter that sorts. What was wrong was the ORDER -- this file ran
 A1-A8, B, C, A9, E, A10, A11, D -- and that is fixed here.
+
+**Why they are in B and not in A.** Section A is findings against the METHOD;
+this one is findings against the ENGINE, which is what these two are. The letter
+in the label is a citation handle, not a statement about which section they
+belong to. That is said again in each heading below, because an outside reviewer
+read this note, jumped to `A10`, and reported the placement as an unfixed defect
+-- which is what a reason stated once, above the thing it explains, is worth to
+somebody who arrives at the thing by citation.
 ### A10. `allow_reset` is routing, not excusing — and it settles the reset question
+
+*(An engine finding, so it sits in B. The `A` is a citation handle.)*
 
 Measured (probes A1-A5) rather than argued. With `allow_reset: true` a drop to
 near zero counts against the RESET tolerance and fires at three; with it false
@@ -483,6 +533,8 @@ engine was honest about not answering rather than answering wrongly.
 
 ### A10 narrowed, 2026-09-10: *near zero* was never measured
 
+*(An engine finding, so it sits in B. The `A` is a citation handle.)*
+
 The paragraph above holds, and it holds for a narrower case than it reads.
 Probes A1 to A6 climb at one step and drop to one floor, so between them they
 measured the switch, the tolerance, the window and the default, and never what
@@ -490,6 +542,8 @@ makes a drop a RESET rather than a reversal in the first place. A11 measures it.
 Nothing above is retracted; the scope is.
 
 ### A11. Which MONOTONICITY arm a drop belongs to is decided by the floor against the step
+
+*(An engine finding, so it sits in B. The `A` is a citation handle.)*
 
 Found from the far end, which is the only place it could have been found: this
 package's own pipeline, fed a line counter climbing at one part a minute and

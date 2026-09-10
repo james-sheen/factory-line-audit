@@ -123,6 +123,40 @@ WITHHELD = {
 #: nothing else.
 NOT_OFFERED: Dict[str, str] = {"capture": "connect_to_plc"}
 
+#: Entries that cannot answer from a `[detect]`-only install, and the extra
+#: each one needs. `compare_walks` routes to `regression`, which asks the core
+#: to judge the two walks; without `[vertical]` it returns 2 carrying no
+#: `error`, so a caller walking the table saw an entry that "could not
+#: construct" and had no way to learn that the table was fine and the
+#: environment was short an extra. The distinction is the whole difference
+#: between a defect and a missing install, and it belongs here rather than in
+#: any one caller: `run_battery.leg_tool` once carried the withheld NAMES as a
+#: literal and counted a new one as a failure, which is the same mistake at a
+#: different address.
+REQUIRES_EXTRA: Dict[str, str] = {"compare_walks": "vertical"}
+
+#: What to import to find out whether an extra is installed, so a caller can
+#: ask without guessing the distribution's module name.
+EXTRA_PROBE: Dict[str, str] = {"vertical": "presence_audit",
+                               "live": "asyncua",
+                               "detect": "arbiter"}
+
+
+def missing_extras() -> Dict[str, str]:
+    """Every extra in `EXTRA_PROBE` whose module this interpreter cannot import.
+
+    MEASURED, not declared: the question is what this environment can do, and
+    the only honest answer comes from trying the import.
+    """
+    import importlib
+    absent = {}
+    for extra, module in EXTRA_PROBE.items():
+        try:
+            importlib.import_module(module)
+        except ImportError:
+            absent[extra] = module
+    return absent
+
 
 def dispatch(name: str, arguments: Optional[Dict[str, Any]] = None,
              runner: Optional[Callable[[List[str]], int]] = None) -> Dict[str, Any]:

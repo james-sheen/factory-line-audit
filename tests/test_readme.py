@@ -431,7 +431,12 @@ class TestTheLegTableListsEveryLeg:
         page = _readme()
         start = page.index(self.SECTION)
         end = page.index("\n## ", start + len(self.SECTION))
-        return set(re.findall(r"^\|\s*`([a-z-]+)`", page[start:end], re.MULTILINE))
+        # `[a-z_-]`, not `[a-z-]`. Every leg name was a single word until
+        # `pin_channel`, so this pattern could not see the first one that was
+        # not -- and the guard then reported a leg missing from a table that
+        # carried it. A rule is only as wide as the surfaces it is run against.
+        return set(re.findall(r"^\|\s*`([a-z_-]+)`", page[start:end],
+                              re.MULTILINE))
 
     def test_there_is_a_table_to_read(self):
         assert len(self._tabled()) >= 10, (

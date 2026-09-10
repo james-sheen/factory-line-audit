@@ -167,7 +167,8 @@ def cmd_capture(args) -> int:
                 register, args.target,
                 security_string=capture_module.security_string(
                     security, args.cert, args.key),
-                user=args.user, password=password, namespace=args.namespace)
+                user=args.user, password=password, namespace=args.namespace,
+                pin=args.server_cert_pin_sha256)
             cached = None
             if os.path.exists(args.membership_cache):
                 with open(args.membership_cache, encoding="utf-8") as handle:

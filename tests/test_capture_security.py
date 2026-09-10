@@ -7,10 +7,21 @@ applied, and the walk's provenance carries that claim downstream to a
 certificate.
 
 What is NOT here, stated so the gap is visible rather than inferred: a
-successful secure connection. The rung-3 surface is anonymous and has no PKI,
-so nothing in this repository can yet show that a signed channel WORKS -- only
-that the impossible combinations are refused. That is a real limit and the
-battery cannot close it.
+successful secure connection. Nothing in this file opens a channel.
+
+That paragraph used to end *so nothing in this repository can yet show that a
+signed channel WORKS ... the battery cannot close it*, and both halves are now
+false. `opcua_surface.py serve --certificate` serves
+Basic256Sha256/SignAndEncrypt with a self-signed certificate, and the
+`pin_channel` battery leg runs `capture` against it twice: a matching digest
+walks and records the certificate the server actually presented, a wrong one
+refuses naming both. So the claim *the library calls this hook* is measured
+rather than grepped -- which matters, because every test below would pass if
+`asyncua` never called it at all.
+
+What is still out of reach, narrowly: a plant's PKI, a certificate anybody else
+signed, and authentication. A self-signed certificate on loopback is evidence
+about this package's plumbing, not about an engagement.
 """
 from __future__ import annotations
 
@@ -28,6 +39,10 @@ LOOPBACK = "opc.tcp://127.0.0.1:4840/x"
 #: the hygiene gate refuses one -- which is how this line got written
 #: the second time.
 PLANT = "opc.tcp://192.0.2.10:4840/x"
+#: A well-formed SHA-256 digest, at module scope because a comprehension in a
+#: class body cannot see the class's own names.
+GOOD_PIN = "ab" * 32
+COLONED = ":".join(GOOD_PIN[i:i + 2] for i in range(0, 64, 2))
 
 
 def refuse(**kwargs):
@@ -111,8 +126,12 @@ class TestWhatItAccepts:
                        "pinned": False, "insecure": False, "client_cert": False}
 
     def test_a_signed_and_encrypted_channel_with_a_pin(self):
+        """A REAL digest. This read `pin="sha256:ab"` and asserted `pinned is
+        True`, so the one test that accepted a pin accepted a two-character one
+        -- the shape `normalise_pin` now refuses. The assertion was about the
+        record, and the record was the thing that could not be wrong."""
         got = security_from_flags(policy="Basic256Sha256", mode="SignAndEncrypt",
-                                  cert="c.pem", key="k.pem", pin="sha256:ab",
+                                  cert="c.pem", key="k.pem", pin="ab" * 32,
                                   insecure=False, endpoint=PLANT)
         assert got["pinned"] is True
         assert got["security_mode"] == "SignAndEncrypt"
@@ -224,3 +243,154 @@ class TestThePinIsCheckedAndNotJustRecorded:
         assert "pinned.checked" in source, (
             "the walk does not assert the validator ran; a pin the library never "
             "calls would pass a wrong digest and still record itself")
+
+
+class TestThePinIsAValidDigestBeforeAnythingIsDialled:
+    """R2 from the 0.1.7 review. The flag was tested for truthiness only.
+
+    `_Pin` stripped `:` and spaces, so `sha256:<hex>` -- the shape this
+    package's own `digest()` prints over a file, and one hyphen away from what
+    `openssl x509 -fingerprint -sha256` prints -- became a seventy-character
+    string that could never equal a digest. The channel was refused, which is
+    the safe direction, with a message saying the SERVER had presented the wrong
+    certificate. A person reading that goes and looks at the plant.
+    """
+
+    def test_a_bare_digest_is_accepted(self):
+        from factory_line_audit.capture import normalise_pin
+        assert normalise_pin(GOOD_PIN) == GOOD_PIN
+
+    @pytest.mark.parametrize("written", [
+        "sha256:" + GOOD_PIN,
+        "SHA256:" + GOOD_PIN,
+        GOOD_PIN.upper(),
+        COLONED,
+        "SHA256 Fingerprint=" + COLONED.upper(),
+        "  " + GOOD_PIN + "  ",
+    ])
+    def test_every_shape_a_person_pastes_reaches_the_same_digest(self, written):
+        from factory_line_audit.capture import normalise_pin
+        assert normalise_pin(written) == GOOD_PIN
+
+    @pytest.mark.parametrize("bad", ["ab", "", "zz" * 32, GOOD_PIN + "ab", "sha256:"])
+    def test_anything_that_is_not_a_digest_is_refused_by_name(self, bad):
+        from factory_line_audit.capture import normalise_pin
+        with pytest.raises(formats.Refusal) as caught:
+            normalise_pin(bad)
+        assert "not a SHA-256 certificate digest" in caught.value.message
+        assert "Nothing was dialled" in caught.value.message
+
+    def test_the_flag_check_refuses_it_too_rather_than_recording_pinned(self):
+        """`security_from_flags` is where nothing has been dialled yet, and its
+        return value is what claims `pinned`."""
+        why = refuse(policy="Basic256Sha256", mode="SignAndEncrypt",
+                     cert="c.pem", key="k.pem", pin="sha256:ab", endpoint=PLANT)
+        assert "not a SHA-256 certificate digest" in why
+
+    def test_a_contradiction_is_still_named_before_the_format(self):
+        """Ordering, asserted. A reader told their digest is malformed when the
+        real problem is `--insecure` beside it has been told the less useful of
+        two true things."""
+        assert "opposite things" in refuse(insecure=True, pin="sha256:ab")
+        assert "nothing to check" in refuse(pin="sha256:ab")
+
+    def test_the_checker_compares_the_normalised_value(self):
+        """One normaliser, not two. A prefix handled in the flag check and not
+        in the comparison would refuse the server instead of the flag."""
+        from factory_line_audit.capture import _Pin
+        assert _Pin("sha256:" + GOOD_PIN, LOOPBACK).expected == GOOD_PIN
+
+
+class TestTheMembershipPassIsPinnedToo:
+    """R1 from the 0.1.7 review. S1's fix covered the walk half only.
+
+    `--membership-cache` dials the server first to ask which declared nodes are
+    still in the address space. That pass took the security string, the
+    credentials and the namespace, and not the pin -- so with both flags given
+    the cheap dial happened on a channel whose peer was never checked. When it
+    answered `unchanged` the verb printed `OUTCOME unchanged`, exited 0 and wrote
+    NO WALK, and the walk is the only artifact that records `pinned`. The half of
+    a verb that exits without writing evidence is the half nobody can audit.
+    """
+
+    def test_the_pin_reaches_the_membership_dial(self):
+        import inspect
+
+        from factory_line_audit import capture as module
+        for name in ("membership", "_membership"):
+            assert "pin" in inspect.signature(getattr(module, name)).parameters, name
+        source = inspect.getsource(module._membership)
+        assert "certificate_validator" in source
+        assert "pinned.checked" in source, (
+            "the membership pass does not assert the validator ran; a pin the "
+            "library never calls would leave the cache trusted against nobody")
+
+    def test_the_cli_hands_it_over(self):
+        """The defect was an argument that was never passed, so the call site is
+        where it is held -- read through the AST, because slicing the source on
+        the next `)` finds the one closing `security_string(`, which is how this
+        test first passed for the wrong reason."""
+        import ast
+        import inspect
+        import textwrap
+
+        from factory_line_audit import cli
+        tree = ast.parse(textwrap.dedent(inspect.getsource(cli.cmd_capture)))
+        calls = [node for node in ast.walk(tree)
+                 if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Attribute)
+                 and node.func.attr == "membership"]
+        assert calls, "cmd_capture no longer dials membership at all"
+        for call in calls:
+            assert "pin" in [kw.arg for kw in call.keywords], \
+                ast.dump(call)[:200]
+
+    def test_the_record_says_what_it_was_taken_over(self):
+        """A cache that cannot say whether it was pinned cannot be read against
+        the channel that produced it."""
+        import inspect
+        source = inspect.getsource(
+            __import__("factory_line_audit.capture", fromlist=["x"])._membership)
+        assert '"pinned"' in source and '"server_cert_sha256"' in source
+
+
+class TestACacheIsNotReusedAcrossAWeakerChannel:
+    """The rule that falls out of R1: if the protection can lapse between two
+    runs, the run that drops it is the one that skips the walk."""
+
+    @staticmethod
+    def _record(**over):
+        base = {"endpoint": LOOPBACK, "present": ["a"], "absent": [],
+                "namespaces": ["urn:x"], "pinned": False,
+                "server_cert_sha256": None}
+        base.update(over)
+        return base
+
+    def test_the_same_posture_is_unchanged(self):
+        from factory_line_audit.capture import membership_unchanged
+        assert membership_unchanged(self._record(), self._record()) is True
+
+    def test_a_pinned_cache_is_not_reused_unpinned(self):
+        from factory_line_audit.capture import membership_unchanged
+        cached = self._record(pinned=True, server_cert_sha256=GOOD_PIN)
+        assert membership_unchanged(cached, self._record()) is False
+
+    def test_two_different_certificates_are_two_different_peers(self):
+        from factory_line_audit.capture import membership_unchanged
+        cached = self._record(pinned=True, server_cert_sha256=GOOD_PIN)
+        fresh = self._record(pinned=True, server_cert_sha256="cd" * 32)
+        assert membership_unchanged(cached, fresh) is False
+
+    def test_adding_a_pin_to_an_unpinned_cache_is_allowed(self):
+        """The direction that does not weaken anything: this run verified the
+        peer, the cache did not, and the comparison is against a verified dial."""
+        from factory_line_audit.capture import membership_unchanged
+        fresh = self._record(pinned=True, server_cert_sha256=GOOD_PIN)
+        assert membership_unchanged(self._record(), fresh) is True
+
+    def test_a_0_1_7_cache_carries_neither_field_and_still_reads(self):
+        """Backward compatibility, asserted rather than assumed."""
+        from factory_line_audit.capture import membership_unchanged
+        old = {"endpoint": LOOPBACK, "present": ["a"], "absent": [],
+               "namespaces": ["urn:x"]}
+        assert membership_unchanged(old, self._record()) is True

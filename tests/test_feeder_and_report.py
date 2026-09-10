@@ -325,3 +325,133 @@ class TestTheGateReadsAStateWordAndNotItsTruthiness:
         for n, sample in enumerate(clean_walk["samples"]):
             sample["nodes"][self.STATE]["v"] = n < 30
         assert self._gated(register, clean_walk, without).get(self.GATED) == 20
+
+
+class TestAGateOnAnIntegerStateCode:
+    """R3 from the 0.1.7 review, and a regression the S5 fix introduced.
+
+    A PLC that serves its running flag as Int16 or Byte `0/1` is the common
+    case, and after 0.1.7 it had no legal declaration at all. Measured, all
+    three shapes:
+
+      * no `open_when`        -> HardStop `gate_undecidable`
+      * `open_when: [1]`      -> refused here as malformed, because every
+                                 member had to be a `str`
+      * `open_when: ["1"]`    -> accepted, and then `1 in ["1"]` is false, so
+                                 every sample was withheld, nothing was fed,
+                                 and the engine declined `missing_property` --
+                                 which this package classes as its OWN defect
+                                 and reports against the wrong subject
+
+    Three ways to lose, and the only one the gate called wrong was the one that
+    would have worked. `open_when` now takes `str | int | bool`, and the silent
+    shape is a hard stop naming both types.
+
+    Not a subclass of the string-gate class: inheriting re-ran that class's
+    cases under this name, which reports eight passes about a subject this
+    class is not testing.
+    """
+
+    STATE = TestTheGateReadsAStateWordAndNotItsTruthiness.STATE
+    GATED = TestTheGateReadsAStateWordAndNotItsTruthiness.GATED
+
+    def _ints(self, clean_walk, value, over=None):
+        rows = clean_walk["samples"] if over is None else clean_walk["samples"][:over]
+        for sample in rows:
+            sample["nodes"][self.STATE]["v"] = value
+        return clean_walk
+
+    def _declared(self, register, tmp_path, words):
+        import copy
+        import json
+
+        from factory_line_audit.declarations import gate
+        body = copy.deepcopy(json.load(open(FIXTURE, encoding="utf-8")))
+        for stmt in body["statements"]:
+            if stmt["kind"] == "gate_on":
+                if words is None:
+                    stmt.pop("open_when", None)
+                else:
+                    stmt["open_when"] = words
+        path = os.path.join(str(tmp_path), "ints.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        return gate([path], register)
+
+    def test_an_integer_state_code_is_a_legal_declaration(self, register,
+                                                          clean_walk, tmp_path):
+        gates = self._declared(register, tmp_path, [1])
+        walk = self._ints(clean_walk, 1)
+        from factory_line_audit.feeder import series_for
+        series, withheld, _ = series_for(register, classify(register, walk),
+                                         walk, gates)
+        assert self.GATED not in withheld
+        assert len(series[self.GATED]) == len(walk["samples"])
+
+    def test_the_other_code_withholds_quietly(self, register, clean_walk,
+                                              tmp_path):
+        """`0` is not `1`, and that is a stopped station, not a bad
+        declaration. It must not hard-stop."""
+        gates = self._declared(register, tmp_path, [1])
+        walk = self._ints(clean_walk, 0)
+        from factory_line_audit.feeder import series_for
+        _, withheld, _ = series_for(register, classify(register, walk), walk,
+                                    gates)
+        assert withheld[self.GATED] == len(walk["samples"])
+
+    def test_a_string_declaration_against_an_integer_server_stops(
+            self, register, clean_walk, tmp_path):
+        """The silent case. Nothing here can ever be equal, so every sample
+        would be withheld and the engine blamed for a missing property."""
+        from factory_line_audit.feeder import HardStop, series_for
+        gates = self._declared(register, tmp_path, ["1"])
+        walk = self._ints(clean_walk, 1)
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, walk), walk, gates)
+        assert caught.value.name == "gate_type_mismatch"
+        assert "'1' (str)" in caught.value.detail
+        assert "(int)" in caught.value.detail
+
+    def test_the_stop_is_a_claim_about_the_walk_not_one_sample(
+            self, register, clean_walk, tmp_path):
+        """A single odd reading is not a declaration that cannot apply. Held
+        because the first version of this check fired per sample and broke the
+        mixed-type case that the boolean gate test has always covered."""
+        from factory_line_audit.feeder import series_for
+        gates = self._declared(register, tmp_path, ["Running"])
+        walk = self._ints(clean_walk, False, over=20)
+        _, withheld, _ = series_for(register, classify(register, walk), walk,
+                                    gates)
+        assert withheld[self.GATED] == 20
+
+    def test_a_boolean_server_may_be_declared_as_one(self, register, clean_walk,
+                                                     tmp_path):
+        """A PLC `BOOL` arrives as `True`, and `open_when: [1]` for it is a
+        legitimate thing to write."""
+        from factory_line_audit.feeder import series_for
+        gates = self._declared(register, tmp_path, [1])
+        walk = self._ints(clean_walk, True)
+        series, withheld, _ = series_for(register, classify(register, walk),
+                                         walk, gates)
+        assert self.GATED not in withheld
+        assert len(series[self.GATED]) == len(walk["samples"])
+
+    def test_a_float_is_still_refused_by_the_declaration_gate(self, register,
+                                                              tmp_path):
+        """Equality on a float is a question about the PLC's scaling, not about
+        the state machine, so the widening stops short of it."""
+        import copy
+        import json
+
+        from factory_line_audit import formats
+        from factory_line_audit.declarations import gate
+        body = copy.deepcopy(json.load(open(FIXTURE, encoding="utf-8")))
+        for stmt in body["statements"]:
+            if stmt["kind"] == "gate_on":
+                stmt["open_when"] = [1.5]
+        path = os.path.join(str(tmp_path), "float.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        with pytest.raises(formats.Refusal) as caught:
+            gate([path], register)
+        assert "open_when" in caught.value.message

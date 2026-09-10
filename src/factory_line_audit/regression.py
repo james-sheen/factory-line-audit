@@ -44,10 +44,14 @@ def _walk(path: str) -> Tuple[Any, str]:
     Every other verb went through the loader; the README's claim that all of
     them do was true of seven of nine.
 
-    `validate_walk` is deliberately NOT called here: the declared-rename leg
-    compares a walk whose node ids carry a prefix this package did not write, and
-    a receiver-side shape check on that copy would refuse the one input the verb
-    exists to accept.
+    `validate_walk` IS called, and the reason it was not is worth recording
+    because it was false. 0.1.7 said a receiver-side shape check would refuse
+    the declared-rename leg's prefixed walk, so the verb exists to accept the
+    one input the check rejects. Measured: `validate_walk` requires node keys to
+    be non-empty strings and `L1.ns=2;s=...` is one, so the prefixed walk passes
+    with no problems at all -- as do all fifteen corpus walks. The decision was
+    harmless and its stated reason was wrong, which is the worse half: a reader
+    who believed it would not have tried.
     """
     try:
         payload = formats.load(path, formats.WALK)
@@ -64,6 +68,13 @@ def _walk(path: str) -> Tuple[Any, str]:
         return None, (f"{path} carries no samples, so it is not a walk this "
                       f"can compare; a capture that served nothing is not a "
                       f"capture that found nothing")
+    from .walkcheck import validate_walk
+    problems = validate_walk(payload)
+    if problems:
+        return None, (f"{path} is not a well-formed walk: "
+                      + "; ".join(problems[:3])
+                      + (f" (and {len(problems) - 3} more)"
+                         if len(problems) > 3 else ""))
     return payload, ""
 
 
