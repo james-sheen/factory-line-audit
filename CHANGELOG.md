@@ -12,6 +12,69 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.10 -- unreleased
+
+Answers the static re-verification of 0.1.9, which raised four observations and
+called none of them a defect. Running them agrees about three and promotes the
+fourth: the membership cache really can mask a state nothing has read, and that
+is fixed. The two runs the report proposed were both performed -- one of them
+needed a different mechanism than the report gave, and the other passed exactly
+as specified. Running them also found a defect the report did not raise, in the
+page it read.
+
+### Breaking
+
+Nothing. A membership cache written by an earlier version is read as before and
+is no longer a reason to skip a walk; the next pass upgrades it.
+
+### Fixed
+
+* **A `--membership-cache` pass whose walk failed masked the state it had just
+  read.** The cache is written before the walk is attempted, on purpose -- the
+  dial has happened and what it learned must be recorded whatever the verdict --
+  so a pass that read the membership and then lost the server left a cache
+  asserting the address space holds exactly these nodes, with nothing saying no
+  walk was taken. The next run found the membership unchanged, printed `OUTCOME
+  unchanged`, exited 0 and read nothing. Measured against a real server with the
+  channel cut between the two dials. The cache now carries `walk_written`, and
+  the shortcut needs both an unchanged membership and a walk behind it. A cache
+  from any earlier version carries no such field and is not reused -- the caches
+  the defect produced are exactly the ones that would otherwise still be
+  trusted. One extra walk, once, and it is self-correcting.
+* **This page and the README described a `gate_unreadable` that does not
+  exist.** The stop is judged only over the samples in which the gated tag
+  itself read usably; both documents stated the condition over the whole walk.
+  Refuted by running: a walk whose gate reads usably in forty of fifty samples
+  still stops, because the ten that mattered got nothing. The stop's own message
+  was narrowed when it shipped and the prose was not, so a reader following
+  either document would have believed a gate that read anywhere was safe. The
+  README now also says what an ABSENT gate tag does -- it reaches the same stop,
+  and the run exits 2 rather than 1, because no verdict about the gated tag was
+  established.
+
+### Changed
+
+* **Which extras a verb needs is now measured by running it.** `REQUIRES_EXTRA`
+  was held against an import walk over the source, which cannot know its own
+  blind spots: a reach through a callee that walk cannot name measured as
+  reaching nothing, and both guards stayed green while the verb needed an extra
+  nobody had declared. The suite now refuses every extra's module in a fresh
+  interpreter and records which ones each verb asks for -- an instrument the
+  source walk cannot move -- and the walk is held to never claim more than the
+  run. An entry reaching two extras was a verdict that changed with
+  `PYTHONHASHSEED`; it is now a red that says the map holds one extra per entry.
+
+### Not changed, and why
+
+* A walk is still recorded as completed even when it holds no samples. `--budget
+  0` exits 0 having written a walk with nothing in it, and Stage 2 then declines
+  `insufficient_samples`, which is reported rather than hidden. There is an
+  artifact and a reader sees it, which is the distinction the fix above is about.
+* The report proposed `--budget 0` as the way to make a walk fail after the
+  membership pass. It does not: the walk completes. The sequence was reproduced
+  with the other mechanism the report offered, made deterministic by refusing the
+  second of the two dials.
+
 ## 0.1.9 -- 2026-09-10
 
 Answers the static re-verification of 0.1.8. Six items were raised and all six
@@ -58,7 +121,9 @@ Nothing.
   `missing_property`, and that was classed `bridge_defect` -- "a mapping bug in
   this package" -- at exit 2, about a tag the SERVER could not read. New hard
   stop `gate_unreadable`, naming the gate, the quality it served and how often.
-  A gate that read usably even once is untouched: one patchy sample is a stopped
+  A gate that read usably in even one of the samples the gated tag read in is
+  untouched -- the clause was wider than that when 0.1.9 shipped, and 0.1.10
+  corrects it here: one patchy sample is a stopped
   station, not a broken declaration.
 * **(Found here, not in the review.) The `pin_channel` leg probed one interpreter
   for a prerequisite and needed it in another.** It asked the `--live-python` for

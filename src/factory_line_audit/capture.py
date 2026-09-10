@@ -232,9 +232,17 @@ async def _membership(endpoint: str, wanted: Sequence[str], *,
             # against the channel that produced it rather than assumed.
             "pinned": pinned is not None,
             "server_cert_sha256": pinned.digest if pinned is not None else None,
+            # WHETHER A WALK FOLLOWED THIS PASS. Written null here because at
+            # this line none has: the caller fills it in once one has been
+            # written. See `walk_recorded` for why a cache without it is not
+            # reused.
+            "walk_written": None,
             "note": "membership only. No value was read and none is stored: "
                     "OPC UA has no per-node ETag, so this cannot say whether a "
-                    "reading changed and does not pretend to."}
+                    "reading changed and does not pretend to. `walk_written` "
+                    "names the walk this pass produced, or is null: a cache "
+                    "whose pass never reached a walk is not a reason to skip "
+                    "one."}
 
 
 async def _walk(endpoint: str, wanted: Sequence[str], *, samples: int,
@@ -422,6 +430,34 @@ def membership(register: Dict[str, Any], endpoint: str, *,
     return asyncio.run(_membership(
         endpoint, declared_nodes(register), security_string=security_string,
         user=user, password=password, namespace=namespace, pin=pin))
+
+
+def walk_recorded(cached: Any) -> Optional[str]:
+    """The walk a cached pass produced, or `None` if it produced none.
+
+    A SECOND QUESTION, AND NOT THE ONE `membership_unchanged` ANSWERS. The cache
+    is written before the walk is attempted -- deliberately, because the dial has
+    already happened and what it learned must be recorded whatever the verdict --
+    so a pass whose walk then FAILED leaves a cache saying the address space
+    holds exactly these nodes and nothing saying no walk was taken. The next run
+    found the membership unchanged, printed `unchanged`, exited 0 and read
+    nothing: a membership state for which no walk has ever completed, masked by
+    the cache of the pass that failed to walk it.
+
+    `None` FOR A CACHE THAT CARRIES NO SUCH FIELD, which is every cache written
+    before this rule existed -- including, precisely, the ones written by the
+    failing passes above. Reading an absent field as *a walk was taken* would
+    leave the gap open for exactly the caches that have it. One extra walk on the
+    first run after an upgrade is the cost, and it is self-correcting.
+
+    The path is what was written, not a promise it still exists: this verb does
+    not own that file's lifetime, and a later run's `--out` may name another
+    place entirely. The claim is that a walk completed, and the path says which.
+    """
+    if not isinstance(cached, dict):
+        return None
+    recorded = cached.get("walk_written")
+    return recorded if isinstance(recorded, str) and recorded else None
 
 
 def membership_unchanged(cached: Any, fresh: Dict[str, Any]) -> bool:

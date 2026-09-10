@@ -552,6 +552,55 @@ class TestAGateTagThatNeverReads:
                 manifest)
         assert caught.value.name == "gate_unreadable"
 
+    def test_an_absent_gate_tag_reaches_the_same_stop(self, register,
+                                                      clean_walk, gated):
+        """O2 from the 0.1.9 review: the two states Stage 1 keeps apart both land
+        here, and they are distinguishable only by the quality words the message
+        carries. A gate node the address space does not hold is *not served in
+        this sample*, fifty times."""
+        for sample in clean_walk["samples"]:
+            sample["nodes"].pop(self.STATE, None)
+        presence = classify(register, clean_walk)
+        graded = [row["state"] for row in presence["tags"]
+                  if row["node"] == self.STATE]
+        assert graded == ["absent"], (
+            f"Stage 1 does not call this absent, so the comparison this test "
+            f"makes is not the one it claims: {graded}")
+        with pytest.raises(HardStop) as caught:
+            series_for(register, presence, clean_walk, gated)
+        assert caught.value.name == "gate_unreadable"
+        assert "not served in this sample x50" in caught.value.detail, (
+            f"an absent gate tag is reported with the same words as an "
+            f"unreadable one, so a reader cannot tell which happened: "
+            f"{caught.value.detail}")
+
+    def test_an_absent_gate_tag_could_not_complete_rather_than_found(
+            self, register, clean_walk, gated, tmp_path):
+        """The exit code, which is the half O2 is actually about. Stage 1 floors
+        the same tag at 1 -- a finding about the line -- and the run is 2, because
+        no verdict about the gated tag was established. Asserted through `main`,
+        since the mapping from a stop to an exit code lives there and nowhere
+        else."""
+        import json
+
+        from factory_line_audit.cli import main
+        presence_floor = classify(register, clean_walk)["exit"]
+        for sample in clean_walk["samples"]:
+            sample["nodes"].pop(self.STATE, None)
+        absent_floor = classify(register, clean_walk)["exit"]
+        assert absent_floor >= 1, (
+            f"Stage 1 does not report the absence at all, so there is no second "
+            f"reading to prefer between: {presence_floor} -> {absent_floor}")
+        path = os.path.join(str(tmp_path), "walk.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(clean_walk, handle)
+        code = main(["detect", "--register", REGISTER, "--walk", path,
+                     "--declarations", FIXTURE])
+        assert code == 2, (
+            f"the stop reported {code}; the README says this exits 2 rather "
+            f"than 1 and a reader counting findings would be told the line has "
+            f"one")
+
     def test_the_message_claims_only_what_the_record_measures(self, register,
                                                              clean_walk, gated):
         """The asymmetric case, and the reason the sentence is narrow.

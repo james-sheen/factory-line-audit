@@ -12,7 +12,7 @@ import os
 
 from conftest import CORPUS
 from factory_line_audit.capture import (declared_nodes, digest,
-                                        membership_unchanged)
+                                        membership_unchanged, walk_recorded)
 
 REGISTER = {"assets": [
     {"id": "PR-01", "tags": {
@@ -90,6 +90,49 @@ class TestTheMembershipCache:
         """The first run must walk, not report a comparison it never made."""
         assert not membership_unchanged(None, self.FRESH)
         assert not membership_unchanged("", self.FRESH)
+
+
+class TestACachedPassThatNeverWalked:
+    """O1 from the 0.1.9 review. `walk_recorded` is the second question.
+
+    The cache is written before the walk is attempted, on purpose: the dial has
+    already happened and what it learned must be recorded whatever the verdict.
+    So a pass whose walk then failed leaves a cache asserting the address space
+    holds exactly these nodes and nothing saying no walk was taken -- and the
+    next run found the membership unchanged, exited 0 and read nothing.
+
+    MEASURED end to end against the rung-3 surface before it was fixed, with the
+    channel cut between the two dials: pass one exited 2 with the cache on disk
+    and no walk; pass two printed `OUTCOME unchanged` and exited 0. The review
+    also proposed `--budget 0` for this, which does not reproduce it: that exits
+    0 with `OUTCOME walked` and a walk holding zero samples.
+    """
+
+    def test_a_cache_with_no_such_field_records_no_walk(self):
+        """Every cache written before this rule, INCLUDING the ones written by
+        the failing passes it is about. Reading an absent field as *a walk was
+        taken* would leave the gap open for precisely those."""
+        assert walk_recorded(dict(TestTheMembershipCache.FRESH)) is None
+
+    def test_a_cache_naming_a_walk_records_one(self):
+        assert walk_recorded(dict(TestTheMembershipCache.FRESH,
+                                  walk_written="/w/walk.json")) == "/w/walk.json"
+
+    def test_an_explicit_null_records_no_walk(self):
+        """What this version writes on a pass whose walk has not happened yet."""
+        assert walk_recorded(dict(TestTheMembershipCache.FRESH,
+                                  walk_written=None)) is None
+
+    def test_nothing_that_is_not_a_path_counts_as_one(self):
+        """An empty string is falsey and would read as no walk anyway; `True` is
+        not, and would have stood in for a path nobody can name."""
+        for value in ("", True, 1, [], {"path": "/w.json"}):
+            assert walk_recorded(dict(TestTheMembershipCache.FRESH,
+                                      walk_written=value)) is None, value
+
+    def test_no_cache_at_all_records_no_walk(self):
+        for absent in (None, "", [], 0):
+            assert walk_recorded(absent) is None, absent
 
 
 class TestItStaysOutOfStageOne:

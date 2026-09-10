@@ -174,6 +174,12 @@ def cmd_capture(args) -> int:
                 with open(args.membership_cache, encoding="utf-8") as handle:
                     cached = json.load(handle)
             unchanged = capture_module.membership_unchanged(cached, fresh)
+            # CARRIED FORWARD ONLY WHEN THE MEMBERSHIP IS THE SAME. A walk
+            # belongs to the membership state it was taken against; if that
+            # state changed, the previous walk is not a walk of this one and
+            # the field resets to null. The walk below then fills it in.
+            fresh["walk_written"] = (capture_module.walk_recorded(cached)
+                                     if unchanged else None)
             # WRITTEN ON EVERY PASS, before the decision is acted on. This used
             # to be written only when the membership had CHANGED, which is the
             # one case where the posture needs no upgrading. A cache from 0.1.7
@@ -189,13 +195,26 @@ def cmd_capture(args) -> int:
             with open(args.membership_cache, "w", encoding="utf-8") as handle:
                 json.dump(fresh, handle, indent=2)
                 handle.write("\n")
-            if unchanged:
+            # UNCHANGED IS NOT ENOUGH ON ITS OWN. The skip rests on there
+            # being a walk of this membership state already; a pass that read
+            # the membership and then failed to walk leaves the first half true
+            # and the second half false, and reusing it exits 0 having read
+            # nothing, for a state no walk has ever covered. MEASURED against
+            # the rung-3 surface with the channel cut between the two dials.
+            if unchanged and fresh["walk_written"]:
                 _out(f"  {len(fresh['present'])} declared node(s) still in the "
                      f"address space, {len(fresh['absent'])} not. No value was "
                      f"read and none is cached: this says the membership is "
                      f"unchanged, not that a reading is")
+                _out(f"  the walk this stands on is "
+                     f"{fresh['walk_written']}, taken when the cache was "
+                     f"written")
                 _out("OUTCOME unchanged")
                 return CLEAN
+            if unchanged:
+                _out("  the membership is unchanged and the cached pass never "
+                     "reached a walk, so this one takes one rather than "
+                     "reporting a state nothing has read")
 
         walk = capture_module.capture(
             register, args.target, samples=args.samples,
@@ -218,6 +237,13 @@ def cmd_capture(args) -> int:
     raw = json.dumps(walk, indent=2) + "\n"
     with open(args.out, "w", encoding="utf-8") as handle:
         handle.write(raw)
+    # AFTER THE WALK IS ON DISK, not after it was returned: the cache's claim is
+    # that a walk exists, so the write that makes it exist comes first.
+    if args.membership_cache:
+        fresh["walk_written"] = args.out
+        with open(args.membership_cache, "w", encoding="utf-8") as handle:
+            json.dump(fresh, handle, indent=2)
+            handle.write("\n")
     source = walk["source"]
     _out(f"  {source['nodes_served']}/{source['nodes_requested']} declared "
          f"node(s) served, "

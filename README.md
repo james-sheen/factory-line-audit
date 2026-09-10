@@ -214,8 +214,11 @@ fixture passes only by disclosing itself on its face, never by naming a reviewer
 **Upgrading, if you keep declaration files.** Three refusals arrived in 0.1.6 and
 0.1.7, each replacing something that was accepted and then ignored; 0.1.8 then
 narrowed one of them back, because it refused a file the generator supports.
-0.1.9 refuses nothing new about a FILE and adds one stop about a WALK. The full
-history is in [CHANGELOG.md](CHANGELOG.md).
+0.1.9 refuses nothing new about a FILE and adds one stop about a WALK. 0.1.10
+refuses nothing new at all and changes one thing a reader can feel: a
+`--membership-cache` written by any earlier version no longer justifies skipping
+a walk, so the first pass after upgrading takes one. The full history is in
+[CHANGELOG.md](CHANGELOG.md).
 
 * `allow_reset` is a `reset` statement of its own (0.1.6). It used to be read off
   a `rate` statement and validated by nothing, so a misspelling read as a
@@ -249,13 +252,40 @@ history is in [CHANGELOG.md](CHANGELOG.md).
   stops and says so instead of withholding everything and letting the engine
   report a missing property.
 * **0.1.9 adds a third gate stop, `gate_unreadable`.** The two above are about
-  the DECLARATION. This one is about the gate tag: if it never read a usable
-  value anywhere in the walk, every sample of the gated tag was withheld because
+  the DECLARATION. This one is about the gate tag. Across the samples in which
+  the GATED tag itself read usably -- the samples that should have been fed --
+  the gate read usably **in none of them**, so every one was withheld because
   the gate could not be consulted, nothing was fed, and the engine's
   `missing_property` was classed `bridge_defect` -- a mapping bug in this
   package -- at exit 2, for a tag the server could not read. A gate that read
-  usably even once is untouched: one patchy sample is a stopped station, not a
-  broken declaration.
+  usably in even one of those samples is untouched: one patchy sample is a
+  stopped station, not a broken declaration.
+* **0.1.10 narrows the paragraph above, which described a stop this package does
+  not have.** It stated the condition over the whole walk, twice, and the stop is
+  judged only over the samples the gated tag read in -- a gate that reads where
+  the gated tag does not has told this package nothing about the readings it has.
+  Measured: a walk whose gate reads usably in forty of fifty samples still stops,
+  because the ten that mattered got nothing. The stop's own message was narrowed
+  in 0.1.9 and this page was not, so the page went on describing a wider stop
+  than the one that ships. The retired wording is not quoted here: a guard
+  holding this page to the narrow condition would find it and fire on the
+  sentence explaining the change.
+* **An absent gate tag reaches the same stop, and the run exits 2 rather than
+  1.** A `required_property` the address space does not hold is graded `absent`
+  by Stage 1 -- a finding about the line, floor 1 -- and arrives here as *not
+  served in this sample*, which is a hard stop: could-not-complete. Both
+  readings of that state are defensible; the exit code is the second one,
+  because no verdict about the gated tag was established. Stage 1's report is
+  where the absence is reported as a finding.
+* **0.1.10: the cache also records whether a walk followed.** It is written
+  before the walk is attempted, which is deliberate -- the server has already
+  been dialled and what that learned is recorded whatever happens next -- so a
+  pass that read the membership and then lost the server left a cache saying the
+  address space holds exactly these nodes and nothing saying no walk was taken.
+  The next run found the membership unchanged, reported `unchanged`, exited 0 and
+  read nothing. `--membership-cache` now shortcuts only when a walk stands behind
+  the cache, and says which one. Nothing to do: a cache from an earlier version
+  carries no such record and is not reused, and the next pass writes one.
 * **0.1.9: a membership cache now records the channel of every pass**, not only
   of passes where the membership changed. A `--membership-cache` written by 0.1.7
   carries no `pinned` field, and until 0.1.9 a pinned run against an unchanged

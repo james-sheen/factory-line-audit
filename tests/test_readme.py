@@ -626,3 +626,125 @@ class TestTheFaultCountIsWhatTheCorpusBuilds:
         wrong = sorted(n for n in self._stated() if n != built)
         assert not wrong, (f"the README states {wrong} and `make_corpus.FAULTS` "
                            f"builds {built}")
+
+
+class TestTheGateStopParagraphDescribesTheStopThatShips:
+    """O1's sibling, found while answering the 0.1.9 review and not raised by it.
+
+    `gate_unreadable` is judged only over the samples in which the GATED tag read
+    usably. The stop's own message was narrowed to that in 0.1.9, after a pass
+    that found it claiming more than its record measured -- and this page was not
+    touched, so it went on stating the condition over the whole walk. A reader
+    following the page would have believed a gate that read anywhere was safe.
+
+    The wide claim is REFUTED HERE BY RUNNING, not asserted to be wrong: the walk
+    below reads its gate usably in forty of fifty samples and stops anyway. The
+    text half of this class is anchored to a clause the shipped message and the
+    page must BOTH carry, so neither is the authority over the other and dropping
+    it from either goes red.
+    """
+
+    #: The clause that distinguishes the narrow condition from the wide one.
+    #: Held against the live message as well as the page -- a phrase only this
+    #: file knew would be a third record to drift.
+    NARROWING = "in none of them"
+
+    def _asymmetric(self):
+        """A walk whose gate reads usably where the gated tag does NOT.
+
+        Forty samples in which the gated tag is unreadable and the gate is fine,
+        then ten in which the gated tag reads and the gate does not. The wide
+        condition is false of this walk; the stop is still right to fire.
+        """
+        import os
+
+        from factory_line_audit import formats
+        from factory_line_audit.declarations import gate
+        from factory_line_audit.presence import grade, load_register
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        register = load_register(os.path.join(root, "examples",
+                                              "asset_register.json"))
+        gated = gate([os.path.join(root, "examples", "declarations",
+                                   "line1.fixture.json")], register)
+        walk = formats.load(os.path.join(root, "battery", "corpus", "clean.json"),
+                            formats.WALK)
+        state, pair = "ns=2;s=ST02.Running", ("ST-02", "cycle_time_s")
+        node = [asset["tags"][pair[1]]["node"] for asset in register["assets"]
+                if asset["id"] == pair[0]][0]
+        for n, sample in enumerate(walk["samples"]):
+            sample["nodes"][node if n < 40 else state]["q"] = "BadNoCommunication"
+        usable = sum(1 for sample in walk["samples"]
+                     if grade(sample["nodes"][state].get("q"))[1]["usable"])
+        return register, gated, walk, usable
+
+    def test_the_wide_condition_is_false_of_a_walk_that_still_stops(self):
+        """The refutation, and the whole basis for the sentence on the page."""
+        import pytest
+
+        from factory_line_audit.feeder import HardStop, series_for
+        from factory_line_audit.presence import classify
+        register, gated, walk, usable = self._asymmetric()
+        assert usable > len(walk["samples"]) // 2, (
+            f"the gate reads usably in only {usable} samples here, so this walk "
+            f"does not refute a whole-walk condition and the class is vacuous")
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, walk), walk, gated)
+        assert caught.value.name == "gate_unreadable"
+        assert self.NARROWING in caught.value.detail, (
+            f"the shipped message no longer carries {self.NARROWING!r}; the page "
+            f"is held to the same clause and one of the two must follow the "
+            f"other: {caught.value.detail}")
+
+    #: The retired wordings. Held as a list because the shape *a claim about
+    #: the whole walk* has no single spelling -- and `for the whole walk` is NOT
+    #: here: this file's own entry for the sibling stop uses it correctly, about
+    #: a tag that is unreadable throughout, which is a true sufficient
+    #: condition. A prohibition wide enough to catch that is a check firing
+    #: against the wrong subject.
+    WIDE = ("anywhere in the walk", "anywhere in this walk",
+            "read usably even once", "never read a usable value")
+
+    @staticmethod
+    def _documents():
+        """Every document at the root that describes this stop, not just one.
+
+        The defect was in TWO documents and was found in one; a rule is only as
+        wide as the surfaces it is run against. Derived by glob, so a new
+        document describing the stop is covered the day it lands.
+        """
+        import glob
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        out = {}
+        for path in sorted(glob.glob(os.path.join(root, "*.md"))):
+            flat = " ".join(open(path, encoding="utf-8").read().split())
+            if "gate_unreadable" in flat:
+                out[os.path.basename(path)] = flat
+        return out
+
+    def test_there_are_documents_describing_the_stop(self):
+        """Non-vacuity for both rules below: each is a statement about documents
+        that name the stop, and an empty set satisfies either."""
+        found = sorted(self._documents())
+        assert len(found) >= 2, (
+            f"only {found} describe this stop; the defect was in two documents "
+            f"and a rule that reaches one of them is the same gap again")
+
+    def test_every_document_states_the_narrow_condition(self):
+        for name, flat in sorted(self._documents().items()):
+            assert self.NARROWING in flat or "samples the gated tag read in" \
+                    in flat, (
+                f"{name} describes gate_unreadable without the clause that "
+                f"separates the narrow condition from a whole-walk one, so a "
+                f"reader cannot tell which stop ships")
+
+    def test_no_document_states_a_whole_walk_condition(self):
+        """The prohibition. The retired sentences are deliberately not quoted on
+        the page that retires them -- this rule would find them there and fire on
+        the paragraph explaining the change."""
+        for name, flat in sorted(self._documents().items()):
+            wide = [phrase for phrase in self.WIDE if phrase in flat]
+            assert not wide, (
+                f"{name} states the condition over the whole walk: {wide}. The "
+                f"stop is judged only over the samples the gated tag read in, "
+                f"and the test above refutes the wider reading by running it")

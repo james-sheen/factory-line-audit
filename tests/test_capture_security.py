@@ -420,6 +420,11 @@ class TestTheCacheRecordsThePostureOfEveryPass:
               "endpoint": "opc.tcp://127.0.0.1:48499/x/",
               "checked_at": "2026-09-10T00:00:00+00:00",
               "namespaces": ["urn:x"], "present": ["ns=2;s=A"], "absent": []}
+    #: The same cache, from a pass that DID reach a walk. `RECORD` is shaped like
+    #: a 0.1.7 one and carries no `walk_written`, which since 0.1.10 is itself a
+    #: reason not to shortcut -- so a case whose subject is the posture rule has
+    #: to stand on this one, or it measures the walk rule instead.
+    WALKED = dict(RECORD, walk_written="/nonexistent/earlier-walk.json")
     #: Enough of a walk for the verb to report one. The shortcut cases must not
     #: reach it at all, and the case that SHOULD walk is asserted by the flag
     #: rather than by an exception: `cmd_capture` catches everything the dial
@@ -484,11 +489,16 @@ class TestTheCacheRecordsThePostureOfEveryPass:
 
     def test_an_unchanged_pinned_pass_upgrades_a_0_1_7_cache(self, monkeypatch,
                                                              tmp_path):
+        """The upgrade is what this is about, and it does not depend on the
+        shortcut being taken: the write happens before the decision. A 0.1.7
+        cache records no walk, so since 0.1.10 this run takes one -- and the
+        posture still arrives in the cache, which is the claim."""
         fresh = dict(self.RECORD, pinned=True, server_cert_sha256=GOOD_PIN)
         code, written, dialled, walked = self._run(
             monkeypatch, tmp_path, dict(self.RECORD), pin=GOOD_PIN, fresh=fresh)
         assert code == 0, "the shortcut itself is still the right answer"
-        assert not walked, "the membership was unchanged and a walk ran anyway"
+        assert walked, (
+            "a cache that records no completed walk is not a reason to skip one")
         assert dialled.get("pin") == GOOD_PIN, "the pin never reached the dial"
         assert written.get("pinned") is True, (
             "the cache still does not record that it was taken over a pinned "
@@ -511,9 +521,9 @@ class TestTheCacheRecordsThePostureOfEveryPass:
                                                         tmp_path):
         """The control. A write that always stamped `pinned` would satisfy the
         rule above and record a protection nothing applied."""
-        fresh = dict(self.RECORD, pinned=False, server_cert_sha256=None)
+        fresh = dict(self.WALKED, pinned=False, server_cert_sha256=None)
         code, written, dialled, walked = self._run(
-            monkeypatch, tmp_path, dict(self.RECORD), pin=None, fresh=fresh)
+            monkeypatch, tmp_path, dict(self.WALKED), pin=None, fresh=fresh)
         assert code == 0
         assert not walked
         assert dialled.get("pin") is None
@@ -536,3 +546,144 @@ class TestTheCacheRecordsThePostureOfEveryPass:
             "never written")
         assert code == 0
         assert written.get("pinned") is False
+
+
+class TestTheShortcutStandsOnAWalkThatHappened:
+    """O1 from the 0.1.9 review, at the decision rather than at the predicate.
+
+    `walk_recorded` is unit-tested beside `membership_unchanged`; what is here is
+    the CLI's composition of the two, because the defect was that the shortcut
+    asked only one of them. The harness is the one above: one stand-in for the
+    client library, so there is one place for it to drift.
+    """
+
+    RECORD = TestTheCacheRecordsThePostureOfEveryPass.RECORD
+
+    @staticmethod
+    def _run(monkeypatch, tmp_path, cache_body, *, fresh=None, walk_raises=False,
+             out="walk.json"):
+        """`capture --membership-cache`, with the walk allowed to fail.
+
+        A raising stand-in is what the real failure looks like from here:
+        `cmd_capture` catches whatever the dial raises and reports a server it
+        could not reach, which is exactly the measured case.
+        """
+        import json
+        import sys
+        import types
+
+        from factory_line_audit import capture as capture_module, cli
+        monkeypatch.setitem(sys.modules, "asyncua",
+                            types.ModuleType("asyncua"))
+        walked = []
+        body = dict(fresh if fresh is not None
+                    else TestTheShortcutStandsOnAWalkThatHappened.RECORD)
+
+        def fake_membership(register, endpoint, **kwargs):
+            return dict(body)
+
+        def fake_capture(*args, **kwargs):
+            walked.append(kwargs)
+            if walk_raises:
+                raise ConnectionResetError(104, "Connection reset by peer")
+            return json.loads(json.dumps(
+                TestTheCacheRecordsThePostureOfEveryPass.WALK))
+
+        monkeypatch.setattr(capture_module, "membership", fake_membership)
+        monkeypatch.setattr(capture_module, "capture", fake_capture)
+        cache = os.path.join(str(tmp_path), "membership.json")
+        if cache_body is not None:
+            with open(cache, "w", encoding="utf-8") as handle:
+                json.dump(cache_body, handle)
+        walk_path = os.path.join(str(tmp_path), out)
+        code = cli.main(["capture", "--register", REGISTER, "--target",
+                         "opc.tcp://127.0.0.1:48499/x/", "--out", walk_path,
+                         "--membership-cache", cache])
+        with open(cache, encoding="utf-8") as handle:
+            return (code, json.load(handle), bool(walked),
+                    os.path.exists(walk_path))
+
+    def test_a_pass_whose_walk_failed_records_no_walk(self, monkeypatch,
+                                                     tmp_path):
+        """The first half of the measured sequence. The cache is still written --
+        that rule stands -- and it now says what the pass did not do."""
+        code, written, walked, wrote_file = self._run(
+            monkeypatch, tmp_path, None, walk_raises=True)
+        assert code == 2, "a walk that could not complete is not clean"
+        assert walked, "the walk was never attempted, so this proves nothing"
+        assert not wrote_file
+        assert written["present"] == self.RECORD["present"], (
+            "the membership this pass read was not recorded at all")
+        assert written.get("walk_written") is None, (
+            "the cache claims a walk that never completed; the next run will "
+            "shortcut on it and report a state nothing has read")
+
+    def test_the_next_pass_walks_rather_than_reporting_unchanged(
+            self, monkeypatch, tmp_path):
+        """The second half, and the defect. Same membership, healthy server."""
+        self._run(monkeypatch, tmp_path, None, walk_raises=True)
+        cache = os.path.join(str(tmp_path), "membership.json")
+        with open(cache, encoding="utf-8") as handle:
+            import json as _json
+            left_behind = _json.load(handle)
+        code, written, walked, wrote_file = self._run(
+            monkeypatch, tmp_path, left_behind, out="second.json")
+        assert code == 0
+        assert walked, (
+            "it reported a membership state for which no walk has ever "
+            "completed, and exited 0 having read nothing")
+        assert wrote_file, "OUTCOME walked and no walk was written"
+        assert written.get("walk_written", "").endswith("second.json"), (
+            "the walk that did complete is not recorded, so the next pass "
+            "walks again for ever")
+
+    def test_once_a_walk_has_completed_the_shortcut_applies(self, monkeypatch,
+                                                           tmp_path):
+        """The control, and the reason this is not just *never shortcut*. A cache
+        that stands on a walk is exactly what the shortcut is for."""
+        self._run(monkeypatch, tmp_path, None)
+        cache = os.path.join(str(tmp_path), "membership.json")
+        with open(cache, encoding="utf-8") as handle:
+            import json as _json
+            stood_on = _json.load(handle)
+        assert stood_on.get("walk_written"), "the first pass recorded no walk"
+        code, _, walked, wrote_file = self._run(
+            monkeypatch, tmp_path, stood_on, out="third.json")
+        assert code == 0
+        assert not walked, "an unchanged membership with a walk behind it walked"
+        assert not wrote_file, "it shortcut and wrote a walk anyway"
+
+    def test_the_shortcut_says_which_walk_it_stands_on(self, monkeypatch,
+                                                      tmp_path, capsys):
+        """A reader of the shortcut cannot otherwise tell whether anything was
+        ever read, which is the whole complaint."""
+        self._run(monkeypatch, tmp_path, None)
+        cache = os.path.join(str(tmp_path), "membership.json")
+        with open(cache, encoding="utf-8") as handle:
+            import json as _json
+            stood_on = _json.load(handle)
+        capsys.readouterr()
+        self._run(monkeypatch, tmp_path, stood_on, out="fourth.json")
+        printed = capsys.readouterr().out
+        assert "OUTCOME unchanged" in printed
+        assert stood_on["walk_written"] in printed, (
+            f"the shortcut names no walk: {printed!r}")
+
+    def test_a_changed_membership_does_not_inherit_the_earlier_walk(
+            self, monkeypatch, tmp_path):
+        """A walk belongs to the membership state it was taken against. Carrying
+        the field across a change would let one node appearing be covered by a
+        walk taken before it did."""
+        self._run(monkeypatch, tmp_path, None)
+        cache = os.path.join(str(tmp_path), "membership.json")
+        with open(cache, encoding="utf-8") as handle:
+            import json as _json
+            stood_on = _json.load(handle)
+        moved = dict(self.RECORD, present=self.RECORD["present"] + ["ns=2;s=B"])
+        code, written, walked, _ = self._run(
+            monkeypatch, tmp_path, stood_on, fresh=moved, walk_raises=True,
+            out="fifth.json")
+        assert code == 2
+        assert walked, "the membership changed and no walk was taken"
+        assert written.get("walk_written") is None, (
+            "the cache now vouches for a membership state its walk predates")
