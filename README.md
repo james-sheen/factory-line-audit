@@ -25,7 +25,7 @@ against the engine and its modelling guide, and **both** of the findings the
 previous attempt at this bridge left to be filed upstream, withdrawn because
 re-measurement did not reproduce them.
 
-**Released -- 0.1.9**, tagged `v0.1.9`, Apache-2.0, on PyPI as
+**Released -- 0.1.10**, tagged `v0.1.10`, Apache-2.0, on PyPI as
 [`factory-line-audit`](https://pypi.org/project/factory-line-audit/).
 
 **Status: a live-but-safe surface read for real -- the third of the four rungs
