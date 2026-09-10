@@ -42,6 +42,18 @@ KINDS: Dict[str, Dict[str, Any]] = {
         "note": "how fast a counter is allowed to climb. The engine answers "
                 "this from a default when nobody declares it.",
     },
+    "reset": {
+        "requires_tag": True, "all_of": (), "requires_keys": ("allow_reset",),
+        "answers": "(nothing -- the engine routes from a default instead, "
+                   "probe A6)",
+        "note": "whether this counter is zeroed in normal operation. The only "
+                "statement whose absence the engine cannot complain about: a "
+                "drop to near zero is routed to the RESET arm by default, so a "
+                "counter nobody asked about is judged as though resetting were "
+                "normal for it. `null` is legal and means the question was "
+                "asked and nobody could answer -- which is not the same as "
+                "never asking, and the manifest records the two separately.",
+    },
     "redundant": {
         "requires_tag": True, "all_of": ("agrees_with", "tolerance"),
         "answers": "missing_config",
@@ -159,6 +171,19 @@ def check_statements(body: Dict[str, Any], register: Dict[str, Any],
         any_of = spec.get("any_of")
         if any_of and not any(stmt.get(f) is not None for f in any_of):
             problems.append(f"{where}.{tag}): needs at least one of {list(any_of)}")
+        for field in spec.get("requires_keys", ()):
+            if field not in stmt:
+                problems.append(f"{where}.{tag}): no {field} key. This kind "
+                                f"requires it; null is the legal way to say the "
+                                f"question was asked and nobody could answer")
+        if kind == "rate" and "allow_reset" in stmt:
+            # Read off `rate` until 0.1.6, by a generator nothing validated --
+            # so a typo in the name was silently dropped and a file could look
+            # declared while the engine routed from its default. Refused by
+            # name rather than ignored, because ignoring it is the defect.
+            problems.append(f"{where}.{tag}): carries allow_reset, which is not "
+                            f"read here. Declare it as a `reset` statement, "
+                            f"where it is required and checked")
         if kind == "redundant":
             for other in stmt.get("agrees_with") or []:
                 if other not in assets[asset_id]["tags"]:
@@ -239,6 +264,16 @@ def draft(register: Dict[str, Any]) -> Dict[str, Any]:
                     "_proposed_because": "a counter climbs at a rate somebody "
                                          "knows; the engine will otherwise "
                                          "answer from a default",
+                })
+                statements.append({
+                    "kind": "reset", "asset": asset["id"], "tag": tag,
+                    "allow_reset": None, "basis": "",
+                    "_proposed_because": "whether this counter is zeroed in "
+                                         "normal operation is a fact about the "
+                                         "plant. Proposed for every counter "
+                                         "because the engine answers it from a "
+                                         "default and says nothing about having "
+                                         "done so",
                 })
     return {
         "format": formats.DECLARATION,

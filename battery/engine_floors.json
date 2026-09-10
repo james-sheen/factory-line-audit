@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-09T19:49:25.195251+00:00",
+  "measured_on": "2026-09-10T01:37:26.549998+00:00",
   "engine_version": "0.1.13",
   "engine_file": "/tmp/fla-ci/lib/python3.10/site-packages/arbiter_engine",
   "python": "3.10.12",
@@ -309,6 +309,66 @@
         }
       },
       "note": "A1 and A2 measure the SWITCH; this measures the DEFAULT, which is what a bridge declaring neither is judged by. A counter that resets and says so nowhere is routed to whichever arm this names, chosen by the engine rather than by anybody in the plant"
+    },
+    "A7": {
+      "question": "WHICH ARM a drop belongs to: the floor read against the step",
+      "measured": {
+        "floor 0.0 / step 1.0": {
+          "3 drops": [
+            "monotonicity_reset_storm:c"
+          ],
+          "4 drops": [
+            "monotonicity_reset_storm:c"
+          ]
+        },
+        "floor 0.0 / step 4.0": {
+          "3 drops": [
+            "monotonicity_reset_storm:c"
+          ],
+          "4 drops": [
+            "monotonicity_reset_storm:c"
+          ]
+        },
+        "floor 0.5 / step 1.0": {
+          "3 drops": null,
+          "4 drops": [
+            "monotonicity_reversal:c"
+          ]
+        },
+        "floor 0.5 / step 4.0": {
+          "3 drops": [
+            "monotonicity_reset_storm:c"
+          ],
+          "4 drops": [
+            "monotonicity_reset_storm:c"
+          ]
+        },
+        "floor 1.0 / step 1.0": {
+          "3 drops": null,
+          "4 drops": [
+            "monotonicity_reversal:c"
+          ]
+        },
+        "floor 1.0 / step 4.0": {
+          "3 drops": null,
+          "4 drops": [
+            "monotonicity_reversal:c"
+          ]
+        },
+        "floor 2.0 / step 1.0": {
+          "3 drops": null,
+          "4 drops": [
+            "monotonicity_reversal:c"
+          ]
+        },
+        "floor 2.0 / step 4.0": {
+          "3 drops": null,
+          "4 drops": [
+            "monotonicity_reversal:c"
+          ]
+        }
+      },
+      "note": "the drop COUNT is held across each pair, so what moves is the ARM and not a tolerance. Two things fall out: a floor of zero is a reset at every step, and a drop that stops short of zero is not -- it is excused to the reversal tolerance and then reported as a REVERSAL, which `allow_reset: true` does not prevent. A10 read wider than the single step every probe above it was measured at"
     },
     "H1": {
       "question": "how many samples before learned HOMEOSTASIS stops declining",

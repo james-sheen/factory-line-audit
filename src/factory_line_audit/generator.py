@@ -18,6 +18,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from . import formats
 from .declarations import collect
 
+#: Every scope an exclusion row can carry. Here rather than in the suite,
+#: which held the list by transcribing it -- and a transcribed vocabulary goes
+#: stale on the day a member lands, with nothing able to go red.
+SCOPES: Tuple[str, ...] = ("tag", "asset", "axiom", "axiom_arm", "relation",
+                           "derived", "routing")
+
 #: Suffix for the indicators this package DERIVES rather than reads.
 #:
 #: CONSERVATION compares levels and fires at a RELATIVE deficit, measured
@@ -410,11 +416,36 @@ def _indicator(asset, tag, spec, by_key):
         # ROUTES drops to the reversal arm, and a tolerance of 1 fires on the
         # first one. It reads as the cautious option and would turn a silent
         # non-event into a finding at every reset.
-        if _statements(by_key, asset_id, tag, "rate") or True:
-            reset = [s for s in _statements(by_key, asset_id, tag, "rate")
-                     if s.get("allow_reset") is not None]
-            if reset:
-                block["allow_reset"] = reset[0]["allow_reset"]
+        #
+        # C.2, and it is the asking rather than the answer. Three states, and
+        # the model cannot tell them apart on its own: DECLARED carries a
+        # basis; UNANSWERED was asked and nobody knew; absent was never asked.
+        # The last two produce the same model and must not produce the same
+        # record.
+        resets = _statements(by_key, asset_id, tag, "reset")
+        if resets and resets[0].get("allow_reset") is not None:
+            block["allow_reset"] = resets[0]["allow_reset"]
+        elif resets:
+            dropped.append({
+                "scope": "routing", "asset": asset_id, "tag": tag,
+                "axiom": "MONOTONICITY", "reason": "reset_unanswered",
+                "basis": resets[0].get("basis"),
+                "detail": "asked and unanswered: `allow_reset` is declared null "
+                          "with a basis, so the engine routes a drop to near "
+                          "zero to the reset arm from its own default (probe "
+                          "A6). Recorded because this reads as a choice and an "
+                          "absent declaration does not"})
+        else:
+            dropped.append({
+                "scope": "routing", "asset": asset_id, "tag": tag,
+                "axiom": "MONOTONICITY", "reason": "no_declared_reset",
+                "detail": "nobody declared whether this counter is zeroed in "
+                          "normal operation. A drop to near zero is routed to "
+                          "the reset arm by the engine's default (probe A6), so "
+                          "this arm runs as though resetting were normal for "
+                          "this tag -- chosen by the engine rather than by "
+                          "anybody who has seen the line. The engine declines "
+                          "nothing here, so no decline will ever report it"})
         row["monotonicity"] = block
 
     if variation:

@@ -484,6 +484,49 @@ record("A6", "with allow_reset ABSENT, which arm answers and at what count",
        "nowhere is routed to whichever arm this names, chosen by the engine "
        "rather than by anybody in the plant")
 
+#: WHAT COUNTS AS NEAR ZERO, which every probe above held fixed.
+#:
+#: A1 to A6 all climb at RESET_STEP and all drop to the same floor, so between
+#: them they measure the switch, the tolerance, the window and the default -- and
+#: never the boundary that decides WHICH ARM a drop belongs to at all. It was
+#: found from the far end: the shipped pipeline, fed a line counter climbing at
+#: one part a minute and dropping to 1.0, reported `monotonicity_reversal` where
+#: every probe here said `monotonicity_reset_storm`.
+#:
+#: The floor is read against the STEP, not against the counter's magnitude: the
+#: same 0.5 is a reset beside a step of 4 and a reversal beside a step of 1, and
+#: a start of 0 or of 8800 changes nothing. Zero is a reset at every step tried,
+#: which is what a PLC counter actually does -- so the finding is about fixtures
+#: that stop short of zero, and about A10's conclusion reading wider than the
+#: one step it was measured at.
+def reset_floor_run(floor, step, count=3, n=50, spacing=3, start=0.0):
+    values, current = [], start
+    drops = {n - 1 - spacing * i for i in range(count)}
+    for i in range(n):
+        current = floor if i in drops else current + step
+        values.append(current)
+    return reset_run(values)
+
+
+def reset_floor_arms(floor, step, count):
+    return [f["problem_type"] for f in
+            fired(reset_floor_run(floor, step, count), "MONOTONICITY")
+            if "reset" in str(f.get("problem_type"))
+            or "reversal" in str(f.get("problem_type"))] or None
+
+
+record("A7", "WHICH ARM a drop belongs to: the floor read against the step",
+       {f"floor {floor} / step {step}":
+            {"3 drops": reset_floor_arms(floor, step, 3),
+             "4 drops": reset_floor_arms(floor, step, 4)}
+        for floor in (0.0, 0.5, 1.0, 2.0) for step in (1.0, 4.0)},
+       "the drop COUNT is held across each pair, so what moves is the ARM and "
+       "not a tolerance. Two things fall out: a floor of zero is a reset at "
+       "every step, and a drop that stops short of zero is not -- it is excused "
+       "to the reversal tolerance and then reported as a REVERSAL, which "
+       "`allow_reset: true` does not prevent. A10 read wider than the single "
+       "step every probe above it was measured at")
+
 # --------------------------------------------------------------- HOMEOSTASIS
 print("\nH -- HOMEOSTASIS")
 

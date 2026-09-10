@@ -52,6 +52,13 @@ def _parse(stamp: Any) -> Optional[_dt.datetime]:
     return parsed
 
 
+#: The manifest reasons a DECLINE can agree with. `no_declared_reset` is not one
+#: and must not become one: the engine declines nothing when a counter says
+#: nothing about resetting -- it routes from its own default and is silent about
+#: having done so, which is why that gap is recorded in the manifest at all.
+RECORDED_GAPS: Tuple[str, ...] = ("no_declared_rate", "no_declared_bound")
+
+
 def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tuple]]:
     """(asset, tag) -> [(when, value)], for reading tags only, gate applied.
 
@@ -266,7 +273,7 @@ def run(model_text: str, register, presence, walk, gated, manifest,
     # The engine declining one of these is the two records agreeing.
     recorded = {(row.get("asset"), row.get("tag"))
                 for row in manifest.get("exclusions") or []
-                if row.get("reason") in ("no_declared_rate", "no_declared_bound")}
+                if row.get("reason") in RECORDED_GAPS}
     unreachable = unreachable_floors(walk, floors or {})
     classes: List[Dict[str, Any]] = []
     for row in envelope.get("not_checked") or []:

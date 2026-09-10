@@ -94,10 +94,17 @@ class TestExclusionsAreNamedNotSilent:
                        and e["asset"] == "MES-GW" for e in manifest["exclusions"])
 
     def test_every_exclusion_says_which_scope_it_is(self, pair):
+        """Held against the emitting module, not a copy of its list.
+
+        This assertion used to carry the vocabulary inline. A transcribed list
+        goes stale on the day a member lands and nothing goes red -- the
+        README's list of declaration kinds did exactly that, and sat a member
+        short of `KINDS` until a guard was written for it.
+        """
+        from factory_line_audit.generator import SCOPES
         _, manifest, _ = pair
         for row in manifest["exclusions"]:
-            assert row["scope"] in ("tag", "asset", "axiom", "axiom_arm",
-                                    "relation", "derived")
+            assert row["scope"] in SCOPES
 
     def test_the_counts_add_up(self, pair):
         _, manifest, model = pair

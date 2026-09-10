@@ -175,10 +175,12 @@ statement carries a `basis` -- what the declarer actually looked at -- and
 `draft` emits them unreviewed with every basis empty and every number null,
 because the one thing a rule cannot supply is why.
 
-Kinds: `bound`, `setpoint`, `rate`, `redundant`, `conservation`,
-`expect_variation`, `slow_oscillation`, `gate_on`, `exclusion`. Each maps onto
-exactly one thing the engine would otherwise decline, which is the decline
-vocabulary read backwards.
+Kinds: `bound`, `setpoint`, `rate`, `reset`, `redundant`, `conservation`,
+`expect_variation`, `slow_oscillation`, `gate_on`, `bad_state`, `exclusion`.
+Each maps onto exactly one thing the engine would otherwise decline, which is
+the decline vocabulary read backwards -- except `reset`, which answers something
+the engine never declines: it routes a counter that drops to zero from its own
+default and says nothing about having done so.
 
 A file becomes usable when a person adds their name **and** the date. A test
 fixture passes only by disclosing itself on its face, never by naming a reviewer.

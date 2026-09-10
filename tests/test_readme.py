@@ -438,3 +438,40 @@ class TestTheLegTableListsEveryLeg:
         was renamed or removed reads as coverage that is not there."""
         extra = sorted(self._tabled() - self._legs())
         assert not extra, f"the table lists legs the battery does not run: {extra}"
+
+
+class TestTheKindsParagraphNamesEveryKind:
+    """The declaration kinds, held to the module that defines them.
+
+    Found while adding an eleventh: the page listed nine of ten. `bad_state`
+    landed as a kind, the sentence was not touched, and nothing could go red --
+    the same shape as the leg table above, in prose instead of a table. A
+    reader counting the kinds got one answer and `gate` another.
+    """
+
+    def _named(self) -> set[str]:
+        """Kinds named in the README, in backticks, inside the kinds sentence.
+
+        Scoped to that paragraph: `rate` and `exclusion` are ordinary words
+        elsewhere on the page, and a document-wide grep would call the list
+        complete on the strength of prose that is not the list.
+        """
+        page = _readme()
+        start = page.index("Kinds: `")
+        return set(re.findall(r"`([a-z_]+)`", page[start:page.index("\n\n", start)]))
+
+    def test_there_is_a_sentence_to_read(self):
+        assert len(self._named()) >= 5, (
+            f"only {sorted(self._named())} parsed; the rules below hold nothing")
+
+    def test_every_kind_is_named(self):
+        from factory_line_audit.declarations import KINDS
+        missing = sorted(set(KINDS) - self._named())
+        assert not missing, (f"`gate` accepts these kinds and the README does "
+                             f"not name them: {missing}")
+
+    def test_no_kind_is_named_that_the_gate_would_refuse(self):
+        from factory_line_audit.declarations import KINDS
+        extra = sorted(self._named() - set(KINDS))
+        assert not extra, (f"the README names these kinds and `gate` refuses "
+                           f"them: {extra}")

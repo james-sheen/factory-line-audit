@@ -578,6 +578,58 @@ that answers it. That is the second question in this exam whose answer is *the
 bridge does it at feed time* (the first was machine state), and both times the
 engine was honest about not answering rather than answering wrongly.
 
+### A10 narrowed, 2026-09-10: *near zero* was never measured
+
+The paragraph above holds, and it holds for a narrower case than it reads.
+Probes A1 to A6 climb at one step and drop to one floor, so between them they
+measured the switch, the tolerance, the window and the default, and never what
+makes a drop a RESET rather than a reversal in the first place. A11 measures it.
+Nothing above is retracted; the scope is.
+
+### A11. Which MONOTONICITY arm a drop belongs to is decided by the floor against the step
+
+Found from the far end, which is the only place it could have been found: this
+package's own pipeline, fed a line counter climbing at one part a minute and
+dropping to 1.0, reported `monotonicity_reversal` where every probe in this file
+said `monotonicity_reset_storm`. The pipeline was not the difference -- the same
+pipeline fed the probe's exact ladder reproduces the probe's answer. The SERIES
+was the difference.
+
+Probe A7, three drops and four, `allow_reset: true` throughout:
+
+| post-drop floor | step | 3 drops | 4 drops |
+|---|---|---|---|
+| 0.0 | 1 or 4 | reset storm | reset storm |
+| 0.5 | 4 | reset storm | reset storm |
+| 0.5 | 1 | silent | **reversal** |
+| 1.0 or 2.0 | 1 or 4 | silent | **reversal** |
+
+The counter's magnitude is irrelevant -- starting at 0 or at 8800 changes
+nothing. What decides the arm is the post-drop value read against the step: the
+same floor of 0.5 is a reset beside a step of 4 and a reversal beside a step of
+1.
+
+Three things follow, and the third is the one that matters here.
+
+* **A real PLC counter resets to exactly zero**, and zero is a reset at every
+  step tried. A10's routing is the behaviour a plant actually produces.
+* **A partial reset is a reversal**, and `allow_reset: true` does not prevent it
+  -- it buys exactly one more drop before the reversal arm answers, three
+  against four. A counter that restarts at 1 rather than 0 is reported as going
+  backwards, whatever its declaration says.
+* **Every probe above sat on one side of a boundary none of them varied.** Six
+  agreed with each other at floor 0.5 and step 4, which is on the reset side for
+  a reason unrelated to resetting. A fixture that stops one unit short of zero
+  measures the other arm and reads exactly like the probe it was copied from.
+
+This is what a declaration is for. The shipped fixture now declares, for each of
+the eight counters in the register, whether it is zeroed in normal operation --
+and the one that must not be, the cumulative MES part record, is declared
+`false`. Fed three resets to zero, byte-identical on both tags, the station's
+shift counter is reported as `monotonicity_reset_storm` and the MES record as
+`monotonicity_reversal`. Same data, same entity, same window; different fault,
+because somebody said which counter this is.
+
 ## D. What survived
 
 Recorded because a findings list with no other side is a complaint.

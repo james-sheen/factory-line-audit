@@ -151,3 +151,82 @@ class TestThreeWaysOfReporting:
         from factory_line_audit.exit_contract import VOCABULARY_AT_DESIGN_TIME
         _, _, _, result = ran
         assert sorted(result["vocabulary_live"]) == sorted(VOCABULARY_AT_DESIGN_TIME)
+
+
+class TestADeclaredResetChangesTheFaultTheOperatorIsHanded:
+    """Plan-2 C.2, measured where it matters: at the far end, on one engine.
+
+    Two counters on ONE station, fed BYTE-IDENTICAL series -- three resets to
+    zero, packed inside the measured window. Everything else is held: same
+    entity, same cadence, same axioms, same corpus. The only difference left in
+    the world is that one is declared to reset in normal operation and the other
+    is declared never to.
+
+    `parts_out` is a shift counter; `parts_out_mes` is the MES record for the
+    order, which is cumulative. Declaring that difference is the whole of C.2,
+    and this is the evidence that declaring it reaches the engine rather than
+    sitting in a JSON file nobody reads.
+    """
+
+    #: The drop floor is ZERO, and it has to be. Measured while writing this:
+    #: the arm is chosen by the post-drop value against the STEP, not against
+    #: the counter's magnitude -- a drop to 0.5 beside a step of 4 is a reset,
+    #: the same 0.5 beside a step of 1 is a reversal, and 0.0 is a reset at
+    #: every step tried. A real PLC counter resets to zero; a fixture that
+    #: stops one short measures the other arm and reads as this test passing
+    #: for its own reason. See probe A7.
+    FLOOR = 0.0
+    STEP = 1.0
+    NODES = ("ns=2;s=ST02.PartsOut", "ns=2;s=ST02.PartsOutMES")
+
+    @pytest.fixture
+    def fed(self, register, clean_walk, gated):
+        import datetime as dt
+        walk = clean_walk
+        samples = walk["samples"]
+        # RESTAMPED to end now. Several arms count inside a window measured
+        # backwards from the present, so a corpus built yesterday presents none
+        # of them -- eleven declines reading *fewer points than can exhibit a
+        # reversal* over fifty samples. The battery refuses a stale corpus; a
+        # test cannot, so it stops depending on when the corpus was built.
+        end = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+        current = 8800.0
+        drops = {len(samples) - 1 - 3 * i for i in range(3)}
+        for n, sample in enumerate(samples):
+            when = (end - dt.timedelta(seconds=60 * (len(samples) - 1 - n))
+                    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+            sample["t"] = when
+            current = self.FLOOR if n in drops else current + self.STEP
+            for node in self.NODES:
+                sample["nodes"][node] = {"v": current, "q": "Good", "t": when}
+        model_text, manifest = build(register, gated)
+        presence = classify(register, walk)
+        result = run(model_text, register, presence, walk, gated, manifest)
+        return {f["finding"]["problem_type"]: f["finding"]
+                for f in result["findings_classified"]
+                if f["finding"].get("entity_id") == "ST-02"
+                and f["finding"].get("axiom") == "MONOTONICITY"}
+
+    def test_the_series_reached_the_arm_at_all(self, fed):
+        """The non-vacuity leg. If the window has moved or the shape is wrong,
+        both rules below are true of an empty set."""
+        assert fed, ("no MONOTONICITY finding on either counter, so neither "
+                     "rule below is evidence of anything")
+
+    def test_the_counter_that_resets_is_reported_as_resetting(self, fed):
+        assert "monotonicity_reset_storm:parts_out" in fed
+
+    def test_the_record_that_must_not_reset_is_reported_as_going_backwards(
+            self, fed):
+        """The same three drops, named as what they are for this tag. Before
+        C.2 both counters inherited the engine's default and a cumulative MES
+        record going backwards was reported as a routine reset."""
+        assert "monotonicity_reversal:parts_out_mes" in fed
+
+    def test_the_two_are_not_the_same_finding(self, fed):
+        """Stated separately because it is the claim: one declaration, two
+        different faults out of identical data."""
+        assert {"monotonicity_reset_storm:parts_out",
+                "monotonicity_reversal:parts_out_mes"} <= set(fed)
+        assert "monotonicity_reset_storm:parts_out_mes" not in fed
+        assert "monotonicity_reversal:parts_out" not in fed
