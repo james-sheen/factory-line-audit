@@ -66,14 +66,20 @@ def node_ids():
             for spec in asset["tags"].values()]
 
 
-def make_certificate(directory: str):
-    """A self-signed server certificate, and its SHA-256 over the DER.
+def make_certificate(directory: str, role: str = "server"):
+    """A self-signed certificate for `role`, and its SHA-256 over the DER.
 
     Generated rather than committed: a private key in a public repository is a
     private key in a public repository, whatever it is for. The digest is
     returned so the caller can pass the RIGHT pin without parsing anything --
     the test is whether the client checks it, not whether a shell can extract
     it.
+
+    `role` NAMES THE FILES, because this function serves two of them. The
+    `pin_channel` leg needs a client certificate too, and with the outputs
+    hard-named for the server it handed `capture` a `--key server-key.pem` that
+    was the client's own private key. Nothing failed; a reader of the leg could
+    not tell which end each file belonged to.
     """
     import datetime as dt
 
@@ -107,10 +113,16 @@ def make_certificate(directory: str):
                 x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH]), critical=False)
             .sign(key, hashes.SHA256()))
 
-    cert_path = os.path.join(directory, "server-cert.der")
-    key_path = os.path.join(directory, "server-key.pem")
+    cert_path = os.path.join(directory, f"{role}-cert.der")
+    key_path = os.path.join(directory, f"{role}-key.pem")
     with open(cert_path, "wb") as handle:
         handle.write(cert.public_bytes(serialization.Encoding.DER))
+    # The same certificate in PEM, because `capture --cert` takes PEM and the
+    # caller would otherwise have to parse and re-encode the DER -- which the
+    # `pin_channel` leg did, in the battery interpreter, needing `cryptography`
+    # in an interpreter whose prerequisite probe had checked a different one.
+    with open(os.path.join(directory, f"{role}-cert.pem"), "wb") as handle:
+        handle.write(cert.public_bytes(serialization.Encoding.PEM))
     with open(key_path, "wb") as handle:
         handle.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
@@ -359,7 +371,23 @@ def main() -> int:
     p.add_argument("--out", required=True)
     p.add_argument("--want", type=int, default=50)
     p.add_argument("--budget", type=float, default=45.0)
+    # A CERTIFICATE MADE WHERE THE LIBRARY LIVES. `serve` needs `cryptography`
+    # and so does a client certificate -- and the battery's `pin_channel` leg
+    # probed the LIVE interpreter for it, then imported `make_certificate` into
+    # its own. The probe and the use were two different interpreters, so the
+    # prerequisite it checked was not the one it needed. This subcommand puts the
+    # work behind the same interpreter the probe asks about.
+    p = subs.add_parser("make-cert")
+    p.add_argument("--out", required=True, metavar="DIR")
+    p.add_argument("--role", default="client", choices=("client", "server"))
     args = parser.parse_args()
+    if args.mode == "make-cert":
+        os.makedirs(args.out, exist_ok=True)
+        der, key, digest = make_certificate(args.out, role=args.role)
+        print(json.dumps({"role": args.role, "cert_der": der,
+                          "cert_pem": der[:-len("der")] + "pem",
+                          "key": key, "sha256": digest}))
+        return 0
     if args.mode == "serve":
         asyncio.run(serve(args.port, args.walk, args.ready,
                           no_source=args.no_source_timestamp,

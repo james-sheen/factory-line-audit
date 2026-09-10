@@ -173,16 +173,29 @@ def cmd_capture(args) -> int:
             if os.path.exists(args.membership_cache):
                 with open(args.membership_cache, encoding="utf-8") as handle:
                     cached = json.load(handle)
-            if capture_module.membership_unchanged(cached, fresh):
+            unchanged = capture_module.membership_unchanged(cached, fresh)
+            # WRITTEN ON EVERY PASS, before the decision is acted on. This used
+            # to be written only when the membership had CHANGED, which is the
+            # one case where the posture needs no upgrading. A cache from 0.1.7
+            # carries neither `pinned` nor a digest; a pinned run against an
+            # unchanged address space answered `unchanged` and returned here,
+            # leaving those fields absent -- so a later run that DROPPED the pin
+            # found nothing stronger to compare against, reused the cache and
+            # exited 0. The rule that a pinned cache is not reused unpinned
+            # protected only caches a pinned run had written, and a pinned run
+            # wrote one only when the thing the cache is about had changed.
+            # The dial has already happened by this line; what it learned is
+            # recorded whatever the verdict.
+            with open(args.membership_cache, "w", encoding="utf-8") as handle:
+                json.dump(fresh, handle, indent=2)
+                handle.write("\n")
+            if unchanged:
                 _out(f"  {len(fresh['present'])} declared node(s) still in the "
                      f"address space, {len(fresh['absent'])} not. No value was "
                      f"read and none is cached: this says the membership is "
                      f"unchanged, not that a reading is")
                 _out("OUTCOME unchanged")
                 return CLEAN
-            with open(args.membership_cache, "w", encoding="utf-8") as handle:
-                json.dump(fresh, handle, indent=2)
-                handle.write("\n")
 
         walk = capture_module.capture(
             register, args.target, samples=args.samples,

@@ -27,9 +27,11 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 
 import pytest
 
+from conftest import REGISTER
 from factory_line_audit import formats
 from factory_line_audit.capture import security_from_flags
 
@@ -394,3 +396,143 @@ class TestACacheIsNotReusedAcrossAWeakerChannel:
         old = {"endpoint": LOOPBACK, "present": ["a"], "absent": [],
                "namespaces": ["urn:x"]}
         assert membership_unchanged(old, self._record()) is True
+
+
+class TestTheCacheRecordsThePostureOfEveryPass:
+    """N3 from the 0.1.8 review, and the hole the R1 fix left.
+
+    The rule R1 landed -- a cache taken over a pinned channel is not reused over
+    an unpinned one -- reads the two new fields out of the cache. The cache was
+    written only when the membership had CHANGED, which is the one case where
+    there is nothing to preserve. So a 0.1.7 cache on a plant whose address space
+    is stable was never upgraded: the pinned run answered `unchanged` and
+    returned before the write, the next unpinned run found no `pinned` to
+    compare against, and the protection lapsed with nothing recording it.
+
+    MEASURED against a server (0.1.8 review, Sec. 6 run 3) before it was fixed:
+    step 3 left the cache without either field and step 4 exited 0. These tests
+    drive `cmd_capture` with a stand-in for the client library, so they run in an
+    interpreter with no `[live]` extra and no server -- the decision under test
+    is the CLI's, not the library's.
+    """
+
+    RECORD = {"format": "factory-line-audit/membership/1",
+              "endpoint": "opc.tcp://127.0.0.1:48499/x/",
+              "checked_at": "2026-09-10T00:00:00+00:00",
+              "namespaces": ["urn:x"], "present": ["ns=2;s=A"], "absent": []}
+    #: Enough of a walk for the verb to report one. The shortcut cases must not
+    #: reach it at all, and the case that SHOULD walk is asserted by the flag
+    #: rather than by an exception: `cmd_capture` catches everything the dial
+    #: raises, so a stand-in that raised would be reported as an unreachable
+    #: server and the test would read as a pass.
+    WALK = {"source": {"nodes_served": 1, "nodes_requested": 1,
+                       "nodes_not_in_address_space": [],
+                       "nodes_present_but_unreadable": [],
+                       "security_policy": "Basic256Sha256",
+                       "security_mode": "SignAndEncrypt", "pinned": False},
+            "samples": []}
+
+    @staticmethod
+    def _run(monkeypatch, tmp_path, cache_body, *, pin, fresh):
+        """`capture --membership-cache`, with the dial replaced.
+
+        `sys.modules` carries a stand-in for `asyncua` so the verb's own `[live]`
+        guard passes wherever this runs; nothing in it is called. A pin needs a
+        policy to have anything to check, so the flags below are the ones a
+        pinned run really carries.
+        """
+        import json
+        import sys
+        import types
+
+        from factory_line_audit import capture as capture_module, cli
+        monkeypatch.setitem(sys.modules, "asyncua",
+                            types.ModuleType("asyncua"))
+        dialled, walked = {}, []
+
+        def fake_membership(register, endpoint, **kwargs):
+            dialled.update(kwargs)
+            return dict(fresh)
+
+        def fake_capture(*args, **kwargs):
+            walked.append(kwargs)
+            return json.loads(json.dumps(TestTheCacheRecordsThePostureOfEveryPass.WALK))
+
+        monkeypatch.setattr(capture_module, "membership", fake_membership)
+        monkeypatch.setattr(capture_module, "capture", fake_capture)
+        path = os.path.join(str(tmp_path), "membership.json")
+        if cache_body is not None:
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(cache_body, handle)
+        material = {}
+        for role in ("cert", "key"):
+            material[role] = os.path.join(str(tmp_path), role + ".pem")
+            with open(material[role], "w", encoding="utf-8") as handle:
+                handle.write("not read by anything these tests call\n")
+        argv = ["capture", "--register", REGISTER, "--target",
+                "opc.tcp://127.0.0.1:48499/x/", "--out",
+                os.path.join(str(tmp_path), "walk.json"),
+                "--security-policy", "Basic256Sha256",
+                "--security-mode", "SignAndEncrypt",
+                "--cert", material["cert"], "--key", material["key"],
+                "--membership-cache", path]
+        if pin:
+            argv += ["--server-cert-pin-sha256", pin]
+        code = cli.main(argv)
+        with open(path, encoding="utf-8") as handle:
+            return code, json.load(handle), dialled, bool(walked)
+
+    def test_an_unchanged_pinned_pass_upgrades_a_0_1_7_cache(self, monkeypatch,
+                                                             tmp_path):
+        fresh = dict(self.RECORD, pinned=True, server_cert_sha256=GOOD_PIN)
+        code, written, dialled, walked = self._run(
+            monkeypatch, tmp_path, dict(self.RECORD), pin=GOOD_PIN, fresh=fresh)
+        assert code == 0, "the shortcut itself is still the right answer"
+        assert not walked, "the membership was unchanged and a walk ran anyway"
+        assert dialled.get("pin") == GOOD_PIN, "the pin never reached the dial"
+        assert written.get("pinned") is True, (
+            "the cache still does not record that it was taken over a pinned "
+            "channel, so a later unpinned run has nothing to refuse")
+        assert written.get("server_cert_sha256") == GOOD_PIN
+
+    def test_the_upgraded_cache_then_refuses_an_unpinned_reuse(self, monkeypatch,
+                                                               tmp_path):
+        """The point of the upgrade, asserted end to end rather than inferred
+        from the field being present."""
+        from factory_line_audit.capture import membership_unchanged
+        fresh = dict(self.RECORD, pinned=True, server_cert_sha256=GOOD_PIN)
+        _, written, _, _ = self._run(monkeypatch, tmp_path, dict(self.RECORD),
+                                     pin=GOOD_PIN, fresh=fresh)
+        later = dict(self.RECORD, pinned=False, server_cert_sha256=None)
+        assert membership_unchanged(written, later) is False, (
+            "an unpinned run would reuse the upgraded cache and exit 0")
+
+    def test_an_unpinned_pass_does_not_invent_a_posture(self, monkeypatch,
+                                                        tmp_path):
+        """The control. A write that always stamped `pinned` would satisfy the
+        rule above and record a protection nothing applied."""
+        fresh = dict(self.RECORD, pinned=False, server_cert_sha256=None)
+        code, written, dialled, walked = self._run(
+            monkeypatch, tmp_path, dict(self.RECORD), pin=None, fresh=fresh)
+        assert code == 0
+        assert not walked
+        assert dialled.get("pin") is None
+        assert written.get("pinned") is False
+        assert written.get("server_cert_sha256") is None
+
+    def test_a_pinned_cache_still_refuses_the_unpinned_run_outright(
+            self, monkeypatch, tmp_path):
+        """The other control: writing on every pass must not overwrite a STRONGER
+        cached posture with a weaker one before anybody compares them. The
+        comparison happens first, so this run WALKS rather than shortcutting,
+        and the walk records the weaker posture where a reader can see it."""
+        cached = dict(self.RECORD, pinned=True, server_cert_sha256=GOOD_PIN)
+        fresh = dict(self.RECORD, pinned=False, server_cert_sha256=None)
+        code, written, _, walked = self._run(monkeypatch, tmp_path, cached,
+                                             pin=None, fresh=fresh)
+        assert walked, (
+            "the unpinned run reused a cache taken over a pinned channel; the "
+            "protection lapsed and the walk that would have recorded it was "
+            "never written")
+        assert code == 0
+        assert written.get("pinned") is False

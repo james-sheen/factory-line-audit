@@ -11,6 +11,117 @@ from conftest import CORPUS, FIXTURE, REGISTER
 from factory_line_audit import tools
 from factory_line_audit.tools import SPEC, WITHHELD, dispatch
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PACKAGE = os.path.join(ROOT, "src", "factory_line_audit")
+
+
+def _declared_extras():
+    """extra -> the distributions `pyproject.toml` puts behind it.
+
+    Read from the packaging metadata rather than from anything in the package,
+    because the question the callers ask is whether this package's own map of
+    extras agrees with what an install of those extras would actually provide.
+    """
+    import re
+    with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as handle:
+        body = handle.read()
+    section = body.split("[project.optional-dependencies]")[1].split("\n[")[0]
+    out = {}
+    for extra, raw in re.findall(r"^(\w+)\s*=\s*\[(.*?)\]", section,
+                                 re.MULTILINE | re.DOTALL):
+        out[extra] = [re.split(r"[<>=!~\[;]", piece.strip().strip("\"'"))[0].strip()
+                      for piece in raw.split(",") if piece.strip().strip("\"'")]
+    return {extra: [d for d in dists if d] for extra, dists in out.items()}
+
+
+def _module_imports(name):
+    """(sibling modules, third-party roots) one package module imports."""
+    path = os.path.join(PACKAGE, name + ".py")
+    with open(path, encoding="utf-8") as handle:
+        tree = ast.parse(handle.read())
+    siblings, third = set(), set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.level:
+                if node.module:
+                    siblings.add(node.module.split(".")[0])
+                else:
+                    siblings.update(alias.name for alias in node.names)
+            elif node.module:
+                third.add(node.module.split(".")[0])
+        elif isinstance(node, ast.Import):
+            third.update(alias.name.split(".")[0] for alias in node.names)
+    return siblings, third
+
+
+def _reach_of_verb(verb):
+    """Every third-party root a CLI verb can reach, transitively.
+
+    Two closures, because the reach lives in both: the call graph INSIDE `cli`
+    starting at the verb's handler -- `cmd_presence` imports nothing itself and
+    calls a helper that does -- and then the sibling-module import closure from
+    whatever those functions import. Following only the handler's own body
+    measured an empty set and called it proof.
+    """
+    import textwrap
+
+    from factory_line_audit import cli
+    siblings, third, walked = set(), set(), set()
+    pending = [_handler_of(verb).__name__]
+    while pending:
+        name = pending.pop()
+        if name in walked:
+            continue
+        function = getattr(cli, name, None)
+        if function is None or not callable(function):
+            continue
+        walked.add(name)
+        tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.level:
+                    if node.module:
+                        siblings.add(node.module.split(".")[0])
+                    else:
+                        siblings.update(alias.name for alias in node.names)
+                elif node.module:
+                    third.add(node.module.split(".")[0])
+            elif isinstance(node, ast.Import):
+                third.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                pending.append(node.func.id)
+    seen = set()
+    queue = list(siblings)
+    while queue:
+        module = queue.pop()
+        if module in seen or not os.path.exists(
+                os.path.join(PACKAGE, module + ".py")):
+            continue
+        seen.add(module)
+        more, roots = _module_imports(module)
+        third |= roots
+        queue.extend(more - seen)
+    assert seen, (f"{verb} reaches no module in this package; the walk found "
+                  f"nothing and an empty reach agrees with every map")
+    return third
+
+
+def _handler_of(verb):
+    """The function the CLI routes `verb` to, read off the real parser.
+
+    Through the parser rather than by spelling `cmd_` + the verb: the routing is
+    what a caller gets, and a verb rerouted to a different handler would leave a
+    name-based lookup measuring a function nothing calls.
+    """
+    from factory_line_audit import cli
+    for action in cli.build_parser()._actions:
+        choices = getattr(action, "choices", None) or {}
+        if verb in choices:
+            handler = choices[verb].get_default("fn")
+            assert handler is not None, f"{verb} is parsed and routed nowhere"
+            return handler
+    raise AssertionError(f"the CLI has no verb {verb!r}")
+
 
 class TestTheTableIsWalkedNotSampled:
     @pytest.mark.parametrize("name", sorted(SPEC))
@@ -198,7 +309,17 @@ class TestAnAbsentExtraIsNotABrokenEntry:
     def test_the_probe_measures_rather_than_declares(self):
         """`missing_extras` must answer about THIS interpreter. The suite's own
         environment has `[vertical]`, so the reachable assertion is that the
-        probe agrees with a real import."""
+        probe agrees with a real import.
+
+        THIS TEST WAS GREEN AGAINST A WRONG MAP, and that is why the one below
+        exists. It imported the same module names the probe imports, so
+        `import arbiter` -- a module no distribution provides -- failed on both
+        sides, `detect` was reported absent, the assertion held, and
+        `missing_extras()` reported the engine missing in every interpreter ever
+        shipped. Shared implementation proves consistency, never truth. Kept,
+        because the agreement it asserts is still worth asserting; no longer
+        alone.
+        """
         import importlib
 
         from factory_line_audit.tools import EXTRA_PROBE, missing_extras
@@ -210,6 +331,71 @@ class TestAnAbsentExtraIsNotABrokenEntry:
                 assert extra in absent, f"{extra} is not importable and not reported"
             else:
                 assert extra not in absent, f"{extra} imports and is reported absent"
+
+    def test_the_probe_agrees_with_the_installed_distributions(self):
+        """The independent oracle: `importlib.metadata`, not this package's map.
+
+        For every extra `pyproject.toml` declares, ask the metadata whether the
+        distribution it names is installed, and require `missing_extras()` to
+        say the same. Nothing here reads `EXTRA_PROBE`, so an import name that
+        does not belong to the distribution reddens -- which `arbiter` did, in
+        every environment, for as long as the map carried it.
+        """
+        from importlib.metadata import PackageNotFoundError, distribution
+
+        from factory_line_audit.tools import missing_extras
+        absent, declared = missing_extras(), _declared_extras()
+        assert declared, "pyproject declares no extras; this test measures nothing"
+        for extra, dists in sorted(declared.items()):
+            assert dists, f"[{extra}] declares no distribution"
+            installed = True
+            for dist in dists:
+                try:
+                    distribution(dist)
+                except PackageNotFoundError:
+                    installed = False
+            if installed:
+                assert extra not in absent, (
+                    f"every distribution behind [{extra}] ({dists}) is "
+                    f"installed and the probe reports the extra absent: it is "
+                    f"importing the wrong module name")
+            else:
+                assert extra in absent, (
+                    f"[{extra}] is not installed ({dists}) and the probe does "
+                    f"not report it")
+
+    def test_every_entry_that_reaches_an_extra_declares_it(self):
+        """`REQUIRES_EXTRA`, derived from the import graph rather than recalled.
+
+        `detect` was missing from the map. The rule 0.1.8 introduced -- an
+        absent extra is not a broken entry -- did not cover the one entry that
+        needs the engine, and no test could notice, because every test about the
+        map read the map. The reach is computed here from the verb's own imports:
+        an entry that starts importing the core or the engine reddens until the
+        map says so.
+        """
+        from factory_line_audit.tools import REQUIRES_EXTRA, SPEC
+        by_root = {root: extra
+                   for extra, dists in _declared_extras().items()
+                   for root in (d.replace("-", "_") for d in dists)}
+        assert by_root, "no distribution roots derived; the reach cannot be read"
+        reached = {}
+        for name, spec in SPEC.items():
+            for root in _reach_of_verb(spec["verb"]):
+                if root in by_root:
+                    reached[name] = by_root[root]
+        assert reached, (
+            "no SPEC entry reaches any extra's distribution; either the import "
+            "walk broke or the table stopped needing an engine")
+        for name, extra in sorted(reached.items()):
+            assert REQUIRES_EXTRA.get(name) == extra, (
+                f"{name} reaches [{extra}] through its own imports and "
+                f"REQUIRES_EXTRA says {REQUIRES_EXTRA.get(name)!r}; a caller "
+                f"cannot tell a missing install from a broken entry")
+        for name in REQUIRES_EXTRA:
+            assert name in reached, (
+                f"{name} declares an extra its imports do not reach; the map "
+                f"has outlived the dependency")
 
     def test_every_declared_extra_names_a_module_to_probe(self):
         from factory_line_audit.tools import EXTRA_PROBE, REQUIRES_EXTRA
@@ -264,12 +450,23 @@ class TestAnAbsentExtraIsNotABrokenEntry:
     def test_the_leg_reads_the_map_rather_than_listing_it(self):
         """The lesson `WITHHELD` already taught here: a copy in the leg is a
         copy that drifts the day the map grows an entry. Held in addition to the
-        behavioural cases above, not instead of them."""
+        behavioural cases above, not instead of them.
+
+        EVERY declared extra, not the one that was current when this was
+        written. It named `vertical` alone, so when the leg grew a second branch
+        for the prerequisite half -- the `detect` run that produces the
+        attestation -- a literal there would have passed. The list is derived
+        from `pyproject.toml`; the QUOTED form is what is forbidden, because
+        `detect_argv` legitimately carries the bare word.
+        """
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         with open(os.path.join(root, "battery", "run_battery.py"),
                   encoding="utf-8") as handle:
             source = handle.read()
         leg = source.split("def leg_tool(")[1].split("\ndef ")[0]
-        assert "REQUIRES_EXTRA" in leg and "missing_extras" in leg
-        assert '"vertical"' not in leg and "'vertical'" not in leg, (
-            "the leg names an extra literally; it must read the map")
+        assert "REQUIRES_EXTRA" in leg or "_extra_for_verb" in leg
+        extras = sorted(_declared_extras())
+        assert extras, "no extras derived; this test forbids nothing"
+        for extra in extras:
+            assert f'"{extra}"' not in leg and f"'{extra}'" not in leg, (
+                f"the leg names [{extra}] literally; it must read the map")

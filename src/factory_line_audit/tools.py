@@ -123,23 +123,41 @@ WITHHELD = {
 #: nothing else.
 NOT_OFFERED: Dict[str, str] = {"capture": "connect_to_plc"}
 
-#: Entries that cannot answer from a `[detect]`-only install, and the extra
-#: each one needs. `compare_walks` routes to `regression`, which asks the core
-#: to judge the two walks; without `[vertical]` it returns 2 carrying no
-#: `error`, so a caller walking the table saw an entry that "could not
-#: construct" and had no way to learn that the table was fine and the
-#: environment was short an extra. The distinction is the whole difference
-#: between a defect and a missing install, and it belongs here rather than in
-#: any one caller: `run_battery.leg_tool` once carried the withheld NAMES as a
-#: literal and counted a new one as a failure, which is the same mistake at a
-#: different address.
-REQUIRES_EXTRA: Dict[str, str] = {"compare_walks": "vertical"}
+#: Entries that cannot answer without an extra, and which one. `compare_walks`
+#: routes to `regression`, which asks the core to judge the two walks; without
+#: `[vertical]` it returns 2 carrying no `error`, so a caller walking the table
+#: saw an entry that "could not construct" and had no way to learn that the
+#: table was fine and the environment was short an extra. The distinction is the
+#: whole difference between a defect and a missing install, and it belongs here
+#: rather than in any one caller: `run_battery.leg_tool` once carried the
+#: withheld NAMES as a literal and counted a new one as a failure, which is the
+#: same mistake at a different address.
+#:
+#: `detect` WAS MISSING FROM THIS MAP until 0.1.9, which is the half of the rule
+#: that was never written down: the rule says an absent extra is not a broken
+#: entry, and the one entry that needs the ENGINE -- the extra this package
+#: exists to bridge to -- was not covered by it. DERIVED, not listed: the test
+#: walks each verb's import graph and asks which third-party root it reaches, so
+#: an entry that starts importing the engine reddens here rather than being
+#: remembered.
+REQUIRES_EXTRA: Dict[str, str] = {"compare_walks": "vertical",
+                                  "detect": "detect"}
 
 #: What to import to find out whether an extra is installed, so a caller can
 #: ask without guessing the distribution's module name.
+#:
+#: A DISTRIBUTION NAME IS NOT AN IMPORT NAME, and this map held the wrong one:
+#: the distribution is `arbiter-engine` and the module is `arbiter_engine`, and
+#: `arbiter` is neither. `missing_extras()` therefore reported `[detect]` absent
+#: in EVERY interpreter, including one with the engine installed -- and the
+#: guard could not see it, because the test imported the same names from this
+#: map, so the import failed identically on both sides and agreed. Shared
+#: implementation proves consistency, never truth. The test now reads the
+#: distributions out of `pyproject.toml` and asks `importlib.metadata` whether
+#: each is installed, which is an oracle this map cannot move.
 EXTRA_PROBE: Dict[str, str] = {"vertical": "presence_audit",
                                "live": "asyncua",
-                               "detect": "arbiter"}
+                               "detect": "arbiter_engine"}
 
 
 def missing_extras() -> Dict[str, str]:

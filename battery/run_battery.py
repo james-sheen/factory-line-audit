@@ -576,8 +576,29 @@ def leg_tool(python, workdir):
     made = cli(python, detect_argv(os.path.join(CORPUS, "clean.json"),
                                    "--attest-out", stored))
     if not os.path.exists(stored):
-        return leg("tool", 2, "could not produce an attestation to walk the "
-                              "read_attestation entry with")
+        # THE SAME RULE AS THE TABLE WALK BELOW, and this half did not have it.
+        # The attestation is produced by `detect`, which needs the engine -- so
+        # in an interpreter without `[detect]` the leg died HERE, before any
+        # entry was dispatched, reporting that it could not produce an
+        # attestation and naming neither the extra nor a reason. Measured while
+        # answering the 0.1.8 review: the run that review proposed for N2 never
+        # reaches the table at all.
+        # Which extra, DERIVED: the verb this prerequisite just ran, looked up
+        # through the table's own `REQUIRES_EXTRA`. The leg naming an extra
+        # literally is the mistake it already made once with the withheld names.
+        needed = _extra_for_verb(python, detect_argv("")[0])
+        lines = (made.stdout or "").strip().splitlines()
+        if needed:
+            return leg("tool", 2, f"this interpreter is short of [{needed}], so "
+                                  f"the attestation the read_attestation entry "
+                                  f"needs could not be produced and the table "
+                                  f"was not walked: install "
+                                  f"factory-line-audit[{needed}]. The entries "
+                                  f"themselves were not exercised, so this is "
+                                  f"not a verdict about them")
+        return leg("tool", 2, f"could not produce an attestation to walk the "
+                              f"read_attestation entry with"
+                              + (f" ({lines[-1][:140]})" if lines else ""))
     script = (
         "import contextlib, io, json, sys, tempfile, os\n"
         "from factory_line_audit.tools import SPEC, WITHHELD, dispatch\n"
@@ -646,6 +667,30 @@ def leg_tool(python, workdir):
     return leg("tool", 0, f"all {len(ran)} table entries constructed and ran; "
                           f"{len(refused)} withheld names stayed refused, read "
                           f"from WITHHELD rather than listed here")
+
+
+def _extra_for_verb(python, verb):
+    """The extra a CLI verb needs and this interpreter does not have, or `None`.
+
+    Asked of the interpreter UNDER TEST rather than of this one: the battery and
+    the subject are two installs, and which extras the battery has says nothing
+    about which the subject has. `None` on any failure, so a broken probe cannot
+    turn a real defect into a missing install.
+    """
+    script = ("import json\n"
+              "from factory_line_audit.tools import (REQUIRES_EXTRA, SPEC,\n"
+              "                                      missing_extras)\n"
+              "absent = missing_extras()\n"
+              "print(json.dumps({spec['verb']: REQUIRES_EXTRA[name]\n"
+              "                  for name, spec in SPEC.items()\n"
+              "                  if REQUIRES_EXTRA.get(name) in absent}))\n")
+    proc = subprocess.run([python, "-c", script], capture_output=True, text=True,
+                          cwd=ROOT, env=dict(os.environ, PYTHONPATH=SRC),
+                          timeout=300)
+    try:
+        return json.loads(proc.stdout).get(verb)
+    except Exception:
+        return None
 
 
 def _spec_names(python):
@@ -898,21 +943,22 @@ def leg_pin_channel(live_python, workdir):
     ready = os.path.join(workdir, "pin-channel-ready.json")
     certs = os.path.join(workdir, "server-cert")
     client = os.path.join(workdir, "client-cert")
-    os.makedirs(client, exist_ok=True)
-    try:
-        sys.path.insert(0, HERE)
-        from opcua_surface import make_certificate
-        raw, key, _ = make_certificate(client)
-        from cryptography import x509
-        from cryptography.hazmat.primitives import serialization
-        with open(raw, "rb") as handle:
-            parsed = x509.load_der_x509_certificate(handle.read())
-        client_cert = os.path.join(client, "client-cert.pem")
-        with open(client_cert, "wb") as handle:
-            handle.write(parsed.public_bytes(serialization.Encoding.PEM))
-    except Exception as exc:
-        return leg("pin_channel", 2, f"could not make a client certificate: "
-                                     f"{exc}", added=True)
+    # IN THE INTERPRETER THE PROBE JUST ASKED ABOUT. This imported
+    # `make_certificate` into the BATTERY interpreter and re-encoded the DER
+    # there, so it needed `cryptography` in an interpreter the probe above had
+    # not measured: with `[live]` in the live one only, the prerequisite passed
+    # and the leg then died naming a module nobody had claimed was present. A
+    # probe that measures a different subject from the use is not a prerequisite
+    # check. `make-cert` exists so the certificate is made where the library is.
+    made = subprocess.run([live_python, surface, "make-cert", "--out", client,
+                           "--role", "client"],
+                          capture_output=True, text=True, timeout=300)
+    if made.returncode:
+        return leg("pin_channel", 2, f"could not make a client certificate in "
+                                     f"the live interpreter: "
+                                     f"{made.stderr.strip()[-200:]}", added=True)
+    material = json.loads(made.stdout)
+    client_cert, client_key = material["cert_pem"], material["key"]
 
     server = subprocess.Popen(
         [live_python, surface, "serve", "--port", "48415", "--ready", ready,
@@ -950,7 +996,7 @@ def leg_pin_channel(live_python, workdir):
                  "--namespace", "urn:factory-line-audit:rung3",
                  "--security-policy", "Basic256Sha256",
                  "--security-mode", "SignAndEncrypt",
-                 "--cert", client_cert, "--key", os.path.join(client, "server-key.pem"),
+                 "--cert", client_cert, "--key", client_key,
                  "--server-cert-pin-sha256", pin],
                 capture_output=True, text=True, timeout=300, cwd=ROOT,
                 env=dict(os.environ, PYTHONPATH=SRC)), out

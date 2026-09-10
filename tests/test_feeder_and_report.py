@@ -455,3 +455,127 @@ class TestAGateOnAnIntegerStateCode:
         with pytest.raises(formats.Refusal) as caught:
             gate([path], register)
         assert "open_when" in caught.value.message
+
+
+class TestAGateTagThatNeverReads:
+    """N4 from the 0.1.8 review, and the residual the R3 fix left.
+
+    `gate_type_mismatch` asks whether any declared word could ever have equalled
+    any value the server served. It is judged from a record written only when a
+    gate reading arrived with a usable quality -- so a gate tag that is
+    `Bad_*`/`Uncertain_*` for the WHOLE walk never reaches it. Every sample was
+    withheld, the gated tag was never fed, the engine declined
+    `missing_property`, and `classify()` returned `bridge_defect`: "a mapping bug
+    in this package", at floor 2, about a state tag the server could not read.
+
+    MEASURED before it was fixed (0.1.8 review, Sec. 6 run 4): a `clean.json`
+    whose gate node carries `BadNoCommunication` on all fifty samples reported
+    `bridge_defect: 1` and exit 2.
+    """
+
+    STATE = TestTheGateReadsAStateWordAndNotItsTruthiness.STATE
+    GATED = TestTheGateReadsAStateWordAndNotItsTruthiness.GATED
+
+    def _quality(self, clean_walk, word, over=None):
+        rows = (clean_walk["samples"] if over is None
+                else clean_walk["samples"][:over])
+        for sample in rows:
+            sample["nodes"][self.STATE]["q"] = word
+        return clean_walk
+
+    def test_a_gate_unreadable_all_walk_stops_and_names_the_gate(
+            self, register, clean_walk, gated):
+        walk = self._quality(clean_walk, "BadNoCommunication")
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, walk), walk, gated)
+        assert caught.value.name == "gate_unreadable"
+        assert "state_running" in caught.value.detail
+        assert "BadNoCommunication x50" in caught.value.detail
+        assert "read usably in 50 sample(s)" in caught.value.detail
+
+    def test_the_stop_says_it_is_not_this_package_s_defect(self, register,
+                                                           clean_walk, gated):
+        """The whole point: the old path reported the wrong subject, so the new
+        message has to name the right one."""
+        walk = self._quality(clean_walk, "BadNoCommunication")
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, walk), walk, gated)
+        assert "is what could not be read" in caught.value.detail
+
+    def test_a_gate_readable_once_does_not_stop(self, register, clean_walk,
+                                               gated):
+        """The control, and the reason the claim is about the WALK. A gate that
+        read usably in a single sample was consulted; the rest is a station that
+        was stopped, or a patchy sensor, and both withhold quietly."""
+        walk = self._quality(clean_walk, "BadNoCommunication",
+                             over=len(clean_walk["samples"]) - 1)
+        _, withheld, _ = series_for(register, classify(register, walk), walk,
+                                    gated)
+        assert withheld[self.GATED] == len(walk["samples"]) - 1
+
+    def test_a_walk_whose_gate_reads_throughout_is_untouched(self, register,
+                                                            clean_walk, gated):
+        """The second control: the shipped corpus must be unaffected, or this
+        stop fires on every healthy line."""
+        _, withheld, _ = series_for(register, classify(register, clean_walk),
+                                    clean_walk, gated)
+        assert self.GATED not in withheld
+
+    def test_an_unreadable_gate_is_not_reported_as_a_type_mismatch(
+            self, register, clean_walk, gated):
+        """The two stops are disjoint and the more basic one wins. A mismatch
+        message here would name types nobody served."""
+        walk = self._quality(clean_walk, "BadNoCommunication")
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, walk), walk, gated)
+        assert caught.value.name != "gate_type_mismatch"
+
+    def test_the_engine_no_longer_blames_this_package(self, register, tmp_path):
+        """End to end, through `run`, because the defect was in what the REPORT
+        said and not in what the feeder returned. Needs the engine: skipped with
+        a reason rather than silently, since a missing leg that leaves no trace
+        reads as a leg that passed."""
+        import json
+
+        pytest.importorskip("arbiter_engine",
+                            reason="the [detect] extra is not installed, so no "
+                                   "decline can be classified here")
+        from factory_line_audit.declarations import gate
+        with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+            walk = json.load(handle)
+        for sample in walk["samples"]:
+            sample["nodes"][self.STATE]["q"] = "BadNoCommunication"
+        gated = gate([FIXTURE], register)
+        model_text, manifest = build(register, gated)
+        with pytest.raises(HardStop) as caught:
+            run(model_text, register, classify(register, walk), walk, gated,
+                manifest)
+        assert caught.value.name == "gate_unreadable"
+
+    def test_the_message_claims_only_what_the_record_measures(self, register,
+                                                             clean_walk, gated):
+        """The asymmetric case, and the reason the sentence is narrow.
+
+        The record is kept only for samples in which the GATED tag read. So a
+        gate that reads usably somewhere the gated tag does not would make
+        *never anywhere in this walk* false while the stop was still right to
+        fire. Here the gated tag is unreadable for the first forty samples and
+        the gate is unreadable for the last ten: the gate reads in forty of
+        fifty, and the ten that mattered still got nothing.
+        """
+        gated_node = None
+        for asset in register["assets"]:
+            if asset["id"] == self.GATED[0]:
+                gated_node = asset["tags"][self.GATED[1]]["node"]
+        assert gated_node, "the gated tag is not in the register any more"
+        for n, sample in enumerate(clean_walk["samples"]):
+            if n < 40:
+                sample["nodes"][gated_node]["q"] = "BadNoCommunication"
+            else:
+                sample["nodes"][self.STATE]["q"] = "BadNoCommunication"
+        with pytest.raises(HardStop) as caught:
+            series_for(register, classify(register, clean_walk), clean_walk,
+                       gated)
+        assert caught.value.name == "gate_unreadable"
+        assert "read usably in 10 sample(s)" in caught.value.detail
+        assert "anywhere in this walk" not in caught.value.detail

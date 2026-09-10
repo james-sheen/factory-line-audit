@@ -103,6 +103,14 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
     #: facts, so both are settled after the loop.
     comparable: Dict[Tuple[str, str], bool] = {}
     observed: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    #: Per gated tag: was the gate's own node ever READABLE, and what quality
+    #: the server reported when it was not. A gate unreadable for the whole walk
+    #: withholds every sample without ever reaching the comparison above, so
+    #: `comparable` has no entry for it and the mismatch stop cannot fire --
+    #: the tag was simply never fed, the engine declined `missing_property`, and
+    #: this package classed its own report as a mapping bug in itself.
+    gate_readable: Dict[Tuple[str, str], bool] = {}
+    gate_quality: Dict[Tuple[str, str], Dict[str, int]] = {}
     from .presence import grade
 
     def _comparable(state: Any, word: Any) -> bool:
@@ -134,7 +142,17 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
             if gate_prop:
                 gate_node = state_nodes.get(key[0], {}).get(gate_prop)
                 gate_row = nodes.get(gate_node) if gate_node else None
-                if not (gate_row and grade(gate_row.get("q"))[1]["usable"]):
+                usable_gate = bool(gate_row
+                                   and grade(gate_row.get("q"))[1]["usable"])
+                # Recorded for every sample in which this gate MATTERED: the
+                # reading above is usable, so the only reason to withhold is the
+                # gate. Settled after the walk, like the mismatch below.
+                gate_readable[key] = gate_readable.get(key, False) or usable_gate
+                if not usable_gate:
+                    word = ((gate_row or {}).get("q") if gate_row
+                            else "not served in this sample")
+                    counts = gate_quality.setdefault(key, {})
+                    counts[str(word)] = counts.get(str(word), 0) + 1
                     withheld[key] = withheld.get(key, 0) + 1
                     continue
                 state = gate_row.get("v")
@@ -179,6 +197,37 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
                     continue
             when_row = _parse(reading_row.get("t")) or when
             out.setdefault(key, []).append((when_row, reading_row["v"]))
+
+    # A gate whose OWN tag never read, across a walk in which it mattered. This
+    # comes first because it is the more basic fact: there was nothing to
+    # compare, so the mismatch stop below cannot speak for it, and until 0.1.9
+    # nothing did -- every sample was withheld, the tag was never fed, and the
+    # engine's `missing_property` was classed `bridge_defect`, which says "a
+    # mapping bug in this package" about a state tag the SERVER could not read.
+    # A check that fires against the wrong subject is worse than one that stays
+    # quiet, and this one also floored the run at 2 for it.
+    for key, readable in sorted(gate_readable.items()):
+        if readable:
+            continue
+        counts = gate_quality.get(key) or {}
+        total = sum(counts.values())
+        # THE MESSAGE SAYS WHAT THE PREDICATE MEASURED, and the two are not the
+        # same sentence. This is recorded only for samples in which the gated
+        # tag ITSELF read -- the samples that should have been fed -- so the
+        # claim is about those, not about the whole walk. A gate readable
+        # somewhere the gated tag was not reading would make the wider sentence
+        # false while this stop was still right to fire.
+        raise HardStop(
+            "gate_unreadable",
+            f"{key[0]}.{key[1]} read usably in {total} sample(s) and its gate "
+            f"{gate_of.get(key)} read usably in none of them: "
+            f"{', '.join(f'{word} x{n}' for word, n in sorted(counts.items()))}"
+            f". Every one was withheld because the gate could not be consulted, "
+            f"so nothing was fed and the engine would decline for a missing "
+            f"property -- which this package classes as its own mapping defect. "
+            f"It is not one: the state tag is what could not be read. Stage 1 "
+            f"grades {gate_of.get(key)} on the same walk; fix it at the source, "
+            f"or declare a gate on a tag that reads")
 
     # A gate that was evaluated and could never once have opened, on type
     # alone. Settled here because it is a claim about the walk: the loop sees

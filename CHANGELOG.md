@@ -12,12 +12,90 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.9 -- unreleased
+
+Answers the static re-verification of 0.1.8. Six items were raised and all six
+held; two of them are the halves a 0.1.8 fix left behind, and one is about a word
+in this file. Running them found two more that the review could not see by
+reading, both about checks measuring the wrong interpreter.
+
+### Breaking
+
+Nothing.
+
+### Fixed
+
+* **`missing_extras()` reported `[detect]` absent in every interpreter ever
+  shipped**, including one with the engine installed. The map it reads named
+  `arbiter`; the distribution is `arbiter-engine` and the module is
+  `arbiter_engine`. Inert in 0.1.8, because only `compare_walks` declared an
+  extra -- and a live defect the moment anything else did. The guard could not
+  see it: the test imported the same names from the same map, so the import
+  failed identically on both sides and the two agreed. It now reads the
+  distributions out of `pyproject.toml` and asks `importlib.metadata`, which is
+  an oracle the map cannot move.
+* **The entry that needs the engine was not in the map that names extras.**
+  `detect` routes to the verb that feeds the engine, and `REQUIRES_EXTRA` did not
+  list it -- so the rule 0.1.8 introduced, *an absent extra is not a broken
+  entry*, did not cover the extra this package exists to bridge to. With the
+  wrong module name above, adding it would have reported the engine missing when
+  it was installed: the two defects masked each other and are fixed together. The
+  map is now held against each verb's own import graph rather than against
+  memory.
+* **A membership cache was never upgraded to record a stronger channel.** The
+  cache was written only when the membership had CHANGED, which is the one case
+  where there is nothing to preserve. So a 0.1.7-shaped cache on a plant with a
+  stable address space stayed that way: the pinned run answered `unchanged` and
+  returned before the write, and a later run that DROPPED the pin found no
+  recorded posture to refuse, reused the cache and exited 0. The rule that a
+  pinned cache is not reused unpinned protected only caches a pinned run had
+  written. The cache is now written on every pass, before the verdict is acted
+  on.
+* **A gate tag that never reads was still reported as this package's own bug.**
+  `gate_type_mismatch` is judged from a record written only when a gate reading
+  arrived usable, so a state tag that is `Bad_*` for the whole walk never reached
+  it: every sample was withheld, nothing was fed, the engine declined
+  `missing_property`, and that was classed `bridge_defect` -- "a mapping bug in
+  this package" -- at exit 2, about a tag the SERVER could not read. New hard
+  stop `gate_unreadable`, naming the gate, the quality it served and how often.
+  A gate that read usably even once is untouched: one patchy sample is a stopped
+  station, not a broken declaration.
+* **(Found here, not in the review.) The `pin_channel` leg probed one interpreter
+  for a prerequisite and needed it in another.** It asked the `--live-python` for
+  `asyncua` and `cryptography`, then imported the certificate builder into the
+  BATTERY interpreter -- so with `[live]` installed only where the probe looked,
+  the prerequisite passed and the leg then died naming a module nobody had
+  claimed was present. The surface now has a `make-cert` subcommand and the
+  certificate is made where the library is. Its outputs are named by role, so the
+  client is no longer handed a key called `server-key.pem`.
+* **(Found here, not in the review.) The `tool` leg's prerequisite named neither
+  the extra nor a reason.** The attestation it walks the `read_attestation` entry
+  with is produced by `detect`, which needs the engine -- so in an interpreter
+  without `[detect]` the leg died BEFORE the table, and the run the review
+  proposed for its second finding never reaches the table at all. The
+  prerequisite half now follows the same rule as the walk, and reads which extra
+  from the table rather than naming one.
+* **"Refuted" was the wrong word for the 0.1.7 release-state finding.** That
+  report observed no pushed tag and that was true when it was taken; `ls-remote`
+  at a later minute is not evidence about an earlier one. Recorded as observed and
+  closed by pushing the tag. A time-stamped observation called refuted invites a
+  reader to discount the rest of them.
+
+### Not changed, and why
+
+* The review's run for the map-omission finding expects the `tool` leg to report
+  the engine entry as a real failure in an interpreter without `[detect]`. It
+  cannot: the leg needs that extra to build its own fixture and stops earlier.
+  The finding holds -- the map was incomplete -- but the probe it was measured
+  from describes the probe. The earlier stop is fixed above.
+
 ## 0.1.8 -- 2026-09-10
 
-Answers the static re-verification of 0.1.7. Eleven items were raised; one was
-refuted on measurement and the rest held, two of them regressions that 0.1.7
-introduced. Running the fixes found three more that no review had named: the two
-marked below, and a guard that could not see its own subject.
+Answers the static re-verification of 0.1.7. Eleven items were raised; ten held,
+two of them regressions that 0.1.7 introduced, and one was a window that had
+closed by the time the report was read. Running the fixes found three more that
+no review had named: the two marked below, and a guard that could not see its
+own subject.
 
 ### Breaking
 
@@ -121,9 +199,12 @@ Nothing. Two rules were NARROWED, so files 0.1.7 refused may now be accepted:
 ### Not changed, and why
 
 * The review reported `v0.1.7` as absent from the remote while the wheel was
-  public. The tag is on the remote at the reviewed commit; the window the review
-  saw had closed before it was read. Releases here are run by hand, so the
-  ordering advice belongs in the runbook rather than in a workflow.
+  public. That was TRUE when it was taken and the answer here first called it
+  refuted, which is the wrong word: `ls-remote` at a later minute is not
+  evidence about an earlier one, and discounting a time-stamped observation
+  invites a reader to discount the rest of them. Observed, and closed by pushing
+  the tag. Releases here are run by hand, so the ordering advice belongs in the
+  runbook rather than in a workflow, and `CONTRIBUTING.md` carries it.
 * The review asked for `A10` and `A11` to move out of FINDINGS section B. They
   are findings against the ENGINE, which is what section B is; the `A` in the
   label is a citation handle, not a claim about placement. The reason was already

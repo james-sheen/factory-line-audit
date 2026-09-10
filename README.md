@@ -247,6 +247,20 @@ full history is in [CHANGELOG.md](CHANGELOG.md).
   the declared values could never equal what the server serves, `detect` now
   stops and says so instead of withholding everything and letting the engine
   report a missing property.
+* **0.1.9 adds a third gate stop, `gate_unreadable`.** The two above are about
+  the DECLARATION. This one is about the gate tag: if it never read a usable
+  value anywhere in the walk, every sample of the gated tag was withheld because
+  the gate could not be consulted, nothing was fed, and the engine's
+  `missing_property` was classed `bridge_defect` -- a mapping bug in this
+  package -- at exit 2, for a tag the server could not read. A gate that read
+  usably even once is untouched: one patchy sample is a stopped station, not a
+  broken declaration.
+* **0.1.9: a membership cache now records the channel of every pass**, not only
+  of passes where the membership changed. A `--membership-cache` written by 0.1.7
+  carries no `pinned` field, and until 0.1.9 a pinned run against an unchanged
+  address space did not add one -- so a later run that dropped the pin found
+  nothing to refuse and exited 0 off the same cache. Nothing to do: the upgrade
+  happens on the next pinned run.
 
 ## The evidence ladder
 

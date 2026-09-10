@@ -60,9 +60,10 @@ By hand, and in this order:
    round there is a window where a public artifact exists and nothing on the
    remote binds it to a commit, and `README.md` claims a tag that no fresh clone
    can resolve. An outside review of 0.1.7 landed inside that window and reported
-   the missing tag as a defect; the tag was pushed minutes later, so the report
-   was right about the window and wrong by the time it was read. The window is
-   the problem, not the report.
+   the missing tag as a defect; the tag was pushed minutes later. The report was
+   right, and it stays right: a later `ls-remote` is not evidence about an
+   earlier one, so the finding was closed by pushing the tag rather than
+   disputed. The window is the problem.
 5. Confirm from the simple index rather than the checkout — the JSON API and the
    index disagree after an upload, in both directions, and which one is ahead is
    not predictable.
