@@ -33,6 +33,7 @@ It writes `pin_evidence.json` and refuses to overwrite it with a partial result.
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import os
 import shutil
@@ -45,6 +46,53 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "pin_evidence.json")
 CORPUS = os.path.join(HERE, "corpus", "clean.json")
+FLOORS = os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json")
+
+
+def corpus_age() -> tuple:
+    """`(age_seconds, built_at, narrowest_window_s)` for the walk this feeds.
+
+    REFUSED IF STALE, and this is the defect that made the file worth guarding.
+    Four engine versions were recorded with the byte-identical line
+    `declined=11`, which cannot be right: B6 measured that from 0.1.11 an
+    undeclared MONOTONICITY rate arm declines where 0.1.10 answered from a
+    default, and this fixture leaves six of eight counters undeclared. Measured
+    on a fresh corpus the two differ by exactly six -- 1 against 7. Measured on a
+    three-hour-old one they are both 11, because every windowed arm has gone
+    quiet with `insufficient_samples` and that decline arrives before the
+    threshold question is ever reached.
+    
+    So the sweep ran against an expired corpus and recorded four identical lines
+    as evidence about four engines. The floor half still held -- 0.1.7 to 0.1.9
+    fail on a missing attribute, which no corpus age can mask -- but the
+    *inside-the-range* half was evidence about a warmed-down fixture. `leg_corpus`
+    refuses a stale corpus and `leg_engine` re-measures the floors; this probe fed
+    the same corpus and asked it nothing.
+    """
+    with open(FLOORS, encoding="utf-8") as handle:
+        floors = json.load(handle)
+    windows = [spec.get("reversal_window_s")
+               for spec in floors["floors"].values()
+               if spec.get("reversal_window_s")]
+    narrowest = min(windows) if windows else None
+    with open(CORPUS, encoding="utf-8") as handle:
+        walk = json.load(handle)
+    built = (walk.get("source") or {}).get("built_at")
+    if not built:
+        print(f"REFUSED: {CORPUS} does not say when it was built, so this sweep "
+              f"cannot know whether the engines or the clock answered it.",
+              file=sys.stderr)
+        raise SystemExit(2)
+    age = (_dt.datetime.now(_dt.timezone.utc)
+           - _dt.datetime.fromisoformat(built.replace("Z", "+00:00"))).total_seconds()
+    if narrowest and age > narrowest:
+        print(f"REFUSED: the corpus is {int(age)}s old and the narrowest measured "
+              f"window is {int(narrowest)}s. Every windowed arm has gone quiet, "
+              f"so every release in the range answers identically and the sweep "
+              f"would record that as agreement. Re-run make_corpus.py.",
+              file=sys.stderr)
+        raise SystemExit(2)
+    return age, built, narrowest
 
 
 def declared_range(dist: str) -> str:
@@ -172,9 +220,35 @@ def sweep(dist: str, run) -> dict:
 
 
 def main() -> int:
-    body = {"distributions": {}}
+    age, built, narrowest = corpus_age()
+    print(f"corpus built {built} ({int(age)}s ago), inside the narrowest "
+          f"measured window ({int(narrowest)}s)")
+    body = {"measured_on": _dt.datetime.now(_dt.timezone.utc)
+            .replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "distributions": {},
+            # STAMPED, so the evidence says what it was measured against. The
+            # previous file recorded four engine versions with one identical
+            # OUTCOME line and nothing in it could say why.
+            "corpus": {"built_at": built, "age_s_at_sweep": int(age),
+                       "narrowest_window_s": narrowest}}
     for dist, run in SUBJECTS.items():
         body["distributions"][dist] = sweep(dist, run)
+
+    # AND AGAIN AT THE END. The check at the top is not enough on its own: this
+    # sweep builds a throwaway environment per release and takes minutes, so a
+    # corpus fresh when it started can expire while it runs -- and then the
+    # earlier releases were asked a live question and the later ones a dead one,
+    # with nothing in the file to say which. Both ages are recorded, and a sweep
+    # that crossed the boundary is not written.
+    end_age, _, _ = corpus_age()
+    body["corpus"]["age_s_at_write"] = int(end_age)
+    if narrowest and end_age > narrowest:
+        print(f"\nREFUSED: the corpus aged past the narrowest measured window "
+              f"({int(narrowest)}s) during the sweep -- {int(age)}s at the start, "
+              f"{int(end_age)}s now. Some releases were asked a live question and "
+              f"some a dead one. Re-run make_corpus.py and this probe.",
+              file=sys.stderr)
+        return 2
 
     # Refuse a partial write: a range with no result is a range this file would
     # then be silent about, and silence here reads as a pin that was exercised.

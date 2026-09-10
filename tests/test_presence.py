@@ -1,6 +1,8 @@
 """Stage 1: three states, never two, and a status word read as a status word."""
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from factory_line_audit import formats
@@ -212,3 +214,49 @@ class TestTheSpellingARealServerUses:
         name, props = grade("SomethingNoServerHasEverSent")
         assert name == "uncertain"
         assert props["usable"] is False
+
+
+class TestARegisterWithNothingToClassify:
+    """M5 from the 0.1.6 review.
+
+    `load_register` refused *no assets* and accepted assets with no tags;
+    `classify` then returned exit 0 over an empty list. *Nothing was testable*
+    and *everything was fine* were one exit code -- which is the distinction the
+    engine keeps with a denominator, and Stage 1 has no denominator to keep it
+    with.
+    """
+
+    def _register(self, tmp_path, tags):
+        import json
+        body = {"format": "factory-line-audit/register/1", "line": "l",
+                "assets": [{"id": "A1", "type": "Station", "tags": tags}]}
+        path = os.path.join(str(tmp_path), "r.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        return path
+
+    def test_an_asset_with_no_tags_at_all_is_refused(self, tmp_path):
+        from factory_line_audit import formats
+        from factory_line_audit.presence import load_register
+        with pytest.raises(formats.Refusal) as caught:
+            load_register(self._register(tmp_path, {}))
+        assert "nothing to classify" in caught.value.message
+
+    def test_a_register_whose_every_tag_was_a_template_slot_is_refused(self,
+                                                                      tmp_path):
+        """The sharper half: these tags exist, and load removes all of them.
+        Before the refusal this reported a clean Stage 1 over nothing, with the
+        exclusions sitting in the manifest saying why."""
+        from factory_line_audit import formats
+        from factory_line_audit.presence import load_register
+        tags = {"SpareAnalog1": {"node": "ns=2;s=A1.S1", "class": "measurement",
+                                 "templated": True}}
+        with pytest.raises(formats.Refusal):
+            load_register(self._register(tmp_path, tags))
+
+    def test_one_surviving_tag_is_enough(self, tmp_path):
+        """The non-vacuity leg. A refusal that fired on every register would
+        pass both rules above and break the package."""
+        from factory_line_audit.presence import load_register
+        tags = {"cycle_time_s": {"node": "ns=2;s=A1.Cycle", "class": "measurement"}}
+        assert load_register(self._register(tmp_path, tags))["assets"]

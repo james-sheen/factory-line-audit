@@ -89,10 +89,26 @@ class Register:
 
     @property
     def points(self) -> Iterable[Tag]:
+        """Every declared point, INCLUDING the ones load removed.
+
+        `load_register` strips templated tags before anything sees the register,
+        so building points from `assets[].tags` alone meant `Tag.is_templated`
+        and `Tag.disabled` could never return True -- two protocol members whose
+        true case was unreachable, and a `templated_tags` count in the core that
+        was always zero however many template slots a register declared. The
+        excluded rows carry their spec for exactly this.
+        """
         src = self._r.get("_path") or "register"
-        return [Tag(asset, tag, spec, src)
-                for asset in self._r.get("assets") or []
-                for tag, spec in (asset.get("tags") or {}).items()]
+        by_id = {asset["id"]: asset for asset in self._r.get("assets") or []}
+        points = [Tag(asset, tag, spec, src)
+                  for asset in self._r.get("assets") or []
+                  for tag, spec in (asset.get("tags") or {}).items()]
+        for row in self._r.get("_excluded_tags") or []:
+            asset = by_id.get(row.get("asset"))
+            spec = row.get("spec")
+            if asset and spec:
+                points.append(Tag(asset, row["tag"], spec, src))
+        return points
 
     @property
     def sources(self) -> Sequence[object]:
@@ -323,9 +339,15 @@ class FactoryLineVocabulary:
         """Empty, and this is a claim rather than a gap.
 
         Two `measurement` tags on one press are two different measurements, not
-        two readings of one thing. This domain has no declared notion of
-        redundancy, and inventing one from asset-and-class would pair a die
-        temperature with a tonnage.
+        two readings of one thing. Redundancy IS declarable here -- `redundant`
+        is a declaration kind, and the shipped fixture pairs a PLC counter with
+        an MES record through it -- but a pair is a claim somebody makes about
+        the plant, never one this method can derive. Inventing pairs from asset
+        and class would marry a die temperature to a tonnage.
+
+        This docstring read *this domain has no declared notion of redundancy*
+        until 0.1.7, which was false the day the `redundant` kind landed and
+        stated the opposite of the reason the method is empty.
         """
         return ()
 

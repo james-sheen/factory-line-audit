@@ -14,6 +14,9 @@ battery cannot close it.
 """
 from __future__ import annotations
 
+import asyncio
+import hashlib
+
 import pytest
 
 from factory_line_audit import formats
@@ -121,3 +124,103 @@ class TestWhatItAccepts:
                                   cert="c.pem", key="k.pem", pin=None,
                                   insecure=False, endpoint=PLANT)
         assert got["security_mode"] == "SignAndEncrypt"
+
+
+class TestThePinIsCheckedAndNotJustRecorded:
+    """S1 from the 0.1.6 review, and the severest thing in it.
+
+    `--server-cert-pin-sha256` was refused in the two combinations that
+    contradict it, recorded as `pinned: true` in the walk's provenance, and then
+    never passed anywhere: `cmd_capture` did not hand it to `capture`, `_walk`
+    had no parameter for it, and no line of code compared a certificate. The
+    suite asserted `got["pinned"] is True` -- it pinned the record, not the
+    behaviour. A walk could say it was taken over a pinned channel when nothing
+    checked who answered.
+
+    `asyncua` calls `Client.certificate_validator(cert, application)` with the
+    server's certificate, so the pin is now that callable. These tests drive it
+    directly with a real self-signed certificate: no server is needed to check
+    that a digest comparison compares digests, and the rung-3 leg covers the
+    channel.
+    """
+
+    @staticmethod
+    def _certificate():
+        """A real X.509, so the digest under test is a digest of a certificate.
+
+        `cryptography` arrives with `asyncua`, which is the `[live]` extra -- and
+        a pin can only be given to `capture`, which needs that extra, so skipping
+        here skips nothing a `[detect]`-only install can reach. The no-skips job
+        installs `[detect,live,vertical]`, so these run there for real.
+        """
+        pytest.importorskip("cryptography", reason="arrives with the [live] "
+                                                   "extra, which is the only "
+                                                   "way to reach a pin at all")
+        import datetime as dt
+
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "fla-test")])
+        now = dt.datetime.now(dt.timezone.utc)
+        cert = (x509.CertificateBuilder()
+                .subject_name(name).issuer_name(name)
+                .public_key(key.public_key())
+                .serial_number(x509.random_serial_number())
+                .not_valid_before(now - dt.timedelta(days=1))
+                .not_valid_after(now + dt.timedelta(days=1))
+                .sign(key, hashes.SHA256()))
+        digest = hashlib.sha256(
+            cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+        return cert, digest
+
+    def _run(self, pin, cert):
+        from factory_line_audit.capture import _Pin
+        checker = _Pin(pin, "opc.tcp://127.0.0.1:4840")
+        asyncio.run(checker(cert))
+        return checker
+
+    def test_a_matching_pin_passes_and_records_what_it_compared(self):
+        cert, digest = self._certificate()
+        checker = self._run(digest, cert)
+        assert checker.checked is True
+        assert checker.digest == digest
+
+    def test_a_wrong_pin_refuses_by_name_and_prints_both_digests(self):
+        cert, digest = self._certificate()
+        with pytest.raises(formats.Refusal) as caught:
+            self._run("00" * 32, cert)
+        assert digest in caught.value.message
+        assert "does not match the pin" in caught.value.message
+
+    def test_the_comparison_ignores_the_punctuation_a_person_pastes(self):
+        """`openssl x509 -fingerprint -sha256` prints colons. A pin refused for
+        its formatting reads exactly like a server that answered wrongly."""
+        cert, digest = self._certificate()
+        spaced = ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
+        assert self._run(spaced.upper(), cert).checked is True
+
+    def test_a_second_certificate_does_not_match_the_first(self):
+        """The control. If every certificate hashed to the same thing -- or the
+        comparison were `in` rather than `==` -- both rules above would pass."""
+        first, digest = self._certificate()
+        other, _ = self._certificate()
+        with pytest.raises(formats.Refusal):
+            self._run(digest, other)
+
+    def test_the_pin_reaches_the_walk_rather_than_stopping_at_the_flag(self):
+        """The defect was a parameter that did not exist. Held against the
+        signatures, because that is where it went missing."""
+        import inspect
+
+        from factory_line_audit import capture as module
+        assert "pin" in inspect.signature(module.capture).parameters
+        assert "pin" in inspect.signature(module._walk).parameters
+        source = inspect.getsource(module._walk)
+        assert "certificate_validator" in source
+        assert "pinned.checked" in source, (
+            "the walk does not assert the validator ran; a pin the library never "
+            "calls would pass a wrong digest and still record itself")

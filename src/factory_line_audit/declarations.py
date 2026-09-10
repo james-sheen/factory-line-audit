@@ -81,7 +81,12 @@ KINDS: Dict[str, Dict[str, Any]] = {
         "requires_tag": True, "all_of": ("required_property",),
         "answers": "precondition_unmet",
         "note": "the check means nothing unless the machine is in a state. "
-                "The engine will not say which way to read the gate.",
+                "The engine will not say which way to read the gate, and "
+                "neither will this package: `open_when` lists the state WORDS "
+                "that mean the check applies. Without it the gate can only read "
+                "a boolean, because a PLC state is usually an enumeration "
+                "string and every non-empty string is true in Python -- a gate "
+                "that opens on truthiness never withholds anything.",
     },
     "bad_state": {
         "requires_tag": True,               # a `state`-class tag
@@ -184,6 +189,31 @@ def check_statements(body: Dict[str, Any], register: Dict[str, Any],
             problems.append(f"{where}.{tag}): carries allow_reset, which is not "
                             f"read here. Declare it as a `reset` statement, "
                             f"where it is required and checked")
+        if kind == "exclusion" and tag and tag not in assets[asset_id]["tags"]:
+            problems.append(f"{where}.{tag}): excludes a tag the register does "
+                            f"not declare (or one already removed at load). A "
+                            f"typo here excludes nothing and the manifest "
+                            f"records the exclusion anyway")
+        if kind == "gate_on":
+            wanted = stmt.get("required_property")
+            tags = assets[asset_id]["tags"]
+            if wanted and wanted not in tags:
+                problems.append(f"{where}.{tag}): required_property "
+                                f"{wanted!r} is not a tag on this asset. A "
+                                f"misspelling here withholds every sample, and "
+                                f"the engine then declines `missing_property` "
+                                f"-- which this package classes as its own "
+                                f"defect, naming the wrong subject")
+            elif wanted and tags[wanted].get("class") != "state":
+                problems.append(f"{where}.{tag}): required_property "
+                                f"{wanted!r} is class "
+                                f"{tags[wanted].get('class')!r}, not `state`. "
+                                f"A gate reads a machine state")
+            words = stmt.get("open_when")
+            if words is not None and (not isinstance(words, list) or not words
+                                      or not all(isinstance(w, str) for w in words)):
+                problems.append(f"{where}.{tag}): open_when must be a non-empty "
+                                f"list of state words")
         if kind == "redundant":
             for other in stmt.get("agrees_with") or []:
                 if other not in assets[asset_id]["tags"]:
@@ -225,7 +255,38 @@ def gate(paths: List[str], register: Dict[str, Any]) -> Dict[str, Any]:
         body["_path"] = path
         body["_review"] = status
         accepted.append(body)
+    duplicates = _duplicates(accepted)
+    if duplicates:
+        first = duplicates[0]
+        raise formats.Refusal(first["paths"][-1], "declaration is a duplicate:\n  - "
+                              + "\n  - ".join(d["said"] for d in duplicates))
     return {"accepted": accepted, "reviews": reviews}
+
+
+def _duplicates(accepted: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Every `(asset, tag, kind)` declared more than once, across all files.
+
+    The generator reads `[0]` of each kind, so a second statement about one tag
+    was accepted and then silently ignored -- and across two files the earlier
+    file won, which is an ordering nobody declared. A contradiction between two
+    reviewed numbers is the one thing a review gate must not resolve by itself.
+    """
+    seen: Dict[Tuple[Optional[str], Optional[str], Optional[str]],
+               List[str]] = {}
+    for body in accepted:
+        for stmt in body.get("statements") or []:
+            key = (stmt.get("asset"), stmt.get("tag"), stmt.get("kind"))
+            seen.setdefault(key, []).append(body.get("_path") or "?")
+    out = []
+    for (asset, tag, kind), paths in seen.items():
+        if len(paths) > 1:
+            where = tag and f"{asset}.{tag}" or asset
+            out.append({"paths": paths, "said":
+                        f"{kind} on {where} is declared {len(paths)} times "
+                        f"({', '.join(sorted(set(paths)))}). The generator reads "
+                        f"the first and ignores the rest, so one of these "
+                        f"numbers is in force and nothing says which"})
+    return out
 
 
 def draft(register: Dict[str, Any]) -> Dict[str, Any]:

@@ -28,17 +28,34 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Sequence, Tuple
 
+from . import formats
 from .exit_contract import CLEAN, FINDINGS, INCOMPLETE
 
 #: What this verb writes. Its own format, because the counts below are this
 #: package's reading of the core's report and not the core's report itself.
-FORMAT = "factory-line-audit/regression/1"
+FORMAT = formats.REGRESSION
 
 
 def _walk(path: str) -> Tuple[Any, str]:
+    """Through `formats.load`, which is what refuses an unknown major.
+
+    This read raw JSON until 0.1.7 and accepted any object with a `samples` key
+    -- including a `walk/2` written by a reader this one does not understand.
+    Every other verb went through the loader; the README's claim that all of
+    them do was true of seven of nine.
+
+    `validate_walk` is deliberately NOT called here: the declared-rename leg
+    compares a walk whose node ids carry a prefix this package did not write, and
+    a receiver-side shape check on that copy would refuse the one input the verb
+    exists to accept.
+    """
     try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
+        payload = formats.load(path, formats.WALK)
+    except formats.Refusal as refused:
+        # The message alone does not carry the file. Every other branch here
+        # names it, and a refusal that does not tells the caller to go and look
+        # at both walks.
+        return None, f"{refused.path}: {refused.message}"
     except OSError as unreadable:
         return None, f"cannot read {path}: {unreadable}"
     except json.JSONDecodeError as malformed:

@@ -91,6 +91,22 @@ def _yaml(value: Any, indent: int = 0) -> List[str]:
                     f"got {type(value).__name__}")
 
 
+#: Words a YAML 1.1 parser reads as something other than a string, IN ANY CASE.
+#:
+#: The engine loads models with `yaml.safe_load`, and PyYAML resolves YAML 1.1:
+#: `Off`, `OFF`, `No`, `Yes`, `On`, `True`, `Null` and their case variants are
+#: booleans and nulls, not words. This list was lowercase-only, so a `bad_state`
+#: declaring the PLC state word `Off` emitted `bad: [Off, Fault]` and the engine
+#: read `[False, "Fault"]`. The fed property is the string `"Off"`, which never
+#: equals `False`, so the declared bad state could not fire -- and probe D1
+#: measured that `unread_fields` says nothing about `bad:`, so no surface
+#: anywhere reported it. `On` and `Yes` fail the other way: they become `True`,
+#: which a state tag fed a real boolean would MATCH.
+#:
+#: The suite derives this set from the parser rather than trusting the list.
+YAML_ONE_ONE_WORDS = ("true", "false", "null", "yes", "no", "on", "off", "y", "n")
+
+
 def _scalar(value: Any) -> str:
     if value is None:
         return "null"
@@ -99,8 +115,8 @@ def _scalar(value: Any) -> str:
     if isinstance(value, (int, float)):
         return repr(value)
     text = str(value)
-    if text and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.:-]*", text) and text not in (
-            "true", "false", "null", "yes", "no", "on", "off"):
+    if (text and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.:-]*", text)
+            and text.lower() not in YAML_ONE_ONE_WORDS):
         return text
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -202,6 +218,26 @@ def build(register: Dict[str, Any], gated: Dict[str, Any]) -> Tuple[str, Dict[st
             })
             counts["indicators"] += 1
             counts["axioms"] += 1
+            # RECORDED, because the check cannot report what it looks like it
+            # reports. The feeder adds this edge exactly when the register
+            # declares it required and both ends were fed, so the engine is
+            # confirming an edge this package asserted from the same register it
+            # read the indicator from. Measured on the shipped corpus: no
+            # CONNECTIVITY finding arises from a clean walk OR from one where
+            # the target is entirely absent -- that case declines
+            # `missing_entity_type` instead. A `missing_relationship` here means
+            # the feeder failed to add an edge it should have, which is a defect
+            # in this package and not a fault on the line.
+            exclusions.append({
+                "scope": "relation", "asset": asset["id"], "tag": rel_type,
+                "reason": "relation_asserted_from_register",
+                "detail": f"the edge to {target} is asserted by this bridge "
+                          f"from the register and then confirmed by the engine, "
+                          f"so this invariant counts toward `attempted` and "
+                          f"cannot fail on plant evidence. A finding here would "
+                          f"be a feed defect in this package. No walk evidence "
+                          f"contradicts a declared edge: OPC UA serves nodes, "
+                          f"not topology"})
         if rows:
             indicators[etype] = rows
         else:
@@ -388,10 +424,16 @@ def _indicator(asset, tag, spec, by_key):
             dropped.append({
                 "scope": "axiom_arm", "asset": asset_id, "tag": tag,
                 "axiom": "MONOTONICITY.rate", "reason": "no_declared_rate",
-                "detail": "no reviewed rate declaration. The engine answers "
-                          "this arm from its own default rather than declining, "
-                          "so the arm runs against a number nobody in this "
-                          "plant chose -- see probe R1 and finding 3"})
+                "detail": "no reviewed rate declaration. MEASURED ACROSS THE "
+                          "DECLARED RANGE, and the behaviour splits: at 0.1.10 "
+                          "the engine answers this arm from its own default "
+                          "rather than declining, and from 0.1.11 it declines "
+                          "`no_threshold` -- six more declines on this fixture, "
+                          "which is what `pin_evidence.json` now records per "
+                          "release. Either way the arm runs against a number "
+                          "nobody in this "
+                          "plant chose -- see probe R1 and the finding titled "
+                          "`The MONOTONICITY rate arm answers from a default rather than declining`"})
         # NO SEGMENTATION HERE, and that is a decision rather than an omission.
         #
         # A `reset_schedule` was specified for this package: cut the series at
@@ -489,7 +531,8 @@ def _indicator(asset, tag, spec, by_key):
             "detail": "a gate_on declaration was made. The engine's "
                       "required_property gate is read by CONNECTIVITY only, so "
                       "this bridge applies the gate at feed time instead -- see "
-                      "probe G1 and finding 4"})
+                      "probe G1 and the finding titled `required_property is "
+                      "read by CONNECTIVITY only, and check will not tell you`"})
 
     if not axioms:
         dropped.append({"scope": "tag", "asset": asset_id, "tag": tag,

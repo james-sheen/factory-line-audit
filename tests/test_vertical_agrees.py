@@ -206,3 +206,47 @@ class TestTheAdaptersAreOnlyTheProtocol:
         v = vertical.FactoryLineVocabulary()
         assert v.template_pattern("SpareAnalog3") is None
         assert v.template_pattern("reserved_1") is None
+
+
+class TestTheCoreCanSeeATemplateSlot:
+    """Sec. 4.5 of the 0.1.6 review: two protocol members with no reachable
+    true case.
+
+    `load_register` strips templated tags before anything else sees the register,
+    and the vertical built its points from what survived -- so `is_templated` and
+    `disabled` always answered False, and the core's `templated_tags` count was
+    zero however many slots a register declared. Nothing could go red: the count
+    was correct about the points it was given.
+    """
+
+    def test_the_register_really_declares_one(self, register):
+        """Non-vacuity. With no template slot in the fixture, both rules below
+        are true of an empty set -- which is how this passed for a month."""
+        assert any(row["reason"] == "declared_templated"
+                   for row in register.get("_excluded_tags") or [])
+
+    def test_a_template_slot_reaches_the_core_as_a_point(self, register):
+        from factory_line_audit.vertical import Register
+        points = list(Register(register).points)
+        templated = [p for p in points if p.is_templated]
+        assert len(templated) == 1, [p.display_name for p in templated]
+        assert templated[0].display_name == "PR-01.SpareAnalog3"
+
+    def test_it_is_disabled_and_still_names_its_node(self, register):
+        """A point the core is told to skip still has to be addressable, or the
+        count is the only thing it can report about it."""
+        from factory_line_audit.vertical import Register
+        slot = next(p for p in Register(register).points if p.is_templated)
+        assert slot.disabled is True
+        assert slot.name.startswith("ns=")
+        assert slot.type == "measurement"
+
+    def test_no_surviving_tag_claims_to_be_a_slot(self, register):
+        """The inverse. If `points` grew a second copy of every tag, or flagged
+        the wrong ones, the count above would still be satisfiable."""
+        from factory_line_audit.vertical import Register
+        points = list(Register(register).points)
+        names = [p.display_name for p in points]
+        assert len(names) == len(set(names)), "a tag reached the core twice"
+        live = [p.display_name for p in points if not p.is_templated]
+        assert "PR-01.SpareAnalog3" not in live

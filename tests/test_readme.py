@@ -546,3 +546,78 @@ class TestEveryVerbIsOnThePage:
         extra = sorted(self._listed() - self._verbs())
         assert not extra, (f"the README names these verbs and the CLI refuses "
                            f"them: {extra}")
+
+
+class TestTheFormatTableListsEveryFormat:
+    """Held to `formats.ALL`, which is what the loader refuses against.
+
+    The page said *all refusing an unknown major by name* over a table of six,
+    while the package wrote eight: `regression/1` and `membership/1` were in
+    neither the table nor `ALL`, so no reader could refuse a future major of
+    either. Two claims short in the same direction -- the enumeration and the
+    mechanism -- and each made the other look complete.
+    """
+
+    def _tabled(self) -> set[str]:
+        page = _readme()
+        start = page.index("## Formats")
+        end = page.index("\n## ", start + 10)
+        return set(re.findall(r"`(factory-line-audit/[a-z]+/\d+)`",
+                              page[start:end]))
+
+    def test_there_is_a_table_to_read(self):
+        assert len(self._tabled()) >= 5, sorted(self._tabled())
+
+    def test_every_format_the_package_knows_has_a_row(self):
+        from factory_line_audit import formats
+        missing = sorted(set(formats.ALL) - self._tabled())
+        assert not missing, (f"these are in formats.ALL and not in the README's "
+                             f"table: {missing}")
+
+    def test_no_row_names_a_format_the_package_does_not_know(self):
+        from factory_line_audit import formats
+        extra = sorted(self._tabled() - set(formats.ALL))
+        assert not extra, (f"the README names these and `formats.load` cannot "
+                           f"refuse an unknown major of them: {extra}")
+
+
+class TestTheFaultCountIsWhatTheCorpusBuilds:
+    """The fourth enumeration in this repository held to its own source.
+
+    `thirteen fault classes` appeared twice on the page and in no test. It went
+    stale the moment a fourteenth landed, with nothing able to notice -- the same
+    shape as the leg table, the declaration kinds and the verbs above.
+    """
+
+    WORDS = {"twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+             "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+             "twenty": 20}
+
+    def _built(self) -> int:
+        source = (ROOT / "battery" / "make_corpus.py").read_text(encoding="utf-8")
+        found = re.search(r"^FAULTS = \[(.*?)^\]", source, re.S | re.MULTILINE)
+        assert found, "no FAULTS list in make_corpus.py"
+        return len(re.findall(r'^\s*\("', found.group(1), re.MULTILINE))
+
+    def _stated(self) -> set[int]:
+        page = _readme()
+        out = set()
+        for word, number in self.WORDS.items():
+            for phrase in (f"{word} fault classes", f"{word} one-fault copies"):
+                if phrase in page:
+                    out.add(number)
+        return out
+
+    def test_the_corpus_builds_faults_to_count(self):
+        assert self._built() >= 10, self._built()
+
+    def test_the_page_states_a_count_this_guard_can_read(self):
+        assert self._stated(), ("no `<word> fault classes` or `<word> one-fault "
+                               "copies` phrase found; the rule below holds "
+                               "nothing")
+
+    def test_every_stated_count_is_the_number_the_corpus_builds(self):
+        built = self._built()
+        wrong = sorted(n for n in self._stated() if n != built)
+        assert not wrong, (f"the README states {wrong} and `make_corpus.FAULTS` "
+                           f"builds {built}")

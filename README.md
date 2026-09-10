@@ -148,7 +148,7 @@ below. `corpus`, `conformance`, `regression`, `capture`, `engine` and
 | `draft` | Does draft tooling emit an unreviewed statement and exit clean? |
 | `gate` | Does the gate then refuse that exact file, by name? |
 | `clean` | Over an uncontaminated corpus, does the pipeline stay quiet? |
-| `fault` | For each of thirteen fault classes, is the injected thing found? |
+| `fault` | For each of fourteen fault classes, is the injected thing found? |
 | `absent` | Is a declared-but-absent source a finding, not an incompleteness? |
 | `attest` | Does attestation work through the same front door? |
 | `pipe` | Does a reader walking away change the verdict, or print anything? |
@@ -190,6 +190,8 @@ All JSON, all carrying a `format` string, all refusing an unknown major by name.
 | `factory-line-audit/declaration/1` | Operator statements, each with a `basis`, and a review marker |
 | `factory-line-audit/manifest/1` | Everything excluded from the model with a reason, the entity-type map, and every indicator this package derived |
 | `factory-line-audit/attest/1` | Per-run record: checked, declined, not-established, engine strings verbatim, exit |
+| `factory-line-audit/regression/1` | Two walks of one line compared: pairs, removals, additions, and any undeclared prefix move |
+| `factory-line-audit/membership/1` | Which declared nodes the address space still holds, and the namespaces; no value read |
 
 ## Declarations
 
@@ -208,20 +210,34 @@ default and says nothing about having done so.
 A file becomes usable when a person adds their name **and** the date. A test
 fixture passes only by disclosing itself on its face, never by naming a reviewer.
 
-**Upgrading to 0.1.6, if you keep declaration files.** `allow_reset` used to be
-read off a `rate` statement and was validated by nothing, so a misspelling of it
-read as a declaration while the engine routed from its own default. It is now a
-`reset` statement of its own, where the key is required -- and a `rate` statement
-still carrying it is **refused by name**, pointing at where it moved. Every
-counter with no `reset` statement is recorded in the manifest as running on the
-engine's routing, which is a line in a report rather than an error.
+**Upgrading, if you keep declaration files.** Three refusals arrived in 0.1.6 and
+0.1.7, each replacing something that was accepted and then ignored.
+
+* `allow_reset` is a `reset` statement of its own (0.1.6). It used to be read off
+  a `rate` statement and validated by nothing, so a misspelling read as a
+  declaration while the engine routed from its own default. A `rate` statement
+  still carrying it is refused by name, pointing at where it moved. A counter with
+  no `reset` statement is recorded in the manifest as running on the engine's
+  routing -- a line in a report, not an error.
+* `gate_on` takes `open_when`, a list of the state WORDS that mean the check
+  applies (0.1.7). The gate read `bool(value)`, and every non-empty word a PLC
+  produces is true in Python -- so a station reporting `Stopped` opened the gate
+  and the run judged a takt the station was not running to. Where the state is
+  not a boolean and no `open_when` is declared, `detect` stops rather than
+  guesses. `required_property` must also name a `state`-class tag on the same
+  asset.
+* A statement declared twice is refused (0.1.7), across every accepted file. The
+  generator reads the first of each kind, so the second was accepted and ignored
+  -- and across two files the earlier file won, an ordering nobody declared.
+  An `exclusion` naming a tag the register does not have is refused for the same
+  reason: it excluded nothing and was recorded as an exclusion.
 
 ## The evidence ladder
 
 | Rung | What it is | Here |
 |---|---|---|
 | 1 | Synthetic corpus | `battery/corpus/clean.json`, sized from measured floors |
-| 2 | Mutated copies | thirteen one-fault copies with expectations declared before the run |
+| 2 | Mutated copies | fourteen one-fault copies with expectations declared before the run |
 | 3 | A live-but-safe surface | `battery/opcua_surface.py` -- a real server, a real client, localhost |
 | 4 | First contact | **not climbed.** A person, a plant, a register exported from that plant's MES, declarations signed by that plant's engineers |
 

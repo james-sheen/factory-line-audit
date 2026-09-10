@@ -163,7 +163,11 @@ def cmd_capture(args) -> int:
 
     try:
         if args.membership_cache:
-            fresh = capture_module.membership(register, args.target)
+            fresh = capture_module.membership(
+                register, args.target,
+                security_string=capture_module.security_string(
+                    security, args.cert, args.key),
+                user=args.user, password=password, namespace=args.namespace)
             cached = None
             if os.path.exists(args.membership_cache):
                 with open(args.membership_cache, encoding="utf-8") as handle:
@@ -185,7 +189,8 @@ def cmd_capture(args) -> int:
             security=security,
             security_string=capture_module.security_string(
                 security, args.cert, args.key),
-            user=args.user, password=password)
+            user=args.user, password=password,
+            pin=args.server_cert_pin_sha256)
     except formats.Refusal as refused:
         _out(f"  COULD NOT COMPLETE: {refused}")
         _out(f"OUTCOME exit={INCOMPLETE} verdict={MEANING[INCOMPLETE]}")
@@ -301,11 +306,29 @@ def cmd_generate(args) -> int:
 
 
 def _floors(path: Optional[str]) -> Dict[str, Any]:
-    candidate = path or os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__)))), "battery", "engine_floors.json")
-    if os.path.exists(candidate):
-        with open(candidate, "r", encoding="utf-8") as handle:
+    """The measured floors, from the package unless a caller names a file.
+
+    This looked in `battery/`, which no wheel carries, and returned `{}` when it
+    found nothing -- including when `--floors` named a file that does not exist.
+    So an installed deployment lost `warmup_unreachable` silently: a collector
+    too slow to ever present a floor had its `insufficient_samples` declines
+    classed `warmup`, floor 0, which reads as *give it time*. The floors now ship
+    beside the code, and a named file that is missing is a refusal rather than an
+    empty dict, because *the file you asked for is not there* and *this engine has
+    no measured floors* are different facts.
+    """
+    if path:
+        if not os.path.exists(path):
+            raise formats.Refusal(path, "--floors names a file that does not "
+                                        "exist. Continuing without it would "
+                                        "class every unreachable floor as a "
+                                        "warm-up")
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    beside = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "engine_floors.json")
+    if os.path.exists(beside):
+        with open(beside, "r", encoding="utf-8") as handle:
             return json.load(handle)
     return {}
 

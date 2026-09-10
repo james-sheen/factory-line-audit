@@ -230,3 +230,98 @@ class TestADeclaredResetChangesTheFaultTheOperatorIsHanded:
                 "monotonicity_reversal:parts_out_mes"} <= set(fed)
         assert "monotonicity_reset_storm:parts_out_mes" not in fed
         assert "monotonicity_reversal:parts_out" not in fed
+
+
+class TestTheGateReadsAStateWordAndNotItsTruthiness:
+    """S5 from the 0.1.6 review, and it was right.
+
+    The gate was `bool(gate_row.get("v"))`. A PLC state is usually an
+    enumeration word, and every non-empty word is true in Python -- so a station
+    reporting `Stopped` opened the gate, the samples were fed, and the package
+    reported a verdict about a takt the station was not running to. The corpus
+    fed the boolean `True`, so the one test covering the gate covered the one
+    case that worked.
+
+    `open_when` lists the words that mean the check applies. Where a declaration
+    does not list them and the value is not a boolean, this package stops rather
+    than guesses: which word means running is a fact about the state machine.
+    """
+
+    STATE = "ns=2;s=ST02.Running"
+    GATED = ("ST-02", "cycle_time_s")
+
+    def _walk_with(self, clean_walk, word, over=20):
+        for sample in clean_walk["samples"][-over:]:
+            sample["nodes"][self.STATE]["v"] = word
+        return clean_walk
+
+    def _gated(self, register, walk, gated):
+        from factory_line_audit.feeder import series_for
+        presence = classify(register, walk)
+        _, withheld, _ = series_for(register, presence, walk, gated)
+        return withheld
+
+    def test_the_corpus_now_carries_a_word_a_plc_would_produce(self, clean_walk):
+        """Non-vacuity. With a boolean here, every rule below is about a case
+        the shipped corpus cannot reach."""
+        value = clean_walk["samples"][0]["nodes"][self.STATE]["v"]
+        assert isinstance(value, str), value
+
+    def test_a_running_station_is_not_withheld(self, register, clean_walk, gated):
+        assert self.GATED not in self._gated(register, clean_walk, gated)
+
+    def test_a_stopped_station_is_withheld_sample_by_sample(self, register,
+                                                            clean_walk, gated):
+        walk = self._walk_with(clean_walk, "Stopped")
+        assert self._gated(register, walk, gated).get(self.GATED) == 20
+
+    def test_any_other_word_is_withheld_too(self, register, clean_walk, gated):
+        """Not a list of bad words -- a list of the one good one. `Changeover`
+        is not in `open_when`, and nobody had to think of it."""
+        walk = self._walk_with(clean_walk, "Changeover", over=7)
+        assert self._gated(register, walk, gated).get(self.GATED) == 7
+
+    def test_an_undeclared_word_gate_stops_rather_than_guessing(
+            self, register, clean_walk, tmp_path):
+        """The same declaration with `open_when` removed, against the same
+        walk. Python truthiness would have opened the gate for every sample."""
+        import copy
+        import json
+
+        from factory_line_audit.declarations import gate
+        from factory_line_audit.feeder import HardStop
+        with open(FIXTURE, encoding="utf-8") as handle:
+            body = json.load(handle)
+        body = copy.deepcopy(body)
+        for stmt in body["statements"]:
+            if stmt["kind"] == "gate_on":
+                stmt.pop("open_when")
+        path = os.path.join(str(tmp_path), "d.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        without = gate([path], register)
+        with pytest.raises(HardStop) as caught:
+            self._gated(register, clean_walk, without)
+        assert caught.value.name == "gate_undecidable"
+        assert "open_when" in caught.value.detail
+
+    def test_a_boolean_state_still_reads_as_a_boolean(self, register, clean_walk,
+                                                      tmp_path):
+        """The case that used to be the only one. A register whose state tag
+        really is a boolean must keep working with no `open_when` at all."""
+        import copy
+        import json
+
+        from factory_line_audit.declarations import gate
+        with open(FIXTURE, encoding="utf-8") as handle:
+            body = copy.deepcopy(json.load(handle))
+        for stmt in body["statements"]:
+            if stmt["kind"] == "gate_on":
+                stmt.pop("open_when")
+        path = os.path.join(str(tmp_path), "d.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        without = gate([path], register)
+        for n, sample in enumerate(clean_walk["samples"]):
+            sample["nodes"][self.STATE]["v"] = n < 30
+        assert self._gated(register, clean_walk, without).get(self.GATED) == 20

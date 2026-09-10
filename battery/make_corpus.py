@@ -34,7 +34,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 CORPUS = os.path.join(HERE, "corpus")
-FLOORS = os.path.join(HERE, "engine_floors.json")
+FLOORS = os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json")
 REGISTER = os.path.join(ROOT, "examples", "asset_register.json")
 
 CADENCE_S = 60
@@ -123,9 +123,9 @@ def clean_walk():
             "PR-01.SpareAnalog3": 0.0,
             "ST-01.cycle_time_s": noisy(60, 1.0),         # setpoint 60 +/- 4
             "ST-01.weld_current_a": noisy(8500, 380.0),   # varies by construction
-            "ST-01.state_running": True,
+            "ST-01.state_running": "Running",
             "ST-02.cycle_time_s": noisy(60, 1.0),
-            "ST-02.state_running": True,
+            "ST-02.state_running": "Running",
             "ST-03.cycle_time_s": noisy(60, 1.0),
             "ST-03.reject_pct": max(0.0, noisy(2.4, 0.45)),
             "ROB-01.program_cycle_ms": noisy(604, 21.0),  # warning 800
@@ -323,6 +323,23 @@ def heartbeat_runaway(walk):
     return touched
 
 
+def latency_over_deadline(walk):
+    """RESPONSIVENESS, which nothing exercised until 2026-09-10.
+
+    The model declares it on both latency tags with a declared critical, and the
+    thirteen faults covered seven axioms without it. 1400 ms against a declared
+    critical of 1200: measured, that fires `response_time_critical` AND
+    `threshold_exceeded`, because one number answers both axioms. The expectation
+    names RESPONSIVENESS, which is the one no other fault reaches.
+    """
+    touched = 0
+    for sample in walk["samples"][-6:]:
+        cell = at(sample, "ROB-01.program_cycle_ms")
+        cell["v"] = 1400.0
+        touched += 1
+    return touched
+
+
 def hmi_override(walk):
     """Stage 1, substituted. The conveyor speed reads GoodLocalOverride: a
     value somebody typed at a panel. The number is inside every bound, which is
@@ -361,6 +378,9 @@ FAULTS = [
      "104.5 on a declared percentage role (C1)"),
     ("heartbeat_runaway", heartbeat_runaway, "MONOTONICITY", "PLC-01", 1,
      "200/s against a declared rate_critical of 120 (R1, R2)"),
+    ("latency_over_deadline", latency_over_deadline, "RESPONSIVENESS", "ROB-01", 1,
+     "1400 ms against a declared critical of 1200; the one axiom no other "
+     "fault reaches"),
     ("hmi_override", hmi_override, None, "CNV-01", 1,
      "Stage 1 only; every value stays inside every bound, deliberately"),
 ]

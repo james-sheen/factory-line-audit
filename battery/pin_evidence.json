@@ -1,4 +1,5 @@
 {
+  "measured_on": "2026-09-10T03:12:40Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.1.10,<0.2",
@@ -54,28 +55,28 @@
         },
         "0.1.10": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=0 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
         },
         "0.1.11": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
         },
         "0.1.12": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
         },
         "0.1.13": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=11 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -156,5 +157,11 @@
         "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'"
       }
     }
+  },
+  "corpus": {
+    "built_at": "2026-09-10T03:12:39Z",
+    "age_s_at_sweep": 1,
+    "narrowest_window_s": 900,
+    "age_s_at_write": 58
   }
 }

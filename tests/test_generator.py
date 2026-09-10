@@ -1,8 +1,11 @@
 """The model and the manifest, as a pair. C2."""
 from __future__ import annotations
 
+import os
+
 import pytest
 
+from conftest import FIXTURE
 from factory_line_audit.generator import build, entity_type_for, sanitise
 
 yaml = pytest.importorskip("yaml", reason="a real parser is needed to check "
@@ -178,3 +181,73 @@ class TestWhatTheModelDeclares:
                 if e.get("reason") == "no_declared_rate"]
         assert rows, "no counter is running on the engine's default rate"
         assert all("default" in e["detail"] for e in rows)
+
+
+class TestTheWriterSurvivesYamlOneOne:
+    """The engine loads the model with `yaml.safe_load`, which resolves YAML 1.1.
+
+    A `bad_state` declaring the PLC state word `Off` emitted `bad: [Off, Fault]`
+    and the engine read `[False, "Fault"]`. The fed property is the string
+    `"Off"`: it never equals `False`, the declared bad state could not fire,
+    nothing declined, and probe D1 had already measured that `unread_fields`
+    says nothing about `bad:`. Silence that looks like health, arriving through
+    the model writer.
+
+    `On` and `Yes` fail the other way round -- they become `True`, which a state
+    tag fed a real boolean WOULD match. Both directions are held below.
+    """
+
+    #: Derived from the parser, not transcribed. The reserved list in the writer
+    #: was lowercase-only for exactly as long as nobody asked PyYAML.
+    CANDIDATES = ("y", "Y", "n", "N", "yes", "Yes", "YES", "no", "No", "NO",
+                  "true", "True", "TRUE", "false", "False", "FALSE",
+                  "on", "On", "ON", "off", "Off", "OFF",
+                  "null", "Null", "NULL", "~", ".nan", ".inf", "-.inf",
+                  "Fault", "Running", "Stopped", "NUMERIC")
+
+    def _bare(self, word):
+        """What the parser makes of the word with no quoting at all."""
+        return yaml.safe_load(f"a: {word}\n")["a"]
+
+    def _written(self, word):
+        from factory_line_audit.generator import _yaml
+        return yaml.safe_load("\n".join(_yaml({"a": word})))["a"]
+
+    def test_the_probe_can_produce_a_positive(self):
+        """Before believing the rule below, prove this parser really does read
+        some of these as non-strings. On a parser that did not, every assertion
+        underneath would pass having measured nothing."""
+        coerced = [w for w in self.CANDIDATES
+                   if not isinstance(self._bare(w), str)]
+        assert len(coerced) >= 20, (
+            f"only {coerced} are coerced when written bare; this parser does "
+            f"not resolve YAML 1.1 and the rule below is vacuous")
+
+    def test_every_candidate_survives_the_writer_as_the_string_it_was(self):
+        for word in self.CANDIDATES:
+            assert self._written(word) == word, (
+                f"{word!r} was written in a way that parses back as "
+                f"{self._written(word)!r}")
+
+    def test_a_declared_bad_state_reaches_the_engine_as_words(self, register,
+                                                              tmp_path):
+        """End to end through the real gate and the real writer, because the
+        rule above is about `_yaml` and the defect was about `bad:`."""
+        import json
+
+        from factory_line_audit.declarations import gate
+        from factory_line_audit.generator import build
+        with open(FIXTURE, encoding="utf-8") as handle:
+            body = json.load(handle)
+        body["statements"].append(
+            {"kind": "bad_state", "asset": "ST-01", "tag": "state_running",
+             "states": ["Off", "Fault", "On"],
+             "basis": "FIXTURE -- three words a PLC really produces"})
+        path = os.path.join(str(tmp_path), "d.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        text, _ = build(register, gate([path], register))
+        row = next(r for r in yaml.safe_load(text)["domain"]
+                   ["indicators"]["Station__ST_01"] if r["name"] == "state_running")
+        assert row["bad"] == ["Off", "Fault", "On"], row["bad"]
+        assert all(isinstance(word, str) for word in row["bad"])

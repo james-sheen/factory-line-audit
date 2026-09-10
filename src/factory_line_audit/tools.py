@@ -65,6 +65,23 @@ SPEC: Dict[str, Dict[str, Any]] = {
                  "--declarations", "{declarations}"],
         "required": ["register", "walk", "declarations"],
     },
+    "validate_walk": {
+        "summary": "Everything wrong with a walk file, or nothing. No engine, "
+                   "no server: a receiver checking a file it was handed.",
+        "verb": "validate-walk",
+        "argv": ["validate-walk", "{walk}"],
+        "required": ["walk"],
+    },
+    "compare_walks": {
+        "summary": "Two walks of one line, oldest first. An undeclared prefix "
+                   "move is REPORTED, never applied. A declared rename is a "
+                   "signature and is not offered here: `--rename` stays with a "
+                   "person, for the same reason marking a declaration reviewed "
+                   "does.",
+        "verb": "regression",
+        "argv": ["regression", "--before", "{before}", "--after", "{after}"],
+        "required": ["before", "after"],
+    },
     "read_attestation": {
         "summary": "Re-report a stored attestation through the same front door.",
         "verb": "attest",
@@ -77,6 +94,10 @@ SPEC: Dict[str, Dict[str, Any]] = {
 #: the closure test can assert the absence rather than the absence being an
 #: omission nobody wrote down.
 WITHHELD = {
+    "declare_a_rename": "The `--rename OLD NEW` signature on `regression`. A "
+                        "move this package inferred would be exactly the guess "
+                        "the review gate exists to refuse, so the comparison is "
+                        "offered and the declaration is not.",
     "connect_to_plc": "First contact. A credentialed reach into a live PLC or "
                       "OPC UA server is an act, not a call. It stays with a "
                       "person, and a refusal is a better boundary than a "
@@ -85,6 +106,22 @@ WITHHELD = {
                            "Marking a declaration reviewed is the one thing "
                            "this package must never automate.",
 }
+
+
+#: CLI verb -> the withheld capability that accounts for it.
+#:
+#: `WITHHELD` is keyed by CAPABILITY, and a capability is not a verb:
+#: `connect_to_plc` is the act, `capture` is the verb that performs it. So the
+#: two lists together did not close over the CLI, and `validate-walk` and
+#: `regression` fell between them -- present in neither, which is the omission
+#: this module's docstring says the enumeration exists to prevent.
+#:
+#: The 0.1.6 review proposed asserting `verbs(SPEC) | verbs(WITHHELD) ==
+#: verbs(cli)`. That acceptance cannot be met: it is satisfied only by offering
+#: `capture`, which is the one thing this surface refuses on purpose. This table
+#: is the missing half -- a verb may be offered, or accounted for here, and
+#: nothing else.
+NOT_OFFERED: Dict[str, str] = {"capture": "connect_to_plc"}
 
 
 def dispatch(name: str, arguments: Optional[Dict[str, Any]] = None,

@@ -88,10 +88,13 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
                 state_nodes.setdefault(asset["id"], {})[tag] = spec["node"]
                 continue
             node_of[(asset["id"], tag)] = spec["node"]
+    open_when: Dict[Tuple[str, str], List[str]] = {}
     for (asset_id, tag), statements in by_key.items():
         for stmt in statements:
             if stmt["kind"] == "gate_on":
                 gate_of[(asset_id, tag)] = stmt["required_property"]
+                if stmt.get("open_when") is not None:
+                    open_when[(asset_id, tag)] = list(stmt["open_when"])
 
     out: Dict[Tuple[str, str], List[Tuple]] = {}
     withheld: Dict[Tuple[str, str], int] = {}
@@ -112,8 +115,28 @@ def series_for(register, presence, walk, gated) -> Dict[Tuple[str, str], List[Tu
             if gate_prop:
                 gate_node = state_nodes.get(key[0], {}).get(gate_prop)
                 gate_row = nodes.get(gate_node) if gate_node else None
-                gate_ok = bool(gate_row and grade(gate_row.get("q"))[1]["usable"]
-                               and gate_row.get("v"))
+                if not (gate_row and grade(gate_row.get("q"))[1]["usable"]):
+                    withheld[key] = withheld.get(key, 0) + 1
+                    continue
+                state = gate_row.get("v")
+                words = open_when.get(key)
+                if words is not None:
+                    gate_ok = state in words
+                elif isinstance(state, bool):
+                    gate_ok = state
+                else:
+                    # NOT truthiness. `bool("Stopped")` is True, so a gate read
+                    # that way opens on every state word a PLC can produce and
+                    # withholds nothing -- the check runs on samples taken while
+                    # the machine was stopped, and reports a verdict about them.
+                    # Which words mean running is a fact about the state machine,
+                    # so the package stops rather than guesses.
+                    raise HardStop(
+                        "gate_undecidable",
+                        f"{key[0]}.{key[1]} is gated on {gate_prop}, whose value "
+                        f"is {state!r} ({type(state).__name__}) rather than a "
+                        f"boolean, and the declaration lists no open_when. "
+                        f"Declare the state words that mean the check applies")
                 if not gate_ok:
                     withheld[key] = withheld.get(key, 0) + 1
                     continue
@@ -318,6 +341,17 @@ def run(model_text: str, register, presence, walk, gated, manifest,
         "engine_version": getattr(arbiter_engine, "__version__", "unknown"),
         "declines": classes,
         "unreachable_floors": unreachable,
+        # WHICH measurement was in force. An empty `unreachable_floors` has two
+        # causes -- no floor is out of reach, or no floors were loaded at all --
+        # and before 0.1.7 the installed tool always had the second one and said
+        # nothing. The engine the floors were measured against is recorded beside
+        # the engine that answered, because they can differ inside the declared
+        # range and a reader is entitled to see that.
+        "floors_measured_against": {
+            "engine_version": (floors or {}).get("engine_version"),
+            "measured_on": (floors or {}).get("measured_on"),
+            "axioms": sorted((floors or {}).get("floors") or {}),
+        },
         "withheld_by_gate": {f"{a}.{t}": n for (a, t), n in withheld.items()},
         "gates_declared": {f"{a}.{t}": p for (a, t), p in gate_of.items()},
         "unread_properties": list(session.unread_properties() or []),

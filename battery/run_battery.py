@@ -53,7 +53,7 @@ CORPUS = os.path.join(HERE, "corpus")
 EXAMPLES = os.path.join(ROOT, "examples")
 REGISTER = os.path.join(EXAMPLES, "asset_register.json")
 FIXTURE = os.path.join(EXAMPLES, "declarations", "line1.fixture.json")
-FLOORS = os.path.join(HERE, "engine_floors.json")
+FLOORS = os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json")
 PIN = os.path.join(HERE, "pin_evidence.json")
 
 CLEAN, FINDINGS, INCOMPLETE = 0, 1, 2
@@ -224,11 +224,70 @@ def leg_live(live_python):
     unreadable = len(source["nodes_present_but_unreadable"])
     if not walk["samples"]:
         return leg("live", 2, "the surface was reachable and served nothing")
+    if source.get("timestamps_from") != ["source"]:
+        return leg("live", 2, f"this server stamps every reading with a "
+                              f"SourceTimestamp and the walk records "
+                              f"{source.get('timestamps_from')}; the control "
+                              f"below is only evidence if this is the control")
+
+    # A SERVER THAT STAMPS ONLY `ServerTimestamp`, which real ones do. `capture`
+    # skipped any reading whose SourceTimestamp was None, so against such a
+    # server it wrote a walk with ZERO samples -- and Stage 1 then called every
+    # declared tag absent while the same file's `nodes_served` said they had been
+    # read. Two halves of one artifact disagreeing, and nothing could see it: the
+    # surface always set a SourceTimestamp, so the fallback had no server to meet.
+    second = os.path.join(tempfile.gettempdir(), "fla-battery-server-clock.json")
+    ready2 = os.path.join(tempfile.gettempdir(), "fla-battery-ready2.json")
+    for path in (second, ready2):
+        if os.path.exists(path):
+            os.unlink(path)
+    other = subprocess.Popen(
+        [live_python, surface, "serve", "--port", "48412", "--ready", ready2,
+         "--no-source-timestamp"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    try:
+        for _ in range(120):
+            if os.path.exists(ready2):
+                break
+            time.sleep(0.5)
+        else:
+            return leg("live", 2, "the server-clock surface never announced a pass")
+        again = subprocess.run(
+            [live_python, surface, "collect", "--port", "48412",
+             "--out", second, "--want", "10", "--budget", "30"],
+            capture_output=True, text=True, timeout=180)
+    finally:
+        other.terminate()
+        try:
+            other.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            other.kill()
+    if again.returncode or not os.path.exists(second):
+        return leg("live", 2, f"the server-clock pass failed: "
+                              f"{again.stderr.strip()[-160:]}")
+    with open(second, encoding="utf-8") as handle:
+        server_clock = json.load(handle)
+    if not server_clock["samples"]:
+        return leg("live", 2, "a server that stamps only ServerTimestamp "
+                              "produced a walk with no samples at all")
+    stamps = server_clock["source"].get("timestamps_from")
+    # `server` has to be in there, not be the whole of it: a node's value is
+    # created before the writer loop reaches it, and a reading taken in that
+    # window carries the source stamp asyncua set at creation. Measured, the set
+    # is `["server", "source"]`. With the fallback removed the server-stamped
+    # readings are skipped and only those initial ones survive, so this still
+    # goes red -- and it is the honest shape of the claim either way.
+    if "server" not in (stamps or []):
+        return leg("live", 2, f"the walk from the server-clock surface records "
+                              f"{stamps}; nothing in it came from the server "
+                              f"clock, so the fallback was not exercised")
     return leg("live", 0,
                f"a real OPC UA server read by a real client: "
                f"{len(walk['samples'])} samples, {served}/{requested} nodes "
-               f"({absent} absent, {unreadable} present but unreadable). "
-               f"Rung 2; nothing here is evidence about security or a plant")
+               f"({absent} absent, {unreadable} present but unreadable); and a "
+               f"second server stamping only ServerTimestamp still yields "
+               f"{len(server_clock['samples'])} samples, recorded as {stamps}. "
+               f"Rung 3; nothing here is evidence about security or a plant")
 
 
 # -------------------------------------------------------------- draft and gate
@@ -399,7 +458,9 @@ def leg_tool(python, workdir):
         f"walk=os.path.join({CORPUS!r}, 'clean.json'), "
         f"declarations=[{FIXTURE!r}], attestation=ATTEST, "
         "out=os.path.join(d, 'a.json'), model_out=os.path.join(d, 'm.yaml'), "
-        "manifest_out=os.path.join(d, 'mf.json'))\n"
+        "manifest_out=os.path.join(d, 'mf.json'), "
+        f"before=os.path.join({CORPUS!r}, 'clean.json'), "
+        f"after=os.path.join({CORPUS!r}, 'asset_absent.json'))\n"
         "answers = {}\n"
         "for name in SPEC:\n"
         "    with contextlib.redirect_stdout(io.StringIO()):\n"
@@ -407,22 +468,28 @@ def leg_tool(python, workdir):
         "for name in WITHHELD:\n"
         "    answers[name] = dispatch(name, {})\n"
         "answers['not_a_tool'] = dispatch('not_a_tool', {})\n"
-        "print(json.dumps(answers))\n")
+        # The withheld NAMES come back with the answers. This leg carried them
+        # as a literal tuple, so the day `WITHHELD` grew a third entry the leg
+        # counted it as a table entry that could not complete -- a check firing
+        # precisely, against the wrong subject.
+        "print(json.dumps({'answers': answers, 'withheld': sorted(WITHHELD)}))\n")
     proc = subprocess.run([python, "-c", script], capture_output=True, text=True,
                           cwd=ROOT, env=dict(os.environ, PYTHONPATH=SRC),
                           timeout=900)
     if proc.returncode:
         return leg("tool", 2, f"the dispatcher raised: {proc.stderr.strip()[-160:]}")
-    answers = json.loads(proc.stdout)
+    reported = json.loads(proc.stdout)
+    answers, refused = reported["answers"], reported["withheld"] + ["not_a_tool"]
     for name, answer in answers.items():
         if "exit" not in answer or "verdict" not in answer:
             return leg("tool", 2, f"{name} answered without an explicit verdict")
-    withheld = [n for n in ("connect_to_plc", "review_declarations", "not_a_tool")
-                if answers.get(n, {}).get("exit") != 2]
+    if len(refused) < 3:
+        return leg("tool", 2, f"only {refused} are withheld; this leg's refusal "
+                              f"half is asserting almost nothing")
+    withheld = [n for n in refused if answers.get(n, {}).get("exit") != 2]
     if withheld:
         return leg("tool", 2, f"these did not answer 2: {withheld}")
-    ran = [n for n, a in answers.items()
-           if n not in ("connect_to_plc", "review_declarations", "not_a_tool")]
+    ran = [n for n, a in answers.items() if n not in refused]
     missing = set(json.loads(_spec_names(python))) - set(ran)
     if missing:
         return leg("tool", 2, f"the walk skipped {sorted(missing)}; a closure "
@@ -433,7 +500,8 @@ def leg_tool(python, workdir):
         return leg("tool", 2, f"these entries could not complete: "
                               f"{[(n, answers[n].get('error')) for n in failed]}")
     return leg("tool", 0, f"all {len(ran)} table entries constructed and ran; "
-                          f"first contact and review stayed refused")
+                          f"{len(refused)} withheld names stayed refused, read "
+                          f"from WITHHELD rather than listed here")
 
 
 def _spec_names(python):
@@ -670,6 +738,30 @@ def leg_pin():
     if "distributions" not in evidence:
         return leg("pin", 2, "pin_evidence.json predates the two-subject sweep "
                              "and covers one range; re-run probe_pin.py")
+    # WHICH CORPUS ANSWERED. The engine subject runs `detect` against the clean
+    # walk, and on a corpus older than the narrowest measured window every
+    # release in the range answers identically -- which the file then records as
+    # agreement. It did: four engine versions, one byte-identical line. The
+    # evidence has to say what it was measured against, and an old file that
+    # cannot say is refused rather than read.
+    if not evidence.get("measured_on"):
+        return leg("pin", 2, "pin_evidence.json does not say when it was "
+                             "measured, so nothing can tell how far behind the "
+                             "index it is; re-run probe_pin.py")
+    corpus = evidence.get("corpus") or {}
+    window = corpus.get("narrowest_window_s")
+    if not corpus.get("built_at") or window is None:
+        return leg("pin", 2, "pin_evidence.json does not record the corpus it "
+                             "was measured against, so it cannot say whether "
+                             "the engines or an expired fixture answered; "
+                             "re-run probe_pin.py")
+    if corpus.get("age_s_at_sweep", 0) > window:
+        return leg("pin", 2,
+                   f"the sweep ran against a corpus {corpus['age_s_at_sweep']}s "
+                   f"old, past the narrowest measured window of {int(window)}s. "
+                   f"Every windowed arm was quiet, so every release answered the "
+                   f"same and the file records that as agreement; re-run "
+                   f"probe_pin.py")
     with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as handle:
         pyproject = handle.read()
     found = evidence["distributions"]
@@ -754,9 +846,53 @@ def leg_ship(python):
         if suite.returncode:
             return leg("ship", 1, f"the suite fails against the installed "
                                   f"artifact: {tail}")
+
+        # THE FLOORS TRAVELLED. `engine_floors.json` sat in `battery/`, which no
+        # wheel carries, and `cli._floors()` returned an empty dict when it could
+        # not find it -- so the installed tool could never assign
+        # `warmup_unreachable`, and a collector too slow to ever present a floor
+        # had its declines classed `warmup` at floor 0. Nothing could see it: the
+        # corpus collects every 60 s against a measured ceiling of 20 844 s, so
+        # every walk this battery feeds is comfortably inside every floor.
+        #
+        # A walk at a cadence above that ceiling is the only question that
+        # separates *no floor is out of reach* from *no floors were loaded*.
+        slow = os.path.join(workdir, "slow.json")
+        with open(os.path.join(CORPUS, "clean.json"), encoding="utf-8") as handle:
+            body = json.load(handle)
+        body["source"]["cadence_s"] = 30000
+        with open(slow, "w", encoding="utf-8") as handle:
+            json.dump(body, handle)
+        attest = os.path.join(workdir, "slow-attest.json")
+        reached = subprocess.run(
+            [shipped_python, "-m", "factory_line_audit.cli"]
+            + detect_argv(slow, "--attest-out", attest),
+            capture_output=True, text=True, cwd=workdir, env=clean_env,
+            timeout=900)
+        if not os.path.exists(attest):
+            return leg("ship", 2, f"the installed artifact wrote no attestation "
+                                  f"for a slow walk: {reached.stderr[-160:]}")
+        with open(attest, encoding="utf-8") as handle:
+            att = json.load(handle)
+        unreachable = att["not_established"]["floors_this_cadence_cannot_reach"]
+        if not unreachable:
+            return leg("ship", 2, "the installed artifact reports no unreachable "
+                                  "floor for a walk collecting every 30000s. The "
+                                  "measured floors did not travel in the wheel, "
+                                  "so `warmup_unreachable` cannot be assigned and "
+                                  "a promise that can never be kept reads as a "
+                                  "warm-up")
+        against = att["not_established"]["floors_measured_against"]
+        if not against.get("engine_version"):
+            return leg("ship", 2, "the installed artifact assigns unreachable "
+                                  "floors and does not record which measurement "
+                                  "it used")
         return leg("ship", 0, f"wheel built, installed into an empty "
                               f"environment, detect clean and suite green "
-                              f"there: {tail[0] if tail else ''}")
+                              f"there: {tail[0] if tail else ''}; the measured "
+                              f"floors travelled ({sorted(unreachable)} "
+                              f"unreachable at 30000s, measured against engine "
+                              f"{against['engine_version']})")
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 

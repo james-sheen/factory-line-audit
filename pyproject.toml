@@ -36,7 +36,9 @@ dependencies = []
 # installs each published release and runs this package's own detect against it.
 # 0.1.7, 0.1.8 and 0.1.9 all stop at
 #   AttributeError: 'EngineSession' object has no attribute 'unread_properties'
-# -- an accessor this package's hard-stop list depends on. Written from memory
+# -- an accessor this package READS, and reports under `not_established`. It is
+# not a hard stop: `detect` simply cannot complete without it, which is what the
+# exit 2 above is. Written from memory
 # this comment said the floor was forced by `add_relationship`; the run said
 # otherwise, which is the whole reason C8 asks for a run.
 # A range is a claim about every release inside it, so the claim starts where
@@ -95,3 +97,17 @@ version = {attr = "factory_line_audit.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# The measured floors travel with the code. They are not documentation: the
+# `warmup_unreachable` class -- a floor this collector's cadence can never
+# present -- can only be assigned if the numbers are there, and a wheel that left
+# them behind dropped that class silently.
+#
+# MEASURED, not assumed: with this section deleted the wheel still carries the
+# file, because it now sits inside the package and `include-package-data`
+# defaults true here. So this line is a specification rather than the mechanism,
+# and what actually makes the floors travel is WHERE THE FILE LIVES. The `ship`
+# leg is the check that can go red -- it does, immediately, if the file moves
+# back out of the package.
+[tool.setuptools.package-data]
+factory_line_audit = ["engine_floors.json"]

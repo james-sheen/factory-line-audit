@@ -29,12 +29,20 @@ from arbiter_engine.types import NotEvaluatedReason
 import arbiter_engine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-#: Beside this file, unless a caller redirects it. The battery's `engine`
-#: leg does redirect it: a check must not rewrite the record it is checking,
-#: and refreshing this file is a deliberate act on a pin change rather than
-#: something a test does behind you.
+ROOT = os.path.dirname(HERE)
+#: INSIDE THE PACKAGE, because the installed tool needs it and the apparatus
+#: does not ship. It sat in `battery/`, the wheel packages `src/` only, and
+#: `cli._floors()` returned `{}` when it could not find it -- so an installed
+#: deployment could never assign `warmup_unreachable`, the class that says a
+#: collector's cadence can never present a floor however long it runs. The floors
+#: are a measurement this package depends on at RUN time, not only a record of
+#: one, and one copy serves both.
+#:
+#: A caller may redirect it, and the battery's `engine` leg does: a check must
+#: not rewrite the record it is checking, and refreshing this file is a
+#: deliberate act on a pin change rather than something a test does behind you.
 OUT = (os.environ.get("FLA_ENGINE_FLOORS_OUT")
-       or os.path.join(HERE, "engine_floors.json"))
+       or os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json"))
 #: REAL now, and it has to be. Every series below is built backwards from this
 #: and every arm the engine counts inside a window measures backwards from the
 #: real clock -- so a frozen NOW is a probe with an expiry date.

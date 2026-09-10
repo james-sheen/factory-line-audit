@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Evidence-ladder rung 2: a live-but-safe OPC UA surface, read for real.
+"""Evidence-ladder rung 3: a live-but-safe OPC UA surface, read for real.
 
 BRIDGES C9: *name every rung -- synthetic corpus, mutated copies, a live-but-safe
 surface, first contact. Every rung below the top must be climbable in a box.*
 
-Rung 1 is `corpus/`. Rung 2 is this: a real OPC UA server, on localhost, serving
+Rung 1 is `corpus/` and rung 2 its mutated copies. Rung 3 is this: a real OPC UA
+server, on localhost, serving
 the rung-1 corpus, read by a real OPC UA client that has never seen the JSON.
 Nothing here reaches a plant, and the walk it produces goes through exactly the
 same Stage 1 and Stage 2 as the synthetic one.
@@ -38,7 +39,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 REGISTER = os.path.join(ROOT, "examples", "asset_register.json")
-NAMESPACE = "urn:factory-line-audit:rung2"
+NAMESPACE = "urn:factory-line-audit:rung3"
 
 #: Deliberately not served, so the live walk exercises all three Stage 1 states
 #: against a real server rather than against a JSON file this package wrote.
@@ -55,7 +56,8 @@ def node_ids():
             for spec in asset["tags"].values()]
 
 
-async def serve(port: int, walk_path: str, ready: str) -> None:
+async def serve(port: int, walk_path: str, ready: str,
+                no_source: bool = False) -> None:
     from asyncua import Server, ua
 
     with open(walk_path, encoding="utf-8") as handle:
@@ -65,12 +67,12 @@ async def serve(port: int, walk_path: str, ready: str) -> None:
     server = Server()
     await server.init()
     server.set_endpoint(f"opc.tcp://127.0.0.1:{port}/factory-line-audit/")
-    server.set_server_name("factory-line-audit rung 2")
+    server.set_server_name("factory-line-audit rung 3")
     idx = await server.register_namespace(NAMESPACE)
     folder = await server.nodes.objects.add_folder(idx, "Line1")
 
     # A node's datatype is fixed when it is created, and a server refuses a
-    # write of the wrong one. This is the first thing rung 2 found that rung 1
+    # write of the wrong one. This is the first thing rung 3 found that rung 1
     # could not: the register declares a tag CLASS but no datatype, and
     # `state_running` is the tag where that difference is not academic. The
     # initial value is taken from the corpus so that a bool node is a bool node.
@@ -110,12 +112,20 @@ async def serve(port: int, walk_path: str, ready: str) -> None:
                     variant = ua.Variant(None, ua.VariantType.Null)
                 elif isinstance(value, bool):
                     variant = ua.Variant(value, ua.VariantType.Boolean)
+                elif isinstance(value, str):
+                    # A machine state is an enumeration WORD on a real server.
+                    # This branch did not exist while the corpus fed booleans for
+                    # `state_running`, and `float("Running")` raises -- so the
+                    # corpus change to real state words would have taken the live
+                    # leg down, which is the leg's whole purpose.
+                    variant = ua.Variant(value, ua.VariantType.String)
                 else:
                     variant = ua.Variant(float(value), ua.VariantType.Double)
                 await server.write_attribute_value(
                     variable.nodeid,
                     ua.DataValue(variant, StatusCode=status,
-                                 SourceTimestamp=when))
+                                 SourceTimestamp=None if no_source else when,
+                                 ServerTimestamp=when if no_source else None))
             if not announced:
                 # After the first full pass, not before it. A readiness marker
                 # written at startup says the process began, and a collector
@@ -154,9 +164,9 @@ def _status_code(word: str):
 
 
 async def collect(port: int, out: str, want: int, budget_s: float) -> int:
-    """Rung 2, driven through the SHIPPED client.
+    """Rung 3, driven through the SHIPPED client.
 
-    This held its own OPC UA client until 2026-09-09, which made rung 2 evidence
+    This held its own OPC UA client until 2026-09-09, which made rung 3 evidence
     about a client nobody installs -- and kept a second copy of FINDINGS A7, the
     rule that tells `BadNodeIdUnknown` apart from every other `Bad_*`. The
     package now ships `capture`, so the ladder reads the code a user gets and
@@ -208,7 +218,13 @@ def main() -> int:
     p = subs.add_parser("serve")
     p.add_argument("--port", type=int, default=48401)
     p.add_argument("--walk", default=os.path.join(HERE, "corpus", "clean.json"))
-    p.add_argument("--ready", default="/tmp/fla-rung2-ready.json")
+    p.add_argument("--ready", default="/tmp/fla-rung3-ready.json")
+    # A server that stamps only ServerTimestamp. `capture` skipped any reading
+    # whose SourceTimestamp was None, which against such a server produced a
+    # walk with ZERO samples -- and Stage 1 then called every declared tag absent
+    # while the same file's `nodes_served` said they had been read. The fallback
+    # is in `capture`; this is what can exercise it.
+    p.add_argument("--no-source-timestamp", action="store_true")
     p = subs.add_parser("collect")
     p.add_argument("--port", type=int, default=48401)
     p.add_argument("--out", required=True)
@@ -216,7 +232,8 @@ def main() -> int:
     p.add_argument("--budget", type=float, default=45.0)
     args = parser.parse_args()
     if args.mode == "serve":
-        asyncio.run(serve(args.port, args.walk, args.ready))
+        asyncio.run(serve(args.port, args.walk, args.ready,
+                          no_source=args.no_source_timestamp))
         return 0
     return asyncio.run(collect(args.port, args.out, args.want, args.budget))
 

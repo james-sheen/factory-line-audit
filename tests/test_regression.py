@@ -141,12 +141,34 @@ class TestWhatItCannotDo:
         assert body["could_not_complete"]
 
     def test_a_walk_with_no_samples_is_two_and_says_why(self, tmp_path):
+        """The fixture carries the REAL format.
+
+        It used to say `format: x`, which since 0.1.7 is refused by the loader
+        one step earlier -- so the test passed on a message about the format
+        while claiming to be about the samples. Two reasons, one assertion, and
+        the one it named was not the one that fired.
+        """
         from factory_line_audit.regression import compare
         one = written(tmp_path, "a.json", walk(NODES))
-        empty = written(tmp_path, "empty.json", {"format": "x", "samples": []})
+        body_of = dict(walk(NODES), samples=[])
+        empty = written(tmp_path, "empty.json", body_of)
         code, body = compare(one, empty)
         assert code == INCOMPLETE
         assert "no samples" in " ".join(body["could_not_complete"])
+
+    def test_an_unknown_major_is_refused_by_this_verb_too(self, tmp_path):
+        """M1 from the 0.1.6 review. This verb read raw JSON and compared any
+        object with a `samples` key, including a `walk/2` written by a reader it
+        does not understand, while the README said every verb refuses an unknown
+        major by name."""
+        from factory_line_audit.regression import compare
+        one = written(tmp_path, "a.json", walk(NODES))
+        ahead = written(tmp_path, "ahead.json",
+                        dict(walk(NODES), format="factory-line-audit/walk/2"))
+        code, body = compare(one, ahead)
+        assert code == INCOMPLETE
+        said = " ".join(body["could_not_complete"])
+        assert "walk/2" in said and "ahead.json" in said, said
 
     def test_both_bad_walks_are_reported_together(self, tmp_path):
         """One per run would make a caller fix them one at a time."""

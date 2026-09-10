@@ -32,6 +32,7 @@ import pytest
 from conftest import ROOT
 
 BATTERY = Path(ROOT) / "battery"
+PACKAGE = Path(ROOT) / "src" / "factory_line_audit"
 
 #: A date somebody wrote down. Not a match for `datetime.now()`, which is the
 #: whole point -- one expires and the other does not.
@@ -161,12 +162,24 @@ class TestEveryEvidenceFileNamesWhatItMeasured:
 
     VERSION = re.compile(r"^\d+\.\d+")
 
+    #: Where committed evidence lives. `engine_floors.json` moved INTO THE
+    #: PACKAGE in 0.1.7, because the installed tool reads it at run time -- and a
+    #: guard that globbed only `battery/` would have gone on passing while its
+    #: subject walked out of the directory it was watching.
+    WHERE = (BATTERY, PACKAGE)
+
     def _tracked(self):
         """Evidence committed to the repository. `battery_result.json` is
         gitignored -- it records a run rather than a measurement, and it is
         rewritten by every one."""
-        return sorted(p for p in BATTERY.glob("*.json")
+        return sorted(p for where in self.WHERE for p in where.glob("*.json")
                       if p.name != "battery_result.json")
+
+    def _path(self, name):
+        for where in self.WHERE:
+            if (where / name).exists():
+                return where / name
+        return None
 
     def test_every_committed_evidence_file_has_a_row(self):
         missing = [p.name for p in self._tracked() if p.name not in self.SUBJECT]
@@ -178,13 +191,12 @@ class TestEveryEvidenceFileNamesWhatItMeasured:
     def test_the_map_describes_files_that_exist(self):
         """The inverse, and the cheaper mistake: a row for a file that was
         renamed or deleted passes forever without reading anything."""
-        gone = [name for name in self.SUBJECT
-                if not (BATTERY / name).exists()]
+        gone = [name for name in self.SUBJECT if self._path(name) is None]
         assert not gone, f"{gone} are named here and not on disk"
 
     @pytest.mark.parametrize("name", sorted(SUBJECT))
     def test_it_records_the_version_of_what_it_measured(self, name):
-        with open(BATTERY / name, encoding="utf-8") as handle:
+        with open(self._path(name), encoding="utf-8") as handle:
             body = json.load(handle)
         versions = self.SUBJECT[name](body)
         assert versions, f"{name} names no version of its subject"
@@ -250,3 +262,55 @@ class TestTheCorpusSpellsStatusWordsTheWayAServerDoes:
         assert self.STATUS.match("GoodLocalOverride")
         assert not self.STATUS.match("ns=2;s=CNV01.Speed")
         assert not self.STATUS.match("q")
+
+
+class TestTheLadderHasOneNumbering:
+    """Sec. 4.1 of the 0.1.6 review: the live surface was rung 2 in its own
+    files, rung 3 in the README, and `capture.py` said both -- rung 2 in its
+    header and rung 3 in a refusal message twelve lines from the bottom.
+
+    Held against the README's table, which is the published one. Not a pinned
+    number: the rung is READ from the row whose description names the thing.
+    """
+
+    LIVE = "live-but-safe"
+    MENTIONS = re.compile(r"[Rr]ung (\d)")
+
+    def _readme_rung(self) -> str:
+        page = (Path(ROOT) / "README.md").read_text(encoding="utf-8")
+        rows = re.findall(r"^\|\s*(\d)\s*\|([^|]*)\|", page, re.MULTILINE)
+        named = [n for n, what in rows if self.LIVE in what]
+        assert len(named) == 1, (
+            f"the README's ladder names {self.LIVE!r} in {named} rows; this "
+            f"guard needs exactly one to hold the rest against")
+        return named[0]
+
+    def _files(self):
+        return [BATTERY / "opcua_surface.py", BATTERY / "run_battery.py",
+                PACKAGE / "capture.py"]
+
+    def test_the_surface_and_the_leg_agree_with_the_page(self):
+        """Every rung number in the files that ARE the live surface must be the
+        README's number for it. `capture.py` mentions rung 1 nowhere, so any
+        number it carries is about this one."""
+        rung = self._readme_rung()
+        wrong = []
+        for path in self._files():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                found = self.MENTIONS.search(line)
+                if not found:
+                    continue
+                if found.group(1) not in (rung, "1", "2", "4"):
+                    wrong.append(f"{path.name}: {line.strip()[:72]}")
+                if found.group(1) in ("1", "2", "4") and "corpus" not in line \
+                        and "mutated" not in line and "first contact" not in line.lower():
+                    wrong.append(f"{path.name}: {line.strip()[:72]}")
+        assert not wrong, ("these name a rung that is not the README's rung for "
+                           f"the live surface ({rung}): {wrong}")
+
+    def test_the_guard_reads_real_mentions(self):
+        """Non-vacuity: if the pattern found nothing, the rule above is a rule
+        about an empty set."""
+        seen = sum(len(self.MENTIONS.findall(p.read_text(encoding="utf-8")))
+                   for p in self._files())
+        assert seen >= 5, f"only {seen} rung mentions found in {self._files()}"

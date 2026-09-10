@@ -19,8 +19,15 @@ PRESENCE = f"{PACKAGE}/presence/1"
 DECLARATION = f"{PACKAGE}/declaration/1"
 MANIFEST = f"{PACKAGE}/manifest/1"
 ATTEST = f"{PACKAGE}/attest/1"
+#: Written by `regression` and by `capture --membership-cache`. They were
+#: emitted with a version string and listed nowhere: not here, so `load` could
+#: not refuse an unknown major of either, and not in the README's table, so the
+#: page's *all refusing an unknown major by name* was a claim about six of eight.
+REGRESSION = f"{PACKAGE}/regression/1"
+MEMBERSHIP = f"{PACKAGE}/membership/1"
 
-ALL = (REGISTER, WALK, PRESENCE, DECLARATION, MANIFEST, ATTEST)
+ALL = (REGISTER, WALK, PRESENCE, DECLARATION, MANIFEST, ATTEST,
+       REGRESSION, MEMBERSHIP)
 
 
 class Refusal(Exception):

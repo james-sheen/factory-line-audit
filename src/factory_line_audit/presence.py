@@ -151,6 +151,14 @@ def load_register(path: str) -> Dict[str, Any]:
             if spec.get("templated") is True:
                 excluded.append({"asset": asset_id, "tag": name,
                                  "reason": "declared_templated",
+                                 # The SPEC travels with the row. Without it the
+                                 # neutral core's `is_templated` and `disabled`
+                                 # could never be true: the vertical builds its
+                                 # points from the loaded register, and by then
+                                 # these tags were gone. Two protocol members
+                                 # with no reachable true case, and a
+                                 # `templated_tags` count that was always zero.
+                                 "spec": dict(spec),
                                  "detail": "the register declares this tag an "
                                            "unfilled template slot; excluded "
                                            "before generation"})
@@ -165,6 +173,17 @@ def load_register(path: str) -> Dict[str, Any]:
                 raise formats.Refusal(path, f"{asset_id}.{name} has no node id")
             keep[name] = spec
         asset["tags"] = keep
+    if not any(asset.get("tags") for asset in assets):
+        # *Nothing was testable* and *everything was fine* were the same exit
+        # code: `classify` returns 0 over an empty tag list, so a register whose
+        # assets carry no tags -- or whose every tag was a template slot --
+        # reported clean. That is the distinction the engine keeps with a
+        # denominator, kept here with a refusal, because Stage 1 has no
+        # denominator to report.
+        raise formats.Refusal(path, "no asset in this register carries a tag "
+                                    "that survived load, so there is nothing to "
+                                    "classify. A register with no testable tag "
+                                    "must not report a clean Stage 1")
     body["_excluded_tags"] = excluded
     body["_path"] = path
     return body

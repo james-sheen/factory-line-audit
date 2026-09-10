@@ -242,6 +242,37 @@ The rule now *proposes* an exclusion through `draft`, and only a declared
 `"templated": true` in the register or a reviewed `exclusion` statement excludes
 anything.
 
+### A9. A citation by section NUMBER is a dependency nothing type-checks
+
+Not a finding against the method — a finding against this bridge, produced by
+following it, and general enough to be worth stating.
+
+This package cited `BRIDGES` by section number in **twenty-five** places across
+`src/`, `tests/`, `battery/`, `pyproject.toml`, `README.md` and this file.
+Closing A6 inserted a new section, and every citation at or above it became a
+pointer to a different section than the one it meant. **All 146 tests stayed
+green.** Nothing on either side can fail on it: a section number is prose in the
+guide and prose in the comment, and no tool holds both.
+
+**The instance fix was itself incomplete, and that is the sharper half.** The
+first repair renumbered by matching `BRIDGES Sec. N` — and the citations are not
+spelled consistently. Eleven sites written as bare `Sec. N`, `Section N of
+BRIDGES`, or a number inside a sentence survived it, still pointing at the wrong
+section, for a full day of work across two more closures. The sweep that found
+them was an enumeration by eye, not a pattern: **a reference in prose has no
+canonical form, so nothing that reads it as a pattern will find all of it.**
+
+The same window falsified two prose claims outright — a class comment asserting
+*BRIDGES says to treat this reason as a modelling error unconditionally*, and
+another asserting the guide *gives findings none*. Both were true when written
+and false within the day, and neither would have been noticed by anything.
+
+**Fixed by citing titles.** *The review gate*, *the verification battery*, *the
+exit contract* — they survive reordering, and they read better at the call site
+than an ordinal a reader has to go and resolve. The one place a number is still
+written is the sentence above describing what happened, which is history rather
+than a pointer.
+
 ## B. Findings against the engine and the modelling guide
 
 ### B1. `required_property` is read by CONNECTIVITY only, and `check` will not tell you
@@ -422,139 +453,11 @@ the API is present -- on the wrong verb.
 
 ---
 
-## C. Reported previously, and withdrawn on measurement
-
-The prior attempt at this bridge left two findings to be filed upstream. Both
-were re-measured before filing. **Neither survived.**
-
-### C1. Withdrawn: BRIDGES.md and the engine disagreed on the decline count
-
-As reported:
-
-> BRIDGES.md as served listed 9 decline reasons and claimed generation from the
-> engine; the engine at the same time had 12.
-
-**Not reproduced.** Counting `NotEvaluatedReason` members in
-`arbiter_engine/types.py` and the stated figure in `BRIDGES.md`, at every commit
-on `master` where both exist:
-
-| commit | date | engine | BRIDGES |
-|---|---|---|---|
-| `57e976d` | 2026-08-31 | 9 | 9 |
-| `5e1fee1` (Release 0.1.9) | 2026-08-31 | 9 | 9 |
-| `a397dbd` | 2026-09-02 | **12** | **12** |
-| `3f6a76a` (Release 0.1.10) | 2026-09-03 | 12 | 12 |
-| `5cb6d41` | 2026-09-03 | 12 | 12 |
-| `d292b22` (remote head) | 2026-09-03 | 12 | 12 |
-
-The three reasons and the table update landed in **one commit**, `a397dbd`. There
-is no window in which the repository was inconsistent, so there is nothing to
-report.
-
-**What actually happened** is worth keeping, because it is a methodological trap
-rather than an engine defect: the reader read the document at one time and
-installed the engine at another, across a release boundary, and attributed the
-difference between their two snapshots to the document. The document's own
-warning -- *second copies drift* -- made that story fit, which is exactly what
-makes it dangerous. A finding of the form *these two disagree* needs both halves
-pinned to the same commit before it is a finding.
-
-Filing it as written would have sent the author looking for a drift that did not
-happen, in the one place the document had gone to trouble to prevent it.
-
-### C2. Withdrawn: CONSERVATION reads a global 300 s window
-
-As reported:
-
-> CONSERVATION ignores the indicator's `window:` and reads a global 300 s window
-> that the supported `EngineSession` surface cannot set. A station whose parts
-> vanish over an hour, evenly, will be judged over the last five minutes only.
-
-**Half true, and the consequential half is not.** Probes K5 and K6: ten samples
-spread over six days, with `window:` declared `5m`, `1h` and `30d`, fire
-identically; a deficit is seen across every span tried, up to six days.
-
-The first clause holds -- the indicator's `window:` does not reach this checker,
-which is why all three declarations give one answer and why a respected `5m`
-would have left a single sample inside it. The second does not: there is no
-five-minute horizon hiding an older deficit.
-
-Right observation, wrong consequence, and the consequence is the part somebody
-would act on. Not filed.
-
-### The pattern in both
-
-Two findings, both drafted from a real observation, both wrong in the half that
-would have been acted on. The observation was never the weak part; the inference
-from it was. Neither would have survived the run that this package's own C3 and
-C8 probes make routine -- which is an argument for the method rather than against
-it, and the reason both are here rather than quietly dropped.
-
-### A9. A citation by section NUMBER is a dependency nothing type-checks
-
-Not a finding against the method — a finding against this bridge, produced by
-following it, and general enough to be worth stating.
-
-This package cited `BRIDGES` by section number in **twenty-five** places across
-`src/`, `tests/`, `battery/`, `pyproject.toml`, `README.md` and this file.
-Closing A6 inserted a new section, and every citation at or above it became a
-pointer to a different section than the one it meant. **All 146 tests stayed
-green.** Nothing on either side can fail on it: a section number is prose in the
-guide and prose in the comment, and no tool holds both.
-
-**The instance fix was itself incomplete, and that is the sharper half.** The
-first repair renumbered by matching `BRIDGES Sec. N` — and the citations are not
-spelled consistently. Eleven sites written as bare `Sec. N`, `Section N of
-BRIDGES`, or a number inside a sentence survived it, still pointing at the wrong
-section, for a full day of work across two more closures. The sweep that found
-them was an enumeration by eye, not a pattern: **a reference in prose has no
-canonical form, so nothing that reads it as a pattern will find all of it.**
-
-The same window falsified two prose claims outright — a class comment asserting
-*BRIDGES says to treat this reason as a modelling error unconditionally*, and
-another asserting the guide *gives findings none*. Both were true when written
-and false within the day, and neither would have been noticed by anything.
-
-**Fixed by citing titles.** *The review gate*, *the verification battery*, *the
-exit contract* — they survive reordering, and they read better at the call site
-than an ordinal a reader has to go and resolve. The one place a number is still
-written is the sentence above describing what happened, which is history rather
-than a pointer.
-
-## E. Disposition
-
-Filed 2026-09-03 in the engine repository's own tracker, since the engine is
-not somebody else's. **Keyed by finding rather than by ticket**: the ticket
-numbers are internal and a reader here cannot resolve them, so the column that
-named them is gone and the finding it covers is the row.
-
-Two of these were still open when this table was written. Both have since
-closed, and the rows say what closed them rather than naming ticket numbers a
-reader here cannot resolve:
-
-| Finding | Disposition |
-|---|---|
-| B5 | engine fix, **released in 0.1.11**, 2026-09-04 |
-| A6 | guide: name the read surface — **done** |
-| A2 | guide: `missing_entity_type` is two-sided — **done** |
-| A3 | guide: findings need floors too — **done** |
-| A4, A5, A7, B4 | four smaller guide edits — **done** |
-| B2, B3 | MODELING.md expectations — **done** |
-| B6 | decision: **ruled**, the default is not intended |
-| B6 | engine fix, **released in 0.1.11**, 2026-09-04, once the consumer below was ready |
-| A9 | this bridge cites the guide by ordinal |
-| -- | the consumer must classify `no_threshold` first — **done**: the feeder moved out in the 0.3.0 split, so it ships in `presence-audit` 0.1.2 |
-| -- | `allow_reset` / `reset_tolerance` measured — **done** |
-
-A1 was retired on measurement and is not filed. A8 is a note about a trap rather
-than a defect and is not filed. C1 and C2 are the withdrawals.
-
-**Nothing here implicates a shipped bridge.** `bmc-sensor-audit` declares no
-CONNECTIVITY, no HOMEOSTASIS, and feeds no counter into CONSERVATION;
-`fleet-sensor-baseline` does not touch the engine. That is also the reason these
-gaps survived two worked examples: the pair exercises a narrow slice, which is
-the limit the guide already states about them and which this exam measured.
-
+The two findings below are against the ENGINE and carry `A` labels. They were
+appended after this section had closed, and the labels stay as they are because
+three documents and a module comment cite them: a citation that resolves is worth
+more than a letter that sorts. What was wrong was the ORDER -- this file ran
+A1-A8, B, C, A9, E, A10, A11, D -- and that is fixed here.
 ### A10. `allow_reset` is routing, not excusing — and it settles the reset question
 
 Measured (probes A1-A5) rather than argued. With `allow_reset: true` a drop to
@@ -630,6 +533,76 @@ shift counter is reported as `monotonicity_reset_storm` and the MES record as
 `monotonicity_reversal`. Same data, same entity, same window; different fault,
 because somebody said which counter this is.
 
+
+## C. Reported previously, and withdrawn on measurement
+
+The prior attempt at this bridge left two findings to be filed upstream. Both
+were re-measured before filing. **Neither survived.**
+
+### C1. Withdrawn: BRIDGES.md and the engine disagreed on the decline count
+
+As reported:
+
+> BRIDGES.md as served listed 9 decline reasons and claimed generation from the
+> engine; the engine at the same time had 12.
+
+**Not reproduced.** Counting `NotEvaluatedReason` members in
+`arbiter_engine/types.py` and the stated figure in `BRIDGES.md`, at every commit
+on `master` where both exist:
+
+| commit | date | engine | BRIDGES |
+|---|---|---|---|
+| `57e976d` | 2026-08-31 | 9 | 9 |
+| `5e1fee1` (Release 0.1.9) | 2026-08-31 | 9 | 9 |
+| `a397dbd` | 2026-09-02 | **12** | **12** |
+| `3f6a76a` (Release 0.1.10) | 2026-09-03 | 12 | 12 |
+| `5cb6d41` | 2026-09-03 | 12 | 12 |
+| `d292b22` (remote head) | 2026-09-03 | 12 | 12 |
+
+The three reasons and the table update landed in **one commit**, `a397dbd`. There
+is no window in which the repository was inconsistent, so there is nothing to
+report.
+
+**What actually happened** is worth keeping, because it is a methodological trap
+rather than an engine defect: the reader read the document at one time and
+installed the engine at another, across a release boundary, and attributed the
+difference between their two snapshots to the document. The document's own
+warning -- *second copies drift* -- made that story fit, which is exactly what
+makes it dangerous. A finding of the form *these two disagree* needs both halves
+pinned to the same commit before it is a finding.
+
+Filing it as written would have sent the author looking for a drift that did not
+happen, in the one place the document had gone to trouble to prevent it.
+
+### C2. Withdrawn: CONSERVATION reads a global 300 s window
+
+As reported:
+
+> CONSERVATION ignores the indicator's `window:` and reads a global 300 s window
+> that the supported `EngineSession` surface cannot set. A station whose parts
+> vanish over an hour, evenly, will be judged over the last five minutes only.
+
+**Half true, and the consequential half is not.** Probes K5 and K6: ten samples
+spread over six days, with `window:` declared `5m`, `1h` and `30d`, fire
+identically; a deficit is seen across every span tried, up to six days.
+
+The first clause holds -- the indicator's `window:` does not reach this checker,
+which is why all three declarations give one answer and why a respected `5m`
+would have left a single sample inside it. The second does not: there is no
+five-minute horizon hiding an older deficit.
+
+Right observation, wrong consequence, and the consequence is the part somebody
+would act on. Not filed.
+
+### The pattern in both
+
+Two findings, both drafted from a real observation, both wrong in the half that
+would have been acted on. The observation was never the weak part; the inference
+from it was. Neither would have survived the run that this package's own C3 and
+C8 probes make routine -- which is an argument for the method rather than against
+it, and the reason both are here rather than quietly dropped.
+
+
 ## D. What survived
 
 Recorded because a findings list with no other side is a complaint.
@@ -653,3 +626,37 @@ Recorded because a findings list with no other side is a complaint.
   parsing rather than grepping. It made the OPC UA rung cheap to add, because
   presence logic was already independent of everything.
 - **The ship leg.** Green, and it is the leg that would have been skipped.
+## E. Disposition
+
+Filed 2026-09-03 in the engine repository's own tracker, since the engine is
+not somebody else's. **Keyed by finding rather than by ticket**: the ticket
+numbers are internal and a reader here cannot resolve them, so the column that
+named them is gone and the finding it covers is the row.
+
+Two of these were still open when this table was written. Both have since
+closed, and the rows say what closed them rather than naming ticket numbers a
+reader here cannot resolve:
+
+| Finding | Disposition |
+|---|---|
+| B5 | engine fix, **released in 0.1.11**, 2026-09-04 |
+| A6 | guide: name the read surface — **done** |
+| A2 | guide: `missing_entity_type` is two-sided — **done** |
+| A3 | guide: findings need floors too — **done** |
+| A4, A5, A7, B4 | four smaller guide edits — **done** |
+| B2, B3 | MODELING.md expectations — **done** |
+| B6 | decision: **ruled**, the default is not intended |
+| B6 | engine fix, **released in 0.1.11**, 2026-09-04, once the consumer below was ready |
+| A9 | this bridge cites the guide by ordinal |
+| -- | the consumer must classify `no_threshold` first — **done**: the feeder moved out in the 0.3.0 split, so it ships in `presence-audit` 0.1.2 |
+| -- | `allow_reset` / `reset_tolerance` measured — **done** |
+
+A1 was retired on measurement and is not filed. A8 is a note about a trap rather
+than a defect and is not filed. C1 and C2 are the withdrawals.
+
+**Nothing here implicates a shipped bridge.** `bmc-sensor-audit` declares no
+CONNECTIVITY, no HOMEOSTASIS, and feeds no counter into CONSERVATION;
+`fleet-sensor-baseline` does not touch the engine. That is also the reason these
+gaps survived two worked examples: the pair exercises a narrow slice, which is
+the limit the guide already states about them and which this exam measured.
+
