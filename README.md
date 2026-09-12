@@ -95,11 +95,11 @@ run the verification battery below, take a checkout instead:
 ```bash
 git clone https://github.com/james-sheen/factory-line-audit
 cd factory-line-audit
-python3 -m virtualenv /tmp/v && /tmp/v/bin/pip install -e '.[detect,live]'
+python3 -m virtualenv .venv && .venv/bin/pip install -e '.[detect,live]'
 export PYTHONPATH=src
 
 # C3 -- measure the engine you pinned. Everything else derives from this.
-/tmp/v/bin/python battery/probe_engine.py
+.venv/bin/python battery/probe_engine.py
 
 # the corpus, sized from those floors and stamped at build time
 python3 battery/make_corpus.py
@@ -115,7 +115,7 @@ python3 -m factory_line_audit.cli gate  --register examples/asset_register.json 
     examples/declarations/line1.fixture.json                                                        # 0
 
 # Stage 2
-/tmp/v/bin/python -m factory_line_audit.cli detect \
+.venv/bin/python -m factory_line_audit.cli detect \
     --register examples/asset_register.json --walk battery/corpus/clean.json \
     --declarations examples/declarations/line1.fixture.json --attest-out /tmp/attest.json
 
@@ -123,10 +123,10 @@ python3 -m factory_line_audit.cli gate  --register examples/asset_register.json 
 python3 battery/probe_pin.py
 
 # does the core still accept this vertical? two imports, and CI runs it too
-/tmp/v/bin/python battery/probe_conformance.py
+.venv/bin/python battery/probe_conformance.py
 
 # the whole battery
-/tmp/v/bin/python battery/run_battery.py --python /tmp/v/bin/python --live-python /tmp/v/bin/python
+.venv/bin/python battery/run_battery.py --python .venv/bin/python --live-python .venv/bin/python
 ```
 
 ## The verification battery

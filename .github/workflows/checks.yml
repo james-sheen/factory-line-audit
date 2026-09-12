@@ -192,16 +192,22 @@ jobs:
         # asserts nothing arrived with it, and then runs Stage 1 there.
         run: |
           set -euo pipefail
+          # The scratch environment, named ONCE. Spelled inline four times
+          # before, which read no better and put four absolute temp paths in a
+          # file the shared hygiene sweep scans -- a rule that exists because a
+          # captured path of exactly this shape shipped inside a wheel. This one
+          # never ships: CI chooses it and the runner throws it away.
+          BARE=/tmp/bare  # hygiene: synthetic
           # Compared as distribution NAMES, not as freeze lines. `pip freeze`
           # spells a local install `name @ file://...` rather than `name==0.1.0`,
           # so the first version of this step stripped nothing and the package
           # counted itself as a stray dependency. The claim is about what else
           # arrived; the predicate has to be about that too.
-          names() { /tmp/bare/bin/python -m pip list --format=freeze \
+          names() { "${BARE}"/bin/python -m pip list --format=freeze \
                     | sed 's/[ =@].*//' | tr 'A-Z_' 'a-z-' | sort -u; }
-          python3 -m venv /tmp/bare
+          python3 -m venv "${BARE}"
           BEFORE=$(names)
-          /tmp/bare/bin/pip install --quiet .
+          "${BARE}"/bin/pip install --quiet .
           EXTRA=$(comm -13 <(echo "${BEFORE}") <(names) | grep -vx 'factory-line-audit' || true)
           if [ -n "${EXTRA}" ]; then
             echo "::error::installing the bare package brought: ${EXTRA}"
@@ -216,9 +222,9 @@ jobs:
           # which is exactly why nothing would have noticed the floor moving.
           # `cert-generator` carries the same guard, after the identical line
           # spent a morning canary's whole signal on its own pin.
-          REQ="$(/tmp/bare/bin/python -c 'from importlib.metadata import requires; print(next(r.split(";")[0].strip() for r in requires("factory-line-audit") if r.split(";")[0].strip().startswith("arbiter-engine")))')"
+          REQ="$("${BARE}"/bin/python -c 'from importlib.metadata import requires; print(next(r.split(";")[0].strip() for r in requires("factory-line-audit") if r.split(";")[0].strip().startswith("arbiter-engine")))')"
           echo "  the declared range, read back rather than restated: ${REQ}"
-          /tmp/bare/bin/pip install --quiet "${REQ}"
+          "${BARE}"/bin/pip install --quiet "${REQ}"
           SEEN=$(comm -13 <(echo "${BEFORE}") <(names) | grep -vx 'factory-line-audit' || true)
           if [ -z "${SEEN}" ]; then
             echo "::error::the check cannot see a dependency that IS there"
@@ -226,7 +232,7 @@ jobs:
           fi
           echo "  it can see an arrival (${SEEN}); the bare install had none"
           python3 battery/make_corpus.py
-          /tmp/bare/bin/factory-line-audit presence \
+          "${BARE}"/bin/factory-line-audit presence \
             --register examples/asset_register.json \
             --walk battery/corpus/clean.json > /tmp/presence.json
           test -s /tmp/presence.json

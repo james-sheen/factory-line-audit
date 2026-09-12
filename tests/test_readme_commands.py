@@ -54,10 +54,10 @@ DOCUMENTED_EXIT = re.compile(r"#\s*(\d)\b")
 #: and this file then reported that the README was wrong -- a check firing
 #: precisely, against the wrong subject. The classification below is DERIVED
 #: from the page rather than from a list of which verbs need what.
-WITH_EXTRAS = "/tmp/v/bin/python"
+WITH_EXTRAS = ".venv/bin/python"
 
 #: An interpreter the page names but a test environment does not have.
-INTERPRETER = re.compile(r"^(?:/tmp/v/bin/python|python3)\b")
+INTERPRETER = re.compile(r"^(?:\.venv/bin/python|python3)\b")
 
 #: argparse refusing the command line, which is NOT the same as this package
 #: refusing the work. Both exit 2 -- `2` means *could not complete* here -- so

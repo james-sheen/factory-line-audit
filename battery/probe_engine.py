@@ -116,7 +116,16 @@ def first_n_where(lo, hi, predicate):
 RESULT = {
     "measured_on": NOW.isoformat(),
     "engine_version": arbiter_engine.__version__,
-    "engine_file": os.path.dirname(arbiter_engine.__file__),
+    # THE MODULE NAME, NOT ITS PATH. This field is written into package data --
+    # `engine_floors.json` ships inside the wheel -- and it used to record
+    # `os.path.dirname(arbiter_engine.__file__)`, which on a CI runner is an
+    # absolute path naming the machine layout that produced the release. Nothing
+    # reads it: `run_battery.py` lists it among the keys it EXCLUDES from the
+    # drift comparison, as environment rather than measurement. So it was an
+    # absolute path, published in a wheel, in a field no consumer and no check
+    # ever looked at. The shared hygiene sweep grew a rule for exactly this shape
+    # after the same defect was found in a sibling.
+    "engine_module": arbiter_engine.__name__,
     "python": sys.version.split()[0],
     "probes": {},
     "floors": {},

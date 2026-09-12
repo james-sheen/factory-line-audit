@@ -141,7 +141,7 @@ def leg_engine(python, workdir):
     # Environment rather than measurement: where the engine is installed, which
     # interpreter ran, and when. Comparing those reports a difference on every
     # machine and says nothing about the engine.
-    where = ("measured_on", "engine_file", "python")
+    where = ("measured_on", "engine_module", "python")
     drift = sorted(k for k in set(measured) | set(recorded)
                    if k not in where and measured.get(k) != recorded.get(k))
     if drift:
