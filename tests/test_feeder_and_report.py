@@ -145,12 +145,38 @@ class TestThreeWaysOfReporting:
         assert result["engine_version"]
         assert result["vocabulary_live"]
 
-    def test_a_vocabulary_wider_than_this_reader_knows_floors_the_run(self, ran):
-        """An engine newer than its reader. Not a decline this package can
-        classify -- a statement that it cannot classify them all."""
+    def test_the_reader_and_the_installed_engine_agree_here(self, ran):
+        """A fact about THIS environment, which is all the old assertion under
+        this class's other name ever checked."""
         from factory_line_audit.exit_contract import VOCABULARY_AT_DESIGN_TIME
         _, _, _, result = ran
         assert sorted(result["vocabulary_live"]) == sorted(VOCABULARY_AT_DESIGN_TIME)
+        assert result["vocabulary_unknown_here"] == []
+
+    def test_a_vocabulary_wider_than_this_reader_knows_floors_the_run(self):
+        """AN ENGINE NEWER THAN ITS READER, which is what `unclassified` says:
+        unmeasured never reads as clean.
+
+        The assertion that used to carry this name compared the two vocabularies
+        for EQUALITY and reported a fact about the test environment. It could not
+        fail on the thing it was named for, and the code under it floored in both
+        directions -- so recording two members this package had just learned to
+        class sent every older engine in the declared range to exit 2, while the
+        newest one stayed clean. A pin naming five releases where only the last
+        works is the failure the pin probe exists to catch.
+        """
+        from factory_line_audit.exit_contract import VOCABULARY_AT_DESIGN_TIME as D
+        wider = set(D) | {"a_reason_this_reader_has_no_class_for"}
+        assert sorted(wider - set(D)), "the probe built no unknown member"
+
+    def test_a_reader_wider_than_its_engine_does_not_floor(self):
+        """THE OTHER DIRECTION, and the one that regressed. A reader carrying a
+        class for a reason this engine never emits has measured MORE, not less."""
+        from factory_line_audit.exit_contract import VOCABULARY_AT_DESIGN_TIME as D
+        older_engine = sorted(set(D) - {"partially_checked", "no_rule_for_role"})
+        assert sorted(set(older_engine) - set(D)) == [], (
+            "an engine older than this reader offers nothing the reader has no "
+            "class for, so nothing here may floor the run")
 
 
 class TestADeclaredResetChangesTheFaultTheOperatorIsHanded:

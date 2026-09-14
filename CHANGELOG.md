@@ -12,6 +12,33 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.13 -- 2026-09-14
+
+**The declared engine range works again at every release inside it, not only the
+newest.** 0.1.12 recorded two decline reasons this package had just learned to
+class -- and the vocabulary comparison that turns a difference into a floor was
+SYMMETRIC, so recording them sent every engine below 0.1.14 to exit 2 on a clean
+corpus. A pin naming five releases where only the last one works is worse than a
+narrow pin, because it reads as a claim about all five.
+
+**The floor is one-directional now, which is what the class beside it always
+said.** `unclassified` reads *the engine is newer than its reader, and unmeasured
+never reads as clean* -- a reason the ENGINE emits that this bridge cannot class.
+A reader carrying classes for reasons the installed engine never emits has
+measured more, not less, and nothing about that is unmeasured. The decline record
+also names which members are unknown here, rather than reporting that some count
+moved.
+
+**The assertion that should have caught it could not.** It was named for the
+floor and compared the two vocabularies for EQUALITY, which is a fact about the
+environment the suite happens to run in -- green in every environment where they
+match, and silent about flooring in either direction. Both directions are
+asserted now, and the environment fact keeps its own name.
+
+Measured with `battery/probe_pin.py` across the declared range: 0.1.10, 0.1.11,
+0.1.12, 0.1.13 and 0.1.14 all exit 0 on the clean corpus, and 0.1.7 to 0.1.9
+still hard-stop below the floor, which is why the floor is where it is.
+
 ## 0.1.12 -- 2026-09-14
 
 **Reads `partially_checked`, which `arbiter-engine` 0.1.14 split out of

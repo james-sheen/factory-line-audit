@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-10T03:12:40Z",
+  "measured_on": "2026-09-14T08:14:14Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.1.10,<0.2",
@@ -17,13 +17,15 @@
         "0.1.10",
         "0.1.11",
         "0.1.12",
-        "0.1.13"
+        "0.1.13",
+        "0.1.14"
       ],
       "inside_range": [
         "0.1.10",
         "0.1.11",
         "0.1.12",
-        "0.1.13"
+        "0.1.13",
+        "0.1.14"
       ],
       "results": {
         "0.1.7": {
@@ -80,6 +82,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.1.14": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -96,8 +105,8 @@
       }
     },
     "presence-audit": {
-      "declared_range": "presence-audit>=0.1.6,<0.2",
-      "lower": "0.1.6",
+      "declared_range": "presence-audit>=0.1.8,<0.2",
+      "lower": "0.1.8",
       "upper": "0.2",
       "published": [
         "0.1.0",
@@ -107,27 +116,13 @@
         "0.1.4",
         "0.1.5",
         "0.1.6",
-        "0.1.7"
+        "0.1.7",
+        "0.1.8"
       ],
       "inside_range": [
-        "0.1.6",
-        "0.1.7"
+        "0.1.8"
       ],
       "results": {
-        "0.1.3": {
-          "exit": 2,
-          "outcome": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
-          "stderr": [],
-          "installed": true,
-          "inside_range": false
-        },
-        "0.1.4": {
-          "exit": 2,
-          "outcome": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
-          "stderr": [],
-          "installed": true,
-          "inside_range": false
-        },
         "0.1.5": {
           "exit": 2,
           "outcome": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'",
@@ -140,11 +135,18 @@
           "outcome": "OUTCOME conformance=0 presence-audit 0.1.6: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
           "stderr": [],
           "installed": true,
-          "inside_range": true
+          "inside_range": false
         },
         "0.1.7": {
           "exit": 0,
           "outcome": "OUTCOME conformance=0 presence-audit 0.1.7: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": false
+        },
+        "0.1.8": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.8: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -152,16 +154,16 @@
       },
       "every_release_in_range_runs_clean": true,
       "floor_is_forced_by": {
-        "0.1.3": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
-        "0.1.4": "OUTCOME conformance=2 the [vertical] extra is not installed in this interpreter, so the core never judged this vertical: ModuleNotFoundError: No module named 'presence_audit.conformance'",
-        "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'"
+        "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'",
+        "0.1.6": "OUTCOME conformance=0 presence-audit 0.1.6: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+        "0.1.7": "OUTCOME conformance=0 presence-audit 0.1.7: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')"
       }
     }
   },
   "corpus": {
-    "built_at": "2026-09-10T03:12:39Z",
-    "age_s_at_sweep": 1,
+    "built_at": "2026-09-14T08:13:54Z",
+    "age_s_at_sweep": 20,
     "narrowest_window_s": 900,
-    "age_s_at_write": 58
+    "age_s_at_write": 82
   }
 }

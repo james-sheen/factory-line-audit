@@ -439,7 +439,21 @@ def run(model_text: str, register, presence, walk, gated, manifest,
     legs.append(presence.get("exit", CLEAN))
     legs.extend(f["floor"] for f in findings)
     legs.extend(c["floor"] for c in classes)
-    if sorted(live_vocabulary) != sorted(VOCABULARY_AT_DESIGN_TIME):
+    # ONE-DIRECTIONAL, and it was symmetric until this was measured across the
+    # declared range. The floor exists for a reason the ENGINE emits that this
+    # bridge has no class for -- `unclassified` says so in as many words: *the
+    # engine is newer than its reader, and unmeasured never reads as clean*. A
+    # reader that knows MORE than the installed engine is the opposite case: it
+    # carries classes for reasons this engine never emits, which costs nothing
+    # and is how a bridge stays usable across a range.
+    #
+    # Symmetric, it floored every engine below the newest one the moment two
+    # members were recorded. Measured on the clean corpus: 0.1.10 through 0.1.13
+    # went to exit 2 while 0.1.14 stayed at 0 -- a pin declaring five releases
+    # where only the last one worked, which is the failure `probe_pin.py` exists
+    # to catch and did.
+    unknown_to_this_reader = sorted(set(live_vocabulary) - set(VOCABULARY_AT_DESIGN_TIME))
+    if unknown_to_this_reader:
         legs.append(INCOMPLETE)
 
     return {
@@ -464,6 +478,9 @@ def run(model_text: str, register, presence, walk, gated, manifest,
         "unread_properties": list(session.unread_properties() or []),
         "vocabulary_live": list(live_vocabulary),
         "vocabulary_at_design_time": list(VOCABULARY_AT_DESIGN_TIME),
+        # NAMED, not just counted. A reader diffing two runs can see which
+        # member it has no class for rather than that some number moved.
+        "vocabulary_unknown_here": unknown_to_this_reader,
         "dropped_declarations_on_check":
             "dropped_declarations" in envelope,
         "fed": {"entities": len(fed_assets), "series": len(series)},
