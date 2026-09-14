@@ -12,6 +12,33 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.11 -- 2026-09-14
+
+**The core floor rises to `presence-audit>=0.1.8`, and that is the thing to do.**
+This package's own claim is that its two Stage 1 paths agree; below 0.1.8 they
+agree on states and counts and disagree on the VERDICT, which is the half a
+consumer acts on. `substituted_value` is this domain's own finding kind, and the
+core scored findings against a frozen set of its own until the release that added
+a vocabulary hook -- so the finding was in the report and worth nothing to the
+exit code. The vertical now declares `regression_kinds`, and the core reads it.
+
+**The agreement test compares the exit code.** It did not, which is why this
+stood: it asserted per-tag state, the three counts and the presence of the
+finding. Two things were needed to make the comparison real. The test builds a
+SECOND walk in which a substituted reading is the only defect -- on the existing
+corpus both paths answer 1 because an absent node is one of the core's own
+regression kinds, so comparing codes there would have passed while the defect
+stood. Two implementations agreeing because a third defect dominates is not
+agreement.
+
+**`Register.sources` has a test that drives the shipped value.** The only
+stand-in in that file supplies `()` and exists to ask a different question, so
+the real path string had no test at all -- and the core's JSON writer read eleven
+members off each element until 0.1.8. Both halves of that report take a path now.
+
+Both new assertions are version-aware and assert in either environment rather
+than skipping, so neither is a red converted to a pass.
+
 ## 0.1.10 -- 2026-09-10
 
 Answers the static re-verification of 0.1.9, which raised four observations and

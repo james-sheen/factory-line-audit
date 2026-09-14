@@ -54,8 +54,14 @@ live = ["asyncua>=1.0,<3"]
 # dependency-free path; this is additive, and both are asserted to give the same
 # three-valued answer by `tests/test_vertical_agrees.py`.
 #
-# The floor is the core's first release, and it is where the claim starts being
-# true rather than where the history starts. The predecessor pin below was
+# The floor is where the claim starts being TRUE rather than where the history
+# starts, and it moved to 0.1.8 at this release. The claim that moved it is this
+# package's own: the two Stage 1 paths agree. They agree on the VERDICT only from
+# 0.1.8, because a domain's own finding kinds score as regressions only from the
+# release that added the vocabulary hook -- below it `substituted_value` is in the
+# report and worth nothing to the core's exit code. The agreement test asserts in
+# either environment, so the floor is what makes the claim true rather than what
+# makes the tests pass. The predecessor pin below was
 # written against an unpublished version deliberately, to bind publish order;
 # that ordering is discharged, because the core is published and this floor
 # names a release that exists.
@@ -81,7 +87,7 @@ live = ["asyncua>=1.0,<3"]
 # exercised. NOT 0.1.7, where the shared `exit_contract` arrives -- this package
 # keeps its own, because Stage 1 has no dependencies. A floor justified by a
 # member nobody calls is a floor nobody can check.
-vertical = ["presence-audit>=0.1.6,<0.2"]
+vertical = ["presence-audit>=0.1.8,<0.2"]
 
 [project.scripts]
 factory-line-audit = "factory_line_audit.cli:main"
