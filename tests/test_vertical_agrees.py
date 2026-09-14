@@ -22,6 +22,7 @@ pa = pytest.importorskip("presence_audit",
 
 from presence_audit import vocabulary as V
 from presence_audit.diff import compare
+from presence_audit import report as pa_report
 
 from factory_line_audit import presence, vertical
 
@@ -58,6 +59,39 @@ def _core_reads_points() -> bool:
         compare(_OnlyPoints(), _EmptyWalk())
         return True
     except TypeError:
+        return False
+    finally:
+        V._REGISTERED = previous
+
+
+def _core_reads_a_plain_source() -> bool:
+    """Does the installed core's JSON writer accept a path as a source?
+
+    By BEHAVIOUR, like the probe above, for the same reason. `sources` is
+    declared `Sequence[object]` and the text half of the core's report has
+    always taken a plain path; the JSON half read eleven members off each
+    element and raised. Reported upstream and fixed there. Until that ships,
+    this package's shipped value crashes one of the core's two writers -- which
+    is a fact about the installed core, and is asserted rather than skipped.
+    """
+    class _Src:
+        points = ()
+        anomalies = ()
+        unreadable = ()
+        sources = ("register.json",)
+
+    class _Walk(_Src):
+        captured_at = None
+        complete = True
+        errors = ()
+
+    previous = V._REGISTERED
+    V.reset()
+    V.register(vertical.FactoryLineVocabulary())
+    try:
+        pa_report.as_json(compare(_Src(), _Walk()), walk=_Walk())
+        return True
+    except AttributeError:
         return False
     finally:
         V._REGISTERED = previous
@@ -115,6 +149,24 @@ def _a_walk(register):
             "samples": [{"t": "2026-09-08T00:00:00Z", "nodes": sample}]}
 
 
+def _a_walk_whose_only_defect_is_substituted(register):
+    """Every node present, reading and Good, except one HMI override.
+
+    A SECOND corpus, and it is the one that isolates the verdict. The corpus
+    above deliberately carries all three states -- so it also carries an absent
+    node, `declared_absent` is one of the core's OWN regression kinds, and both
+    paths answer 1 for a reason that has nothing to do with this domain. Two
+    implementations agreeing because a third defect dominates is not agreement.
+    """
+    nodes = [spec["node"] for a in register["assets"]
+             for spec in (a.get("tags") or {}).values()]
+    assert len(nodes) >= 2, "the register is too small to isolate one defect"
+    sample = {node: {"v": 1.0, "q": "Good"} for node in nodes}
+    sample[nodes[1]] = {"v": 1.0, "q": "GoodLocalOverride"}
+    return {"source": {"endpoint": "opc.tcp://test"},
+            "samples": [{"t": "2026-09-08T00:00:00Z", "nodes": sample}]}
+
+
 def _stage1_states(register, walk):
     out = {}
     for row in presence.classify(register, walk)["tags"]:
@@ -159,6 +211,76 @@ class TestTheTwoPathsAgree:
         assert counts["reading"] == s1[presence.READING]
         assert counts["present_not_reading"] == s1[presence.NOT_READING]
         assert counts["declared_absent"] == s1[presence.ABSENT]
+
+    def test_the_verdict_agrees_as_well_as_the_states(self, corpus, registered):
+        """THE THING A CONSUMER ACTS ON, and the one this file did not compare.
+
+        States, counts and the presence of a finding all agreed while the two
+        paths disagreed about the exit code: `substituted_value` is this
+        domain's own kind, and the core scored findings against a frozen set of
+        its own. Stage 1 said 1, the core said 0, and this file could not see it
+        because it never asked either path for its code.
+
+        Version-aware rather than skipped, and both arms assert. A core without
+        the vocabulary hook CANNOT agree, so against one this asserts the
+        divergence AND that this package declares what would close it -- which
+        is a claim that goes red if the declaration is dropped.
+        """
+        register, _ = corpus
+        walk = _a_walk_whose_only_defect_is_substituted(register)
+        stage1 = presence.classify(register, walk)["exit"]
+        core = compare(vertical.Register(register), vertical.Walk(walk)).exit_code
+        found = [f.kind for f in
+                 compare(vertical.Register(register), vertical.Walk(walk)).findings]
+        assert found == ["substituted_value"], (
+            f"this walk was built so a substituted reading is the ONLY defect "
+            f"and the core found {found}; anything else here would dominate the "
+            f"code and the comparison would prove nothing")
+        assert stage1 == 1, (
+            "stage 1 stopped flooring a substituted reading at 1, so this "
+            "compares two clean runs")
+        assert "substituted_value" in tuple(vertical.FactoryLineVocabulary().regression_kinds), (
+            "this vertical no longer tells the core which of its own kinds are "
+            "regressions, so the core cannot score them however new it is")
+        if hasattr(V, "regression_kinds"):
+            assert core == stage1, (
+                f"the two paths disagree about the verdict: stage1={stage1} "
+                f"core={core}, on one walk")
+        else:
+            assert core == 0, (
+                f"the installed core has no vocabulary hook for a domain's own "
+                f"regression kinds, so it cannot score {stage1} here -- but it "
+                f"answered {core}, which is neither the old behaviour nor the "
+                f"new one")
+
+
+@NEEDS_POINTS
+class TestTheProvenanceThisPackageSupplies:
+    """`Register.sources` is supplied here and read by the CORE, never here."""
+
+    def test_the_real_value_survives_the_cores_json_writer(self, corpus, registered):
+        """The REAL member, not a stand-in's.
+
+        The only stand-in in this file supplies `sources = ()` and exists to ask
+        a different question, so the shipped value had no test at all -- and the
+        writer that consumes it reads eleven members off each element. It took a
+        plain string the way the text half always had only after that was
+        reported; this drives the shipped value through it.
+        """
+        register, walk = corpus
+        report = compare(vertical.Register(register), vertical.Walk(walk))
+        assert report.declaration_sources, "the register declared no source"
+        if not _core_reads_a_plain_source():
+            with pytest.raises(AttributeError):
+                pa_report.as_json(report, walk=vertical.Walk(walk))
+            return
+        payload = json.loads(pa_report.as_json(report, walk=vertical.Walk(walk)))
+        named = payload.get("declaration_sources") or []
+        assert named and named[0]["path"], named
+
+    def test_it_is_the_path_the_register_was_read_from(self, corpus):
+        register, _ = corpus
+        assert tuple(vertical.Register(register).sources) == (register["_path"],)
 
 
 @NEEDS_POINTS

@@ -112,6 +112,18 @@ class Register:
 
     @property
     def sources(self) -> Sequence[object]:
+        """Where the declaration came from. A PATH, which is what the protocol
+        promises: `Sequence[object]`, the files or authorities read.
+
+        NOTHING IN THIS PACKAGE READS IT, and that is not the same as it being
+        unused. This package writes its own JSON, so its own report never asks;
+        the consumer is `presence_audit.report`, which a third party reaches by
+        installing this vertical and asking the CORE for a diff. That writer
+        used to read eleven members off each element and crash on a string --
+        reported upstream, and the text half of the same report had always
+        accepted one. Both halves take a path now, and a test below drives the
+        real value through the core rather than a stand-in's `()`.
+        """
         return (self._r.get("_path") or "register",)
 
     @property
@@ -238,6 +250,20 @@ class FactoryLineVocabulary:
     @property
     def count_keys(self) -> Mapping[str, str]:
         return {TEMPLATED: "templated_tags", UNRECOGNISED: "unrecognised_class"}
+
+    @property
+    def regression_kinds(self) -> Sequence[str]:
+        """This domain's own kinds that mean something got WORSE.
+
+        `capture_findings` lets a vertical report what only it can see, and the
+        core scored those against a frozen set of its own kinds -- so
+        `substituted_value` was in the report and worth nothing to `exit_code`.
+        This package was unaffected in practice because its command line
+        computes its own code and floors a substituted reading at 1; the two
+        paths then disagreed about the verdict for one walk, which is the thing
+        the agreement test exists to catch and could not.
+        """
+        return ("substituted_value",)
 
     @property
     def noun(self) -> Sequence[str]:
