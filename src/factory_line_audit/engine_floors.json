@@ -1,6 +1,6 @@
 {
-  "measured_on": "2026-09-12T16:31:10.901459+00:00",
-  "engine_version": "0.1.13",
+  "measured_on": "2026-09-14T07:59:44.294871+00:00",
+  "engine_version": "0.1.14",
   "engine_module": "arbiter_engine",
   "python": "3.10.12",
   "probes": {
@@ -60,7 +60,7 @@
     "V1": {
       "question": "how many decline reasons does this engine define",
       "measured": {
-        "count": 12,
+        "count": 14,
         "reasons": [
           "checker_error",
           "insufficient_samples",
@@ -69,8 +69,10 @@
           "missing_property",
           "missing_role",
           "no_current_value",
+          "no_rule_for_role",
           "no_threshold",
           "not_applicable",
+          "partially_checked",
           "precondition_unmet",
           "undefined_for_values",
           "wrong_indicator_type"
@@ -786,7 +788,7 @@
       "measured": {
         "meta": {
           "schema_version": 1,
-          "engine_version": "0.1.13",
+          "engine_version": "0.1.14",
           "source": "live"
         },
         "invariants": 1,
@@ -968,8 +970,10 @@
     "missing_property",
     "missing_role",
     "no_current_value",
+    "no_rule_for_role",
     "no_threshold",
     "not_applicable",
+    "partially_checked",
     "precondition_unmet",
     "undefined_for_values",
     "wrong_indicator_type"

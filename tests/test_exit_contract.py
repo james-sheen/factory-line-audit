@@ -73,16 +73,30 @@ class TestDeclineClassesAndTheirFloors:
         assert classify("no_rule_for_role") == classify("missing_role")
         assert classify("no_rule_for_role") == "model_defect"
 
-    def test_no_rule_for_role_is_not_in_the_recorded_vocabulary_yet(self):
+    def test_the_recorded_vocabulary_is_the_probe_s_and_not_a_hand_edit(self):
         """The classes are a DECISION and may run ahead of the engine; this
-        tuple is a MEASUREMENT and may not. No released engine emits this
-        reason, so recording it would be claiming a probe nobody ran.
+        tuple is a MEASUREMENT and may not.
 
-        This goes green again by running `probe_engine.py` against a release
-        that emits it, and adding it with that version beside it -- in that
-        order.
+        It used to pin the ABSENCE of `no_rule_for_role`, because no released
+        engine emitted it and recording it would have claimed a probe nobody
+        ran. `arbiter-engine` 0.1.14 emits it and `partially_checked` both, and
+        `probe_engine.py` has been re-run against that release -- so the claim
+        this file can now make is the stronger one: what is recorded here is
+        what the probe wrote, member for member.
+
+        A hand-edited addition goes red here even when it happens to be right,
+        which is the property the old assertion was protecting.
         """
-        assert "no_rule_for_role" not in VOCABULARY_AT_DESIGN_TIME
+        import json
+        from pathlib import Path
+        measured = json.loads(
+            (Path(__file__).resolve().parents[1]
+             / "src" / "factory_line_audit" / "engine_floors.json").read_text())
+        assert sorted(VOCABULARY_AT_DESIGN_TIME) == sorted(measured["vocabulary"]), (
+            "the recorded vocabulary and the probe's own output disagree; "
+            "re-run battery/probe_engine.py against the pinned engine rather "
+            "than editing the tuple")
+        assert measured["engine_version"], "the probe recorded no engine version"
 
     def test_the_ambiguous_pair_needs_stage_one(self):
         """`missing_property` means two different things and the engine cannot

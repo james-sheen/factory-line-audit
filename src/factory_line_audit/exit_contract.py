@@ -93,7 +93,7 @@ DECLINE_CLASSES: Dict[str, Dict[str, Any]] = {
         "floor": INCOMPLETE,
         "reasons": ("missing_role", "missing_config", "no_threshold",
                     "wrong_indicator_type", "missing_entity_type",
-                    "no_rule_for_role"),
+                    "no_rule_for_role", "partially_checked"),
         "why": "This package generated the model. Nothing else will notice. "
                "`no_rule_for_role` is classed here BEFORE any release emits "
                "it. The engine splits it out of `missing_role` to say the "
@@ -114,7 +114,7 @@ DECLINE_CLASSES: Dict[str, Dict[str, Any]] = {
     },
     "declared_gap": {
         "floor": CLEAN,
-        "reasons": ("no_threshold",),
+        "reasons": ("no_threshold", "partially_checked"),
         "why": "The engine declining a check this package ALREADY excluded and "
                "named in the manifest with a reason. Not a defect -- the two "
                "records agreeing. MONOTONICITY's rate arm is the case: it "
@@ -154,18 +154,19 @@ DECLINE_CLASSES: Dict[str, Dict[str, Any]] = {
 #: after this file was written becomes visible instead of falling into
 #: `unclassified` quietly.
 #:
-#: `no_rule_for_role` is DELIBERATELY NOT HERE, though `model_defect` above
-#: already classes it. This tuple records what was measured from a running
-#: engine, and no released engine emits it: 0.1.13 is the newest on the index
-#: and carries twelve reasons. Adding it here by hand would make this file
-#: claim a measurement nobody took, and the live-vocabulary comparison would
-#: refuse it anyway. It goes in the day a release emits it and a probe records
-#: it, with that version written beside it.
+#: `no_rule_for_role` and `partially_checked` WERE deliberately absent while no
+#: released engine emitted them -- this tuple records what was MEASURED from a
+#: running engine, and adding a member by hand would make this file claim a
+#: measurement nobody took. That note said they go in the day a release emits
+#: them, with the version written beside them. `arbiter-engine` 0.1.14 emits
+#: both; the enum was read off the installed engine rather than transcribed, and
+#: the count went twelve to fourteen.
 VOCABULARY_AT_DESIGN_TIME = (
     "checker_error", "insufficient_samples", "missing_config",
     "missing_entity_type", "missing_property", "missing_role",
-    "no_current_value", "no_threshold", "not_applicable",
-    "precondition_unmet", "undefined_for_values", "wrong_indicator_type",
+    "no_current_value", "no_rule_for_role", "no_threshold", "not_applicable",
+    "partially_checked", "precondition_unmet", "undefined_for_values",
+    "wrong_indicator_type",
 )
 
 
@@ -238,12 +239,21 @@ def classify(reason: str, *, stage1_said_reading: Optional[bool] = None,
     """
     if reason == "insufficient_samples":
         return "warmup_unreachable" if floor_unreachable else "warmup"
-    if reason == "no_threshold" and recorded_gap:
+    if reason in ("no_threshold", "partially_checked") and recorded_gap:
         # The manifest already named this exclusion, with a reason. An engine
         # that then declines it is agreeing, not reporting a defect -- and
         # reading agreement as a defect is how a bridge fails on a healthy line.
         # Measured: without this, a released engine carrying the rate
         # decline turns this package's clean corpus from exit 0 into exit 2.
+        #
+        # TWO REASONS NOW, and the second is the first one told apart upstream.
+        # `arbiter-engine` 0.1.14 split `partially_checked` out of
+        # `no_threshold` for exactly this case -- one arm of a two-armed axiom
+        # with nothing to judge against while the other arm ran -- after this
+        # package reported that the single code sent a bridge to floor a correct
+        # model at could-not-complete. Both are accepted: the older code still
+        # arrives from every engine below 0.1.14, which this package's own pin
+        # admits.
         return "declared_gap"
     if reason == "missing_entity_type":
         if target_absent is None:

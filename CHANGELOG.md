@@ -12,6 +12,33 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.12 -- 2026-09-14
+
+**Reads `partially_checked`, which `arbiter-engine` 0.1.14 split out of
+`no_threshold`.** Nothing here needs doing; this is the release that keeps a
+clean corpus reporting 0 against that engine.
+
+The split was asked for BY this package, and then broke it, which is worth
+recording rather than tidying away. `no_threshold` meant two things a bridge has
+to route differently -- a model with nothing to judge against, and one arm of a
+two-armed axiom with the other arm running -- so this package told them apart by
+asking its own manifest whether the gap had been declared. The engine tells them
+apart itself now. The branch that read the old code alone stopped matching, the
+decline fell through to `unclassified`, and `unclassified` floors at 2: the exact
+failure the comment beside that branch already described, from the other
+direction.
+
+**Both codes are accepted**, because every engine this package's pin admits
+below 0.1.14 still emits the old one.
+
+**The recorded vocabulary is the probe's again.** `VOCABULARY_AT_DESIGN_TIME`
+pinned the ABSENCE of `no_rule_for_role`, deliberately, because no release
+emitted it and recording it would have claimed a measurement nobody took. 0.1.14
+emits it and `partially_checked` both; `battery/probe_engine.py` was re-run
+against that release, and the test now asserts the recorded tuple IS the probe's
+output rather than asserting one member is missing -- so a hand-edit goes red
+even when it happens to be right.
+
 ## 0.1.11 -- 2026-09-14
 
 **The core floor rises to `presence-audit>=0.1.8`, and that is the thing to do.**
