@@ -36,10 +36,12 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -47,6 +49,53 @@ ROOT = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "pin_evidence.json")
 CORPUS = os.path.join(HERE, "corpus", "clean.json")
 FLOORS = os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json")
+
+
+#: One definition of the work-directory prefix, because the reaper and the
+#: `mkdtemp` that creates them have to agree. Written twice, the two drift and
+#: the reaper quietly stops matching anything -- which reads exactly like a
+#: machine that never leaks. Namespaced to this tool: the prefix used to be a
+#: bare `pin-`, which is a wide net to sweep a shared /tmp with.
+WORK_PREFIX = "fla-pin-"
+
+#: How old an abandoned directory must be before it is reaped. Anything younger
+#: could belong to a probe running right now.
+REAP_AFTER_SECONDS = 6 * 3600
+
+
+def reap_abandoned(prefix: str = WORK_PREFIX,
+                   older_than: int = REAP_AFTER_SECONDS) -> list[str]:
+    """Remove work directories a previous run was killed before cleaning up.
+
+    The `finally` below covers exceptions. It does not cover SIGKILL, a
+    timed-out CI step or a reboot, and a run that dies that way leaves one
+    virtualenv per release tried -- gigabytes, with nothing left alive to
+    remove them. So this reaps on the way IN: the run that leaked is by
+    definition not around to clean up on the way out.
+
+    Conservative on purpose. A directory is reaped only when it carries this
+    tool's own prefix, is older than the threshold -- so a probe running
+    concurrently is never touched -- and either holds an environment or is the
+    empty shell of a run that died before building one. Anything else wearing
+    the prefix belongs to somebody else and is left alone.
+    """
+    reaped = []
+    cutoff = time.time() - older_than
+    for path in sorted(pathlib.Path(tempfile.gettempdir()).glob(f"{prefix}*")):
+        if path.is_symlink() or not path.is_dir():
+            continue
+        try:
+            if path.stat().st_mtime >= cutoff:
+                continue
+            occupied = any(path.iterdir())
+        except OSError:
+            continue
+        if occupied and not any(path.glob("*/pyvenv.cfg")):
+            continue
+        shutil.rmtree(path, ignore_errors=True)
+        if not path.exists():
+            reaped.append(path.name)
+    return reaped
 
 
 def corpus_age() -> tuple:
@@ -185,7 +234,7 @@ def sweep(dist: str, run) -> dict:
 
     results = {}
     for version in below[-3:] + inside:
-        workdir = tempfile.mkdtemp(prefix=f"pin-{version}-")
+        workdir = tempfile.mkdtemp(prefix=f"{WORK_PREFIX}{version}-")
         python = os.path.join(workdir, "v", "bin", "python")
         try:
             subprocess.run([sys.executable, "-m", "virtualenv", "-q",
@@ -220,6 +269,11 @@ def sweep(dist: str, run) -> dict:
 
 
 def main() -> int:
+    abandoned = reap_abandoned()
+    if abandoned:
+        print(f"reaped {len(abandoned)} work director"
+              f"{'y' if len(abandoned) == 1 else 'ies'} left by a killed run: "
+              f"{', '.join(abandoned)}")
     age, built, narrowest = corpus_age()
     print(f"corpus built {built} ({int(age)}s ago), inside the narrowest "
           f"measured window ({int(narrowest)}s)")
