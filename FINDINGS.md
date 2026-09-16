@@ -704,9 +704,19 @@ reader here cannot resolve:
 | A9 | this bridge cites the guide by ordinal |
 | -- | the consumer must classify `no_threshold` first — **done**: the feeder moved out in the 0.3.0 split, so it ships in `presence-audit` 0.1.2 |
 | -- | `allow_reset` / `reset_tolerance` measured — **done** |
+| B1 | **not filed.** Re-measured 2026-09-16 against 0.1.14: BOUNDEDNESS still fires with the gate property absent, nothing declines, `required_property` still reads `axiom_not_declared, read_by: ["CONNECTIVITY"]`. The bridge gates at feed time instead, and the engine-side ask has never been raised |
+| A11 | **not filed.** Engine behaviour rather than a defect: which arm a drop takes is decided by the post-drop value read against the step. Re-measured 2026-09-16 against 0.1.14, all eight cells of the table unchanged. Settled in this bridge by declaring, per counter, whether it zeroes in normal operation |
 
 A1 was retired on measurement and is not filed. A8 is a note about a trap rather
 than a defect and is not filed. C1 and C2 are the withdrawals.
+
+**This table was short by four, and is now short by two.** B1 and A11 had no
+disposition anywhere in this file until 2026-09-16; they were found by a test
+that resolves every finding this document defines against this section, and both
+were re-measured before a row was written for them rather than dispositioned from
+memory. **B7 and A10 are still outside it**: B7's disposition sits in its own
+body, and A10's is the `allow_reset` row above, which names a topic where the
+column says a finding. Neither is lost, and neither is here.
 
 **Nothing here implicates a shipped bridge.** `bmc-sensor-audit` declares no
 CONNECTIVITY, no HOMEOSTASIS, and feeds no counter into CONSERVATION;
