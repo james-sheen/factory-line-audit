@@ -70,19 +70,17 @@ def test_finding_labels_are_unique_and_contiguous_within_each_letter() -> None:
 
 # --- the disposition table, and the four findings it does not reach --------
 
-#: Defined findings section E does not disposition. A REAL GAP, pinned so it
-#: cannot grow quietly, and NOT endorsed:
+#: Defined findings section E does not disposition. EMPTY, and kept as a set so
+#: that a regression re-populates it rather than deleting the check.
 #:
-#:   B7  -- dispositioned in its own body (shipped in 0.1.11, 2026-09-04) and
-#:          never carried up into the table.
-#:   A10 -- covered by a table row whose Finding column is `--`, naming the topic
-#:          `allow_reset` instead of the label, while E's own preamble says the
-#:          table is KEYED BY FINDING.
-#:
-#: B1 and A11 were here until 2026-09-16, with no disposition anywhere in the
-#: document. Both were re-measured against engine 0.1.14 before a row was
-#: written, and both still hold.
-UNDISPOSITIONED = {"B7", "A10"}
+#: It held four on 2026-09-16, all found by the test below and none closed from
+#: memory. B1 and A11 had no disposition anywhere in the file and were
+#: re-measured against engine 0.1.14 first; both still hold. A10's disposition
+#: was a row whose Finding column read `--`. B7's was in its own body, and
+#: carrying it up made the sharper half visible: the fix shipped in 0.1.11 and
+#: the finding survives it, because the advertised floor is the release without
+#: it. Anything appearing here again is a finding somebody forgot to account for.
+UNDISPOSITIONED: set[str] = set()
 
 
 def test_the_disposition_table_accounts_for_every_finding_but_the_known_four() -> None:
