@@ -24,13 +24,26 @@ It moved there in 0.1.7 so the installed wheel carries it; both documents went
 on naming the old path, which is why every repository path either of them names
 is now held by a test.
 
-**Which engine each claim is about.** The exam measured `arbiter-engine 0.1.10`,
-which is still this package's range floor. Engine fixes recorded below as *fixed
-in source* shipped in **0.1.11 (2026-09-04)**; the engine has released 0.1.12 and
-0.1.13 since. Where a finding says a release does or does not have something, it
-means **that release** -- not whatever the range resolves to on the day you read
-this. A range resolves to its newest member, so a fresh install and the floor are
-different engines, and this file is about the floor.
+**Which engine each claim is about.** The exam measured `arbiter-engine 0.1.10`.
+That is NO LONGER this package's range floor: the floor is now `0.2.4`, raised
+2026-09-24 when the `<0.2` ceiling was re-derived against a 0.2 release for the
+first time. This file therefore describes an engine the package no longer
+installs, and the sentence that used to call the two the same has been removed
+rather than corrected in place, because it had been true and quietly stopped
+being so.
+
+What was re-measured rather than assumed: `battery/probe_engine.py` was re-run
+against `0.2.4` and every floor in
+`src/factory_line_audit/engine_floors.json` reproduced -- the version string and
+the timestamp are the only fields that moved. So the NUMBERS below still hold on
+the current floor; what does not carry over is any claim about which release
+first had or lacked something.
+
+Engine fixes recorded below as *fixed in source* shipped in **0.1.11
+(2026-09-04)**. Where a finding says a release does or does not have something,
+it means **that release** -- not whatever the range resolves to on the day you
+read this. A range resolves to its newest member, so a fresh install and the
+floor are different engines.
 
 ---
 

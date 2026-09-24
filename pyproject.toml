@@ -43,7 +43,16 @@ dependencies = []
 # otherwise, which is the whole reason C8 asks for a run.
 # A range is a claim about every release inside it, so the claim starts where
 # the claim is true. Evidence: battery/pin_evidence.json.
-detect = ["arbiter-engine>=0.1.10,<0.2"]
+#
+# THE CEILING MOVED TO 0.2 ON A MEASUREMENT, 2026-09-24. `<0.2` had held since
+# the engine's 0.1 line and was never re-derived against a 0.2 release, so it
+# was a claim about a boundary nobody had crossed. Measured on 0.2.4: 510 passed and 7 skipped, the same pair
+# 0.1.18 reports.
+# The floor is raised with it rather than left low: a range is a claim about
+# every release inside it, and the releases between the old floor and this one were not
+# re-run when the ceiling moved. `unread_properties` is still the reason the
+# floor cannot go below 0.1.10.
+detect = ["arbiter-engine>=0.2.4,<0.3"]
 # The live leg's dependency, deliberately in its own extra. BRIDGES, on the
 # verification battery:
 # optional extras installed to make one leg run can pull a transitive major that

@@ -149,17 +149,33 @@ def test_every_repository_path_the_prose_names_exists() -> None:
             f"the prose names {path}, which is not in the repository")
 
 
-def test_the_engine_the_exam_measured_is_still_the_declared_floor() -> None:
-    """The document says the exam measured 0.1.10 and that this *is still this
-    package's range floor* -- a claim about `pyproject.toml`, which moves
-    independently of prose. If the floor is raised, this file is about an engine
-    the package no longer accepts, and it should say so rather than be read as
-    current."""
+def test_the_engine_the_exam_measured_is_named_against_the_declared_floor() -> None:
+    """The document names the engine the exam ran on; `pyproject.toml` names the
+    floor. They move independently, and the failure this guards is the document
+    being read as current after the floor is raised.
+
+    THE CHECK IS NOT EQUALITY ANY MORE, AND THE CHANGE MAKES IT STRICTER. It was
+    equality until 2026-09-24, when the floor moved from 0.1.10 to 0.2.4 and this
+    went red -- correctly. Equality can be satisfied two ways: by re-running the
+    exam, or by editing the prose to name a version nobody measured. Only one of
+    those is honest and the assertion could not tell them apart.
+
+    So when the two agree, nothing more is asked. When they DIVERGE, the prose
+    must name the current floor and say that the exam predates it -- which is
+    what the old docstring said should happen and what the old assertion made
+    impossible to express."""
     measured = re.search(r"The exam measured `arbiter-engine ([0-9.]+)`", FINDINGS)
     assert measured, "the prose no longer names the engine version it measured"
     pyproject = open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8").read()
     floor = re.search(r'arbiter-engine>=([0-9.]+)', pyproject)
     assert floor, "no arbiter-engine floor in pyproject.toml"
-    assert measured.group(1) == floor.group(1), (
-        f"the exam measured {measured.group(1)} and the floor is now "
-        f"{floor.group(1)}; the prose calls them the same")
+    if measured.group(1) == floor.group(1):
+        return
+    assert f"the floor is now `{floor.group(1)}`" in FINDINGS, (
+        f"the exam measured {measured.group(1)}, the floor is now "
+        f"{floor.group(1)}, and the prose does not name the floor -- so this "
+        f"file reads as current for an engine the package no longer installs")
+    assert "NO LONGER this package's range floor" in FINDINGS, (
+        "the two versions differ and the prose does not say so in as many "
+        "words; naming both without saying which is current is the same "
+        "silence with more numbers in it")
