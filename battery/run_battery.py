@@ -1138,9 +1138,27 @@ def leg_pin():
             continue
         if not body["every_release_in_range_runs_clean"]:
             red.append(dist)
-        notes.append(f"{body['declared_range']} ({len(body['inside_range'])} "
-                     f"inside, floor forced by "
-                     f"{sorted(body['floor_is_forced_by'])})")
+        # WHICH OF THE TWO THINGS A PASSING CONTROL MEANS, said out loud.
+        # This printed `floor forced by` over every control checked below the
+        # floor -- true while they failed, and false the moment a floor was
+        # raised to a release the ones under it also satisfy. Three releases
+        # were named as forcing a floor they do not force.
+        if "checked_below" not in body:
+            stale.append(f"{dist} evidence predates the forced/checked split "
+                         f"and cannot say whether the controls below the floor "
+                         f"failed; re-run probe_pin.py")
+            continue
+        forced = sorted(body["floor_is_forced_by"])
+        if forced:
+            notes.append(f"{body['declared_range']} "
+                         f"({len(body['inside_range'])} inside, floor forced "
+                         f"by {forced})")
+        else:
+            notes.append(f"{body['declared_range']} "
+                         f"({len(body['inside_range'])} inside, floor NOT "
+                         f"forced -- {sorted(body['checked_below'])} below it "
+                         f"run clean too, so the floor is higher than this "
+                         f"sweep can show is necessary)")
     if stale:
         return leg("pin", 2, "; ".join(stale))
     if red:

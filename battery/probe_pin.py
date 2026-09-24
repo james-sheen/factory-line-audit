@@ -262,9 +262,25 @@ def sweep(dist: str, run) -> dict:
         "published": everything, "inside_range": inside,
         "results": results,
         "every_release_in_range_runs_clean": inside_ok,
-        "floor_is_forced_by": {
+        # TWO FIELDS, BECAUSE THEY WERE ONE AND IT WAS A CLAIM THE DATA DID NOT
+        # CARRY. `floor_is_forced_by` held every control checked below the
+        # floor, whether it failed or not, and the battery printed *floor
+        # forced by* over the list. That was true only while the controls
+        # failed -- which they did, until a floor was raised to a release the
+        # ones below it also satisfy. Then the sentence named three releases
+        # as forcing a floor they do not force, and nothing could tell.
+        #
+        # A passing control is evidence the floor is HIGHER than anything here
+        # measured. It is not evidence the floor is wrong, and it is not
+        # evidence the floor is needed. Keeping both sets lets the reader be
+        # told which of those it is looking at.
+        "checked_below": {
             v: results[v].get("stderr") or results[v].get("outcome")
             for v in below[-3:] if v in results},
+        "floor_is_forced_by": {
+            v: results[v].get("stderr") or results[v].get("outcome")
+            for v in below[-3:]
+            if v in results and results[v].get("exit") != 0},
     }
 
 
