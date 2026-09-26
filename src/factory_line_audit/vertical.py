@@ -326,7 +326,7 @@ class FactoryLineVocabulary:
         was, now = getattr(old, "state", None), getattr(new, "state", None)
         if was == now:
             return ()
-        return (Change(kind="quality_changed", sensor=getattr(new, "name", "?"),
+        return (Change(kind="quality_changed", point=getattr(new, "name", "?"),
                        detail=f"OPC UA quality went {was} -> {now}",
                        before_path=getattr(old, "path", None),
                        after_path=getattr(new, "path", None)),)
@@ -337,7 +337,7 @@ class FactoryLineVocabulary:
         b = len(list(getattr(after, "points", ())))
         if a == b:
             return ()
-        return (Change(kind="node_count_changed", sensor="(walk)",
+        return (Change(kind="node_count_changed", point="(walk)",
                        detail=f"the server served {a} node(s), then {b}"),)
 
     def capture_findings(self, capture: object) -> Sequence[object]:
@@ -355,7 +355,7 @@ class FactoryLineVocabulary:
             n = getattr(node, "substituted_samples", 0)
             if n:
                 out.append(Finding(
-                    kind="substituted_value", sensor=node.name,
+                    kind="substituted_value", point=node.name,
                     detail=(f"{n} sample(s) substituted at an HMI; this measures "
                             f"the operator, not the process"),
                     live_path=node.path))

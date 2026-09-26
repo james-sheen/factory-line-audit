@@ -95,6 +95,7 @@ def compare(before_path: str, after_path: str,
 
     try:
         # Lazy on purpose: Stage 1 declares no dependency and a test asserts it.
+        from presence_audit import vocabulary as core_vocabulary
         from presence_audit.regression import compare_walks
     except ImportError as missing:
         return INCOMPLETE, {"format": FORMAT, "could_not_complete": [
@@ -116,14 +117,25 @@ def compare(before_path: str, after_path: str,
     changes = report.regressions
     changes = list(changes() if callable(changes) else changes)
 
-    counts = dict(report.counts())
+    # IN THIS PACKAGE'S OWN WORD. A kind naming the subject is the core's to
+    # spell -- `sensor_removed` on the core's 0.1 line, `point_removed` from its
+    # 0.2.0 -- and passing on whichever the installed core emitted would make
+    # this report say different things across the range it admits. The core
+    # spells a kind in the vocabulary it is handed, so both read `tag_removed`.
+    with core_vocabulary.using(FactoryLineVocabulary()):
+        spelled = core_vocabulary.spelled_kind
+        counts: Dict[str, int] = {}
+        for kind, n in dict(report.counts()).items():
+            counts[spelled(kind)] = counts.get(spelled(kind), 0) + n
+        lines = [f"[{spelled(change.kind)}] {change.point} -- {change.detail}"
+                 for change in changes]
     shifted = counts.get("aggregation_prefix_shift", 0)
     body: Dict[str, Any] = {
         "format": FORMAT,
         "before": before_path, "after": after_path,
         "declared_renames": list(renames),
         "counts": counts,
-        "regressions": [str(change) for change in changes],
+        "regressions": lines,
         "undeclared_prefix_shifts": shifted,
     }
     if shifted:

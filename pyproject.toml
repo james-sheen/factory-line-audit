@@ -109,7 +109,12 @@ live = ["asyncua>=1.0,<3"]
 # exercised. NOT 0.1.7, where the shared `exit_contract` arrives -- this package
 # keeps its own, because Stage 1 has no dependencies. A floor justified by a
 # member nobody calls is a floor nobody can check.
-vertical = ["presence-audit>=0.1.8,<0.2"]
+# RAISED TO 0.1.13, 2026-09-26, because this vertical now writes something
+# new: that release's `Change` and `Finding` take `point=`, and 0.1.12's do not.
+# THE CEILING IS 0.3. The core's 0.2.0 removes the old names this vertical no
+# longer writes, and the suite ran against a 0.2.0 build as well as 0.1.13
+# before the range admitted it.
+vertical = ["presence-audit>=0.1.13,<0.3"]
 
 [project.scripts]
 factory-line-audit = "factory_line_audit.cli:main"

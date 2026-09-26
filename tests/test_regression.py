@@ -82,8 +82,21 @@ class TestARemoval:
         after = written(tmp_path, "after.json", walk(NODES[:-1]))
         code, body = compare(before, after)
         assert code == FINDINGS
-        assert body["counts"].get("sensor_removed") == 1
+        assert body["counts"].get("tag_removed") == 1
         assert any(NODES[-1] in line for line in body["regressions"]), body
+
+    def test_the_kind_is_spelled_in_this_packages_word_on_every_core(self, tmp_path):
+        """The core's 0.1 line emits `sensor_removed` and its 0.2.0 emits
+        `point_removed`; this report says `tag_removed` over either, so a reader
+        of it sees one spelling across the whole range the extra admits."""
+        from factory_line_audit.regression import compare
+        before = written(tmp_path, "before.json", walk(NODES))
+        after = written(tmp_path, "after.json", walk(NODES[:-1]))
+        _, body = compare(before, after)
+        assert [line for line in body["regressions"] if "[tag_removed]" in line]
+        leaked = [key for key in body["counts"]
+                  if key.startswith(("sensor_", "point_"))]
+        assert not leaked, leaked
 
 
 class TestADeclaredRename:
@@ -111,8 +124,8 @@ class TestADeclaredRename:
         before = written(tmp_path, "before.json", walk(NODES))
         after = written(tmp_path, "after.json", walk(NODES, prefix="L1."))
         _, body = compare(before, after, [("ns=2;s=", "L1.ns=2;s=")])
-        assert not body["counts"].get("sensor_removed")
-        assert not body["counts"].get("sensor_added")
+        assert not body["counts"].get("tag_removed")
+        assert not body["counts"].get("tag_added")
 
 
 class TestAnUndeclaredShift:
@@ -126,7 +139,7 @@ class TestAnUndeclaredShift:
         code, body = compare(before, after)
         assert code == FINDINGS
         assert body["undeclared_prefix_shifts"] >= 1
-        assert body["counts"].get("sensor_removed") == len(NODES)
+        assert body["counts"].get("tag_removed") == len(NODES)
         assert not body["counts"].get("aggregation_prefix_paired")
         assert "NOT applied" in body["note"]
 

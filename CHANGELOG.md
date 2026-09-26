@@ -12,6 +12,20 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.15 -- 2026-09-26
+
+**`pip install 'factory-line-audit[vertical]'` needs `presence-audit>=0.1.13,<0.3`.**
+The core names a finding's and a change's subject `point` from 0.1.13, and this
+vertical writes that name; on 0.1.12 the keyword does not exist. The ceiling admits
+the core's 0.2.0, which removes the old names, and the suite ran against a 0.2.0
+build as well as 0.1.13 before it did.
+
+**`regression` says `tag_removed`, where 0.1.14 said `sensor_removed`.** A change kind
+naming the subject is the core's to spell, and the core's two lines spell it
+differently -- `sensor_removed` on 0.1.x, `point_removed` from 0.2.0 -- so this verb
+now spells it in this package's own word over either. A script reading `counts` or
+the `regressions` lines by the old key has to read the new one.
+
 ## 0.1.14 -- 2026-09-26
 
 **`pip install 'factory-line-audit[detect]'` installs the engine's 0.2 line.** The
