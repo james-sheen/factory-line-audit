@@ -78,8 +78,9 @@ def test_finding_labels_are_unique_and_contiguous_within_each_letter() -> None:
 #: re-measured against engine 0.1.14 first; both still hold. A10's disposition
 #: was a row whose Finding column read `--`. B7's was in its own body, and
 #: carrying it up made the sharper half visible: the fix shipped in 0.1.11 and
-#: the finding survives it, because the advertised floor is the release without
-#: it. Anything appearing here again is a finding somebody forgot to account for.
+#: the finding survived it while the advertised floor was the release without
+#: it, until the range moved to 0.2.4. Anything appearing here again is a
+#: finding somebody forgot to account for.
 UNDISPOSITIONED: set[str] = set()
 
 

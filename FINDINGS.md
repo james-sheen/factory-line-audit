@@ -492,14 +492,17 @@ records the latter in the manifest for every counter without one.
 ### B7. A hard stop worth having does not exist at the range floor
 
 `check().dropped_declarations` was `[Unreleased]` in the engine's CHANGELOG when
-this was written; it **shipped in 0.1.11, 2026-09-04**. Released 0.1.10 still does
-not have it, and 0.1.10 is this package's range floor. A bridge that builds its
+this was written; it **shipped in 0.1.11, 2026-09-04**. Released 0.1.10 does not
+have it, and 0.1.10 was this package's range floor when this was written. A bridge that builds its
 *did the engine understand my model* hard stop on that leg has a hard stop that
 silently does not exist at the floor it advertises -- which
 `battery/probe_pin.py` exercises alongside every other release the range admits.
 
 `model_describe().model.unread_fields` carries the same fact with
 `reason: unknown_value` on **both**, which is where this package reads it.
+
+**Closed by the range, 2026-09-24.** The floor is `>=0.2.4` now, and every
+release it admits carries `dropped_declarations`.
 
 Found by C8's floor exercise. An API inventory would not have found it, because
 the API is present -- on the wrong verb.
@@ -717,7 +720,7 @@ reader here cannot resolve:
 | A9 | this bridge cites the guide by ordinal |
 | -- | the consumer must classify `no_threshold` first — **done**: the feeder moved out in the 0.3.0 split, so it ships in `presence-audit` 0.1.2 |
 | A10 | `allow_reset` / `reset_tolerance` measured — **done**. The half the engine has no arm for — telling a scheduled reset from an unscheduled one — is the bridge's at feed time, as B1's machine-state gate is |
-| B7 | engine fix, **released in 0.1.11**, 2026-09-04: `dropped_declarations` is Added in that entry and absent from 0.1.10's. **The finding stands anyway** — this package's floor is still `>=0.1.10`, so the hard stop does not exist at the range it advertises, and `battery/probe_pin.py` exercises that across every release the range admits |
+| B7 | engine fix, **released in 0.1.11**, 2026-09-04: `dropped_declarations` is Added in that entry and absent from 0.1.10's. **Closed by the range, 2026-09-24**: the floor moved to `>=0.2.4`, so every release this package admits carries it. Until then the finding stood, because the advertised floor was `>=0.1.10`, the release without it |
 | B1 | **not filed.** Re-measured 2026-09-16 against 0.1.14: BOUNDEDNESS still fires with the gate property absent, nothing declines, `required_property` still reads `axiom_not_declared, read_by: ["CONNECTIVITY"]`. The bridge gates at feed time instead, and the engine-side ask has never been raised |
 | A11 | **not filed.** Engine behaviour rather than a defect: which arm a drop takes is decided by the post-drop value read against the step. Re-measured 2026-09-16 against 0.1.14, all eight cells of the table unchanged. Settled in this bridge by declaring, per counter, whether it zeroes in normal operation |
 
@@ -730,8 +733,9 @@ this section's own key, and none was closed from memory. B1 and A11 had no
 disposition anywhere in the file and were re-measured against 0.1.14 first; both
 still hold. A10's disposition was the `allow_reset` row, which named a topic
 where the column says a finding. B7's sat in its own body, and carrying it up
-made its sharper half visible: the engine fix shipped, and the finding survives
-it, because the floor this package advertises is the release that lacks it.
+made its sharper half visible: the engine fix shipped, and the finding survived
+it while the floor this package advertised was the release that lacks it --
+until the range moved to `>=0.2.4` on 2026-09-24 and closed it.
 
 **Nothing here implicates a shipped bridge.** `bmc-sensor-audit` declares no
 CONNECTIVITY, no HOMEOSTASIS, and feeds no counter into CONSERVATION;
