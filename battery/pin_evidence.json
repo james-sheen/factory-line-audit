@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-26T12:32:43Z",
+  "measured_on": "2026-09-26T13:52:24Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -31,7 +31,8 @@
         "0.2.9",
         "0.2.10",
         "0.2.11",
-        "0.2.12"
+        "0.2.12",
+        "0.2.13"
       ],
       "inside_range": [
         "0.2.4",
@@ -41,7 +42,8 @@
         "0.2.9",
         "0.2.10",
         "0.2.11",
-        "0.2.12"
+        "0.2.12",
+        "0.2.13"
       ],
       "results": {
         "0.1.17": {
@@ -109,14 +111,21 @@
         },
         "0.2.11": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=7 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
         },
         "0.2.12": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=7 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.13": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -193,9 +202,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-26T12:32:38Z",
-    "age_s_at_sweep": 5,
+    "built_at": "2026-09-26T13:52:23Z",
+    "age_s_at_sweep": 1,
     "narrowest_window_s": 900,
-    "age_s_at_write": 414
+    "age_s_at_write": 218
   }
 }
