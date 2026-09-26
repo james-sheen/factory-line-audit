@@ -1,0 +1,18 @@
+# THE SDIST SHIPS THE TRACKED TREE, so its own suite runs from the artifact.
+# setuptools' default carries `tests/test*.py` and not the `conftest.py`
+# fourteen of them import, nor the tools two more do, so 0.1.13's suite stopped
+# at collection: sixteen errors, nothing ran.
+#
+# Named path by path rather than grafted from the root, because a working tree
+# is not the repository: an untracked `.hygiene-local.json` exists to hold names
+# that must never be published, and the corpus is built and expires.
+graft .githooks
+graft .github
+graft battery
+graft examples
+graft tests
+graft tools
+include .gitignore CHANGELOG.md CONTRIBUTING.md FINDINGS.md SECURITY.md
+prune battery/corpus
+exclude battery/battery_result.json .hygiene-local.json
+global-exclude *.py[cod]
