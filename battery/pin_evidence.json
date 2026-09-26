@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-24T07:41:58Z",
+  "measured_on": "2026-09-26T03:45:47Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -24,10 +24,18 @@
         "0.1.17",
         "0.1.18",
         "0.2.3",
-        "0.2.4"
+        "0.2.4",
+        "0.2.6",
+        "0.2.7",
+        "0.2.8",
+        "0.2.9"
       ],
       "inside_range": [
-        "0.2.4"
+        "0.2.4",
+        "0.2.6",
+        "0.2.7",
+        "0.2.8",
+        "0.2.9"
       ],
       "results": {
         "0.1.17": {
@@ -57,6 +65,34 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.6": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.7": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.8": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.9": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -80,10 +116,16 @@
         "0.1.5",
         "0.1.6",
         "0.1.7",
-        "0.1.8"
+        "0.1.8",
+        "0.1.9",
+        "0.1.10",
+        "0.1.11"
       ],
       "inside_range": [
-        "0.1.8"
+        "0.1.8",
+        "0.1.9",
+        "0.1.10",
+        "0.1.11"
       ],
       "results": {
         "0.1.5": {
@@ -113,6 +155,27 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.1.9": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.9: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.10": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.10: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.1.11": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.1.11: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -127,9 +190,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-24T07:41:58Z",
-    "age_s_at_sweep": 0,
+    "built_at": "2026-09-26T03:45:43Z",
+    "age_s_at_sweep": 4,
     "narrowest_window_s": 900,
-    "age_s_at_write": 37
+    "age_s_at_write": 325
   }
 }
