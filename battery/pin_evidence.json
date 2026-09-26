@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-26T06:52:29Z",
+  "measured_on": "2026-09-26T09:49:08Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -208,9 +208,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-26T06:52:27Z",
-    "age_s_at_sweep": 2,
+    "built_at": "2026-09-26T09:49:08Z",
+    "age_s_at_sweep": 0,
     "narrowest_window_s": 900,
-    "age_s_at_write": 81
+    "age_s_at_write": 87
   }
 }
