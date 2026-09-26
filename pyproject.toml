@@ -30,6 +30,19 @@ license-files = ["LICENSE", "NOTICE"]
 # described: `pip install factory-line-audit` installs nothing else, so a Stage 1
 # run cannot silently be leaning on something the engine dragged in.
 dependencies = []
+# A published page with no link to its source is a page a reader cannot check.
+# 0.1.0 through 0.1.13 went up without these, and a release's metadata is
+# immutable, so the gap stands on all fourteen and closes from 0.1.14. The
+# sibling that fixed the same omission at its 0.1.1 noted that nothing in the
+# family's parity test looks for it; nothing here did either.
+authors = [{ name = "James Sheen" }]
+keywords = ["manufacturing", "factory", "production-line", "opc-ua", "plc",
+            "audit", "presence"]
+
+[project.urls]
+Homepage = "https://github.com/james-sheen/factory-line-audit"
+Issues = "https://github.com/james-sheen/factory-line-audit/issues"
+Source = "https://github.com/james-sheen/factory-line-audit"
 
 [project.optional-dependencies]
 # The floor is 0.1.10 because it was MEASURED, not chosen: `battery/probe_pin.py`
