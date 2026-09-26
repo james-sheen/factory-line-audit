@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-26T11:50:56Z",
+  "measured_on": "2026-09-26T12:32:43Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -109,14 +109,14 @@
         },
         "0.2.11": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=7 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
         },
         "0.2.12": {
           "exit": 0,
-          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=7 attempted=48",
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -131,9 +131,9 @@
       "floor_is_forced_by": {}
     },
     "presence-audit": {
-      "declared_range": "presence-audit>=0.1.8,<0.2",
-      "lower": "0.1.8",
-      "upper": "0.2",
+      "declared_range": "presence-audit>=0.1.13,<0.3",
+      "lower": "0.1.13",
+      "upper": "0.3",
       "published": [
         "0.1.0",
         "0.1.1",
@@ -151,69 +151,29 @@
         "0.1.13"
       ],
       "inside_range": [
-        "0.1.8",
-        "0.1.9",
-        "0.1.10",
-        "0.1.11",
-        "0.1.12",
         "0.1.13"
       ],
       "results": {
-        "0.1.5": {
-          "exit": 2,
-          "outcome": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'",
-          "stderr": [],
-          "installed": true,
-          "inside_range": false
-        },
-        "0.1.6": {
-          "exit": 0,
-          "outcome": "OUTCOME conformance=0 presence-audit 0.1.6: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
-          "stderr": [],
-          "installed": true,
-          "inside_range": false
-        },
-        "0.1.7": {
-          "exit": 0,
-          "outcome": "OUTCOME conformance=0 presence-audit 0.1.7: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
-          "stderr": [],
-          "installed": true,
-          "inside_range": false
-        },
-        "0.1.8": {
-          "exit": 0,
-          "outcome": "OUTCOME conformance=0 presence-audit 0.1.8: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
-          "stderr": [],
-          "installed": true,
-          "inside_range": true
-        },
-        "0.1.9": {
-          "exit": 0,
-          "outcome": "OUTCOME conformance=0 presence-audit 0.1.9: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
-          "stderr": [],
-          "installed": true,
-          "inside_range": true
-        },
         "0.1.10": {
           "exit": 0,
           "outcome": "OUTCOME conformance=0 presence-audit 0.1.10: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
           "stderr": [],
           "installed": true,
-          "inside_range": true
+          "inside_range": false
         },
         "0.1.11": {
           "exit": 0,
           "outcome": "OUTCOME conformance=0 presence-audit 0.1.11: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
           "stderr": [],
           "installed": true,
-          "inside_range": true
+          "inside_range": false
         },
         "0.1.12": {
           "exit": 0,
           "outcome": "OUTCOME conformance=0 presence-audit 0.1.12: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
           "stderr": [],
           "installed": true,
-          "inside_range": true
+          "inside_range": false
         },
         "0.1.13": {
           "exit": 0,
@@ -225,19 +185,17 @@
       },
       "every_release_in_range_runs_clean": true,
       "checked_below": {
-        "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'",
-        "0.1.6": "OUTCOME conformance=0 presence-audit 0.1.6: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
-        "0.1.7": "OUTCOME conformance=0 presence-audit 0.1.7: core clean, this vertical clean, the kit named 9 problem(s) against a short stand-in, and the core renders ('tag', 'tags')"
+        "0.1.10": "OUTCOME conformance=0 presence-audit 0.1.10: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+        "0.1.11": "OUTCOME conformance=0 presence-audit 0.1.11: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+        "0.1.12": "OUTCOME conformance=0 presence-audit 0.1.12: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')"
       },
-      "floor_is_forced_by": {
-        "0.1.5": "OUTCOME conformance=2 the core is installed and this probe could not put a question to it: AttributeError: module 'presence_audit.vocabulary' has no attribute 'using'"
-      }
+      "floor_is_forced_by": {}
     }
   },
   "corpus": {
-    "built_at": "2026-09-26T11:50:55Z",
-    "age_s_at_sweep": 1,
+    "built_at": "2026-09-26T12:32:38Z",
+    "age_s_at_sweep": 5,
     "narrowest_window_s": 900,
-    "age_s_at_write": 88
+    "age_s_at_write": 414
   }
 }
