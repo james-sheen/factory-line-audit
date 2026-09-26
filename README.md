@@ -169,7 +169,9 @@ partial run cannot read as a full one.
 The whole battery runs in CI, on every push, in under a minute. It is that
 cheap because `pin` reads the evidence `probe_pin.py` wrote rather than
 sweeping: the sweep installs every release in two ranges and runs weekly in its
-own workflow. Three legs also run a second time on their own terms, and the
+own workflow. So a release newer than that evidence is a notice in `pin`, not a
+failure -- the weekly sweep is what can say whether it runs -- and so is a newer
+engine in `engine` when every floor it measures reproduces. Three legs also run a second time on their own terms, and the
 duplication is the point: `conformance` on every interpreter, because it costs
 two imports and is the only leg whose question is about software this package
 does not control; and `live` and `capture` in a job that installs the OPC UA
@@ -324,8 +326,10 @@ closure test asserts that absence.
   says so on its face and every `basis` string begins `FIXTURE`.
 - The engine measured is whichever one `src/factory_line_audit/engine_floors.json`
   records, and
-  the `engine` battery leg goes red when that file stops describing the engine
-  that resolves here. Any other pin needs `probe_engine.py` re-run, not re-read.
+  the `engine` battery leg goes red when a floor in that file stops reproducing
+  on the engine that resolves here, and posts a notice when only the engine's
+  version has moved. Either way the record changes by `probe_engine.py` re-run,
+  not re-read.
   This line named a version until 2026-09-09, by which time the file recorded a
   later one.
 - Ten of the twelve decline reasons are reachable from a model this package could

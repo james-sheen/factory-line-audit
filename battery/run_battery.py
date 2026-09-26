@@ -144,6 +144,21 @@ def leg_engine(python, workdir):
     where = ("measured_on", "engine_module", "python")
     drift = sorted(k for k in set(measured) | set(recorded)
                    if k not in where and measured.get(k) != recorded.get(k))
+    # A NEWER ENGINE THAT MOVED NOTHING IS NEWS, the same call the `pin` leg
+    # makes about a release its sweep predates. Every release of the engine
+    # inside this package's range turned the next push red here until the
+    # record was re-probed, though the question -- do the committed floors
+    # still hold -- had already been answered yes: every measured number
+    # reproduced and only the version it names had moved. A floor that DID move
+    # is a finding and still fails below.
+    if drift and _version_moved_alone(measured, recorded):
+        news = (f"arbiter-engine {measured['engine_version']} resolves here and "
+                f"the committed floors were measured on "
+                f"{recorded['engine_version']}; every measured number "
+                f"reproduces, so only the version the record names is behind. "
+                f"Re-run probe_engine.py and commit the record when convenient")
+        print(f"::notice::{news}")
+        return leg("engine", 0, f"NOTICE: {news}", added=True)
     if drift:
         return leg("engine", 1, f"the committed engine_floors.json no longer "
                                 f"describes the engine that resolves here: "
@@ -1050,6 +1065,46 @@ def leg_pin_channel(live_python, workdir):
             server.kill()
 
 
+def _release_order():
+    """The sweep's own ordering of release strings, `probe_pin.as_tuple`.
+
+    Loaded by path because the battery is scripts rather than a package, and
+    read from the probe rather than restated here, so this leg ranks releases
+    exactly as the sweep that wrote the evidence ranked them.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "fla_probe_pin", os.path.join(HERE, "probe_pin.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.as_tuple
+
+
+def _version_moved_alone(measured, recorded):
+    """True when two floor records differ in nothing but the engine they name.
+
+    A record carries its version in more than one place -- a probe keeps the
+    envelope it read, `meta.engine_version` included -- so the measured version
+    string is mapped onto the recorded one wherever it appears before the two
+    are compared, instead of a list of keys to skip that the next probe would
+    outgrow. The environment keys are dropped as the engine leg drops them.
+    """
+    old, new = recorded.get("engine_version"), measured.get("engine_version")
+    if not old or not new or old == new:
+        return False
+
+    def relabel(value):
+        if isinstance(value, dict):
+            return {key: relabel(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [relabel(item) for item in value]
+        return old if value == new else value
+
+    where = ("measured_on", "engine_module", "python")
+    keep = lambda record: {k: v for k, v in record.items() if k not in where}
+    return relabel(keep(measured)) == keep(recorded)
+
+
 def _installed_version(dist):
     """What this interpreter has, or `None` if the distribution is absent.
 
@@ -1111,7 +1166,8 @@ def leg_pin():
     if not found:
         return leg("pin", 2, "the evidence names no distribution, so it is an "
                              "absence reported as a pass")
-    stale, red, notes = [], [], []
+    stale, red, notes, news = [], [], [], []
+    order = _release_order()
     for dist, body in sorted(found.items()):
         if body["declared_range"] not in pyproject:
             stale.append(f"{dist} was measured against {body['declared_range']}, "
@@ -1129,13 +1185,32 @@ def leg_pin():
         # Measured, not dated: an age bound would redden because a week passed,
         # which is a guard with an expiry date rather than a guard. This
         # reddens when the thing it describes actually changes.
+        #
+        # EXCEPT WHEN WHAT CHANGED IS UPSTREAM. A release newer than every one
+        # the sweep saw is news, not a defect in this repository, and it
+        # reddened whichever push came next -- twice on 2026-09-26, a push that
+        # changed only a workflow among them. The question it raises is asked
+        # where it belongs: `pin.yml` sweeps the index every Monday and whenever
+        # a range or a probe changes, and goes red on a release that does not
+        # run. So that case is a notice here. A release the sweep SHOULD have
+        # seen -- older than the newest it recorded -- still means the evidence
+        # is incomplete, and still fails.
+        swept = body["published"] or []
         here = _installed_version(dist)
-        if here and here not in (body["published"] or []):
-            stale.append(f"{dist} {here} is installed here and the evidence "
-                         f"swept {body['published'][-3:]}...; the range claim "
-                         f"rests on a sweep that never saw this release. "
-                         f"Re-run probe_pin.py")
-            continue
+        if here and here not in swept:
+            newest = max(swept, key=order) if swept else None
+            if newest and order(here) > order(newest):
+                news.append(f"{dist} {here} is installed here and is newer than "
+                            f"every release the committed sweep saw (newest "
+                            f"{newest}); pin.yml sweeps it on its own schedule. "
+                            f"Re-run probe_pin.py and commit the evidence when "
+                            f"convenient")
+            else:
+                stale.append(f"{dist} {here} is installed here and the evidence "
+                             f"swept {swept[-3:]}...; the range claim rests on a "
+                             f"sweep that never saw this release. Re-run "
+                             f"probe_pin.py")
+                continue
         if not body["every_release_in_range_runs_clean"]:
             red.append(dist)
         # WHICH OF THE TWO THINGS A PASSING CONTROL MEANS, said out loud.
@@ -1165,7 +1240,9 @@ def leg_pin():
         return leg("pin", 1, f"a release inside the declared range does not run "
                              f"clean for {red}; the range is a claim that is "
                              f"not true")
-    return leg("pin", 0, "; ".join(notes))
+    for item in news:
+        print(f"::notice::{item}")
+    return leg("pin", 0, "; ".join(notes + [f"NOTICE: {item}" for item in news]))
 
 
 # ----------------------------------------------------------------------- ship
