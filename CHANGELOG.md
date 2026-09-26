@@ -12,6 +12,39 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.14 -- 2026-09-26
+
+**`pip install 'factory-line-audit[detect]'` installs the engine's 0.2 line.** The
+range is `arbiter-engine>=0.2.4,<0.3`; `<0.2` had never been re-derived against a 0.2
+release. Nothing in a declaration file changes. Every floor in `engine_floors.json`
+reproduced on 0.2.4, and again on 0.2.6, 0.2.9 and 0.2.10 -- only the version and the
+time moved -- and `battery/probe_pin.py` runs every release inside both declared ranges
+clean: the engine from 0.2.4 through 0.2.10, `presence-audit` from 0.1.8 through 0.1.11.
+
+**The pin evidence says whether a control below the floor forced it.** It recorded every
+release checked beneath the floor as forcing it, failed or not, and raising the floor to
+a release the ones under it also satisfy made that name three releases as forcing a
+floor they do not force. `checked_below` now sits beside `floor_is_forced_by`, and the
+battery says which of the two it is holding.
+
+**The source distribution runs its own suite.** setuptools' default carried
+`tests/test*.py` and not the `conftest.py` fourteen of them import, nor the tools two
+more do, so 0.1.13's sdist stopped at collection. `MANIFEST.in` names the tracked tree;
+from the built sdist, after `battery/make_corpus.py`, the suite runs 547 passed.
+
+**`FINDINGS.md` is held to the package the way the README is.** Every repository path it
+names is checked by a test, every finding carries a disposition, and B7 is closed by the
+range that moved: the floor it said lacked `dropped_declarations` is no longer the floor.
+
+**A killed pin-probe run no longer leaves its environments behind.** The probe reaps its
+own work directories older than six hours on the way in, under a prefix namespaced to
+this tool.
+
+**The index page links back to this repository.** Fourteen releases went up with no
+project URLs, author or keywords, so none of their pages could reach the source.
+Declared from this release; a release's metadata is immutable, so the earlier pages
+keep the gap.
+
 ## 0.1.13 -- 2026-09-14
 
 **The declared engine range works again at every release inside it, not only the
