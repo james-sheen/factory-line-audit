@@ -1,6 +1,6 @@
 {
-  "measured_on": "2026-09-26T02:55:15.294578+00:00",
-  "engine_version": "0.2.9",
+  "measured_on": "2026-09-26T04:55:48.800196+00:00",
+  "engine_version": "0.2.10",
   "engine_module": "arbiter_engine",
   "python": "3.10.12",
   "probes": {
@@ -788,7 +788,7 @@
       "measured": {
         "meta": {
           "schema_version": 1,
-          "engine_version": "0.2.9",
+          "engine_version": "0.2.10",
           "source": "live"
         },
         "invariants": 1,
