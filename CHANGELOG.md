@@ -12,7 +12,7 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
-## 0.1.16 -- unreleased
+## 0.1.16 -- 2026-09-27
 
 **`regression` refuses a walk whose samples carry no node, as it refuses one with
 no samples.** Two such walks paired zero points against zero and answered *nothing
