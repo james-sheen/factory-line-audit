@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-26T15:06:05Z",
+  "measured_on": "2026-09-27T01:46:17Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -32,7 +32,8 @@
         "0.2.10",
         "0.2.11",
         "0.2.12",
-        "0.2.13"
+        "0.2.13",
+        "0.2.14"
       ],
       "inside_range": [
         "0.2.4",
@@ -43,7 +44,8 @@
         "0.2.10",
         "0.2.11",
         "0.2.12",
-        "0.2.13"
+        "0.2.13",
+        "0.2.14"
       ],
       "results": {
         "0.1.17": {
@@ -129,6 +131,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.14": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -158,11 +167,13 @@
         "0.1.11",
         "0.1.12",
         "0.1.13",
-        "0.2.0"
+        "0.2.0",
+        "0.2.1"
       ],
       "inside_range": [
         "0.1.13",
-        "0.2.0"
+        "0.2.0",
+        "0.2.1"
       ],
       "results": {
         "0.1.10": {
@@ -199,6 +210,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.1": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.2.1: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -211,9 +229,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-26T15:06:05Z",
-    "age_s_at_sweep": 0,
+    "built_at": "2026-09-27T01:46:16Z",
+    "age_s_at_sweep": 1,
     "narrowest_window_s": 900,
-    "age_s_at_write": 84
+    "age_s_at_write": 97
   }
 }
