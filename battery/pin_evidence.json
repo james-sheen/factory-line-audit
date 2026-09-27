@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-27T07:45:03Z",
+  "measured_on": "2026-09-27T13:40:36Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -34,7 +34,8 @@
         "0.2.12",
         "0.2.13",
         "0.2.14",
-        "0.2.15"
+        "0.2.15",
+        "0.2.16"
       ],
       "inside_range": [
         "0.2.4",
@@ -47,7 +48,8 @@
         "0.2.12",
         "0.2.13",
         "0.2.14",
-        "0.2.15"
+        "0.2.15",
+        "0.2.16"
       ],
       "results": {
         "0.1.17": {
@@ -147,6 +149,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.16": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -177,12 +186,14 @@
         "0.1.12",
         "0.1.13",
         "0.2.0",
-        "0.2.1"
+        "0.2.1",
+        "0.2.2"
       ],
       "inside_range": [
         "0.1.13",
         "0.2.0",
-        "0.2.1"
+        "0.2.1",
+        "0.2.2"
       ],
       "results": {
         "0.1.10": {
@@ -226,6 +237,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.2": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.2.2: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -238,9 +256,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-27T07:45:02Z",
-    "age_s_at_sweep": 1,
+    "built_at": "2026-09-27T13:40:36Z",
+    "age_s_at_sweep": 0,
     "narrowest_window_s": 900,
-    "age_s_at_write": 123
+    "age_s_at_write": 221
   }
 }
