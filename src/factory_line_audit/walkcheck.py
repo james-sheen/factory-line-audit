@@ -152,6 +152,13 @@ def observations(payload: Dict[str, Any]) -> List[str]:
                      "nothing, and nothing here can be judged from it")
         return notes
     widths = {len(s.get("nodes") or {}) for s in samples if isinstance(s, dict)}
+    if widths == {0}:
+        # Samples, every one of them empty: the server answered and served
+        # no node. Legal for the reason no samples is legal, and worth saying
+        # for the same reason -- it went unremarked while the empty list did.
+        notes.append(f"no node in any of the {len(samples)} sample(s): the "
+                     f"server answered and served nothing, and nothing here "
+                     f"can be judged from it")
     if len(widths) > 1:
         notes.append(f"samples do not all carry the same number of nodes "
                      f"({min(widths)}-{max(widths)}); a node that appeared or "

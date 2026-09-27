@@ -75,6 +75,15 @@ def _walk(path: str) -> Tuple[Any, str]:
                       + "; ".join(problems[:3])
                       + (f" (and {len(problems) - 3} more)"
                          if len(problems) > 3 else ""))
+    # SAMPLES WITH NO NODE IN ANY OF THEM served nothing either. The check
+    # above keyed on the sample list alone, so two such walks paired zero
+    # points against zero and answered *nothing changed*, exit 0 -- the
+    # answer the refusal above exists to prevent, one level down.
+    if not any(sample.get("nodes") for sample in payload["samples"]):
+        return None, (f"{path} carries {len(payload['samples'])} sample(s) "
+                      f"and no node in any of them, so it is not a walk this "
+                      f"can compare; a capture that served nothing is not a "
+                      f"capture that found nothing")
     return payload, ""
 
 

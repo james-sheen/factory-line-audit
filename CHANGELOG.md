@@ -12,6 +12,26 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.16 -- unreleased
+
+**`regression` refuses a walk whose samples carry no node, as it refuses one with
+no samples.** Two such walks paired zero points against zero and answered *nothing
+changed*, exit 0. A collector that connects and reads nothing now gets exit 2, with
+the file named.
+
+**`detect` stops on a walk that fed nothing as `nothing_fed`, and says why** -- no
+samples, no node in any sample, or no node the register models. It stopped as
+`engine_unavailable`, naming the one component that was working; that name is kept
+for an unavailable envelope with another cause, and now quotes the engine's reason.
+
+**`attest` refuses an attestation that records no invariant attempted**, by name
+and exit 2 -- the rule `detect` applies before writing one. It re-reported whatever
+verdict the file carried.
+
+**`validate-walk` notes a walk whose samples carry no node, and `gate` notes a
+reviewed declaration that declares nothing.** Both still exit 0: the walk is well
+formed, and the register, not a declaration, decides what is checked.
+
 ## 0.1.15 -- 2026-09-26
 
 **`pip install 'factory-line-audit[vertical]'` needs `presence-audit>=0.1.13,<0.3`.**

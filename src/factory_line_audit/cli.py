@@ -35,6 +35,8 @@ REFUSALS = {
     "declaration_fixture_without_disclosure":
         "a file claims fixture status without disclosing it in reviewed_by",
     "declaration_malformed": "a declaration statement is missing a required field",
+    "attestation_attempted_nothing":
+        "an attestation records no invariant attempted",
     "engine_absent": "Stage 2 was asked for and the engine is not installed",
     "hard_stop": "a condition under which no verdict may be reported",
     "unknown_verb": "a verb this front door does not implement",
@@ -314,6 +316,15 @@ def cmd_gate(args) -> int:
     for review in result["reviews"]:
         _out(f"{review['path']}: {review['status']} "
              f"({review['statements']} statements)")
+        # NOTED, NOT REFUSED. A reviewed file of no statements is a legal
+        # answer -- somebody asked and nothing was known -- and the register,
+        # not a declaration, is what decides which assets are checked; an empty
+        # register is already refused. What it must not do is read like a file
+        # that added something.
+        if not review["statements"]:
+            _out(f"  note: {review['path']} declares nothing, so it adds "
+                 f"nothing to the model; the register alone decides what is "
+                 f"checked")
     return CLEAN
 
 
@@ -403,6 +414,18 @@ def cmd_attest(args) -> int:
     """
     from .report import human
     att = formats.load(args.attestation, formats.ATTEST)
+    # THE RULE `detect` ALREADY APPLIES, applied to what it wrote down. A
+    # record of no invariant attempted carries a verdict over an empty
+    # denominator; `detect` stops rather than write one, and re-reporting one
+    # that exists anyway -- edited, or from elsewhere -- would pass it on as
+    # clean. Refused before the report prints, because its OUTCOME line is the
+    # recorded verdict and would contradict the exit. A refusal of the FILE,
+    # and Stage 1's: re-reporting a record never needs the engine.
+    if not (att.get("checked") or {}).get("invariants_attempted"):
+        raise formats.Refusal(args.attestation,
+                              "records no invariant attempted, so its verdict "
+                              "is over an empty denominator. A clean result "
+                              "over an empty denominator is not a clean result")
     _out(human(att))
     return att["exit"]
 

@@ -130,6 +130,16 @@ class TestEveryRefusalIsReachable:
         err = capsys.readouterr().err
         assert "no basis" in err and "no such tag" in err
 
+    def test_attestation_attempted_nothing(self, tmp_path, capsys):
+        """`detect` will not write a record of nothing attempted, and `attest`
+        will not re-report one that exists anyway. Stage 1: no engine."""
+        path = write(tmp_path, "attest.json", {
+            "format": formats.ATTEST, "exit": 0, "verdict": "CLEAN",
+            "checked": {"invariants_attempted": 0, "entities": 0}})
+        assert run("attest", path) == 2
+        err = capsys.readouterr().err
+        assert path in err and "no invariant attempted" in err
+
     def test_hard_stop(self, tmp_path, capsys):
         """A hard stop is exit 2 and prints what it was, on stderr."""
         from factory_line_audit.feeder import HardStop

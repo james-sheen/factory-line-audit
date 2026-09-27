@@ -300,6 +300,21 @@ def unreachable_floors(walk, floors: Dict[str, Any]) -> Dict[str, str]:
     return out
 
 
+def _nothing_fed(walk) -> str:
+    """Why no asset in the register received a reading, from the walk."""
+    samples = [s for s in (walk.get("samples") or []) if isinstance(s, dict)]
+    if not samples:
+        served = "the walk carries no samples"
+    elif not any(s.get("nodes") for s in samples):
+        served = (f"the walk's {len(samples)} sample(s) carry no node in any "
+                  f"of them")
+    else:
+        served = ("no node the walk served is a tag this register models as "
+                  "reading")
+    return (f"{served}, so no asset was fed and nothing could be checked. A "
+            f"capture that served nothing is not a capture that found nothing")
+
+
 def run(model_text: str, register, presence, walk, gated, manifest,
         floors: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Feed, read the envelope, classify every decline, compose the exit."""
@@ -369,6 +384,13 @@ def run(model_text: str, register, presence, walk, gated, manifest,
                 session.add_relationship(asset["id"], relation["type"],
                                          relation["target"])
 
+    # NOTHING FED IS SAID HERE, BY ITS CAUSE. With no asset fed the engine
+    # answers an unavailable envelope, and this used to stop on that as
+    # `engine_unavailable` -- naming the one component that was working, for a
+    # walk that served nothing.
+    if not fed_assets:
+        raise HardStop("nothing_fed", _nothing_fed(walk))
+
     envelope = check(session).to_dict()
     meta = envelope.get("meta") or {}
     if meta.get("schema_version") != SCHEMA_VERSION:
@@ -377,8 +399,9 @@ def run(model_text: str, register, presence, walk, gated, manifest,
                        f"this reader understands {SCHEMA_VERSION}")
     if meta.get("source") == "unavailable":
         raise HardStop("engine_unavailable",
-                       "the engine returned an unavailable envelope; nothing "
-                       "in it is a measurement")
+                       f"the engine returned an unavailable envelope "
+                       f"({meta.get('reason')!r}); nothing in it is a "
+                       f"measurement")
     attempted = (envelope.get("checked") or {}).get("invariants", 0)
     if attempted == 0:
         raise HardStop("zero_invariants",
