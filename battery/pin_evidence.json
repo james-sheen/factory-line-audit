@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-27T13:40:36Z",
+  "measured_on": "2026-09-28T00:38:22Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -187,13 +187,15 @@
         "0.1.13",
         "0.2.0",
         "0.2.1",
-        "0.2.2"
+        "0.2.2",
+        "0.2.3"
       ],
       "inside_range": [
         "0.1.13",
         "0.2.0",
         "0.2.1",
-        "0.2.2"
+        "0.2.2",
+        "0.2.3"
       ],
       "results": {
         "0.1.10": {
@@ -244,6 +246,13 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.3": {
+          "exit": 0,
+          "outcome": "OUTCOME conformance=0 presence-audit 0.2.3: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -256,9 +265,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-27T13:40:36Z",
+    "built_at": "2026-09-28T00:38:22Z",
     "age_s_at_sweep": 0,
     "narrowest_window_s": 900,
-    "age_s_at_write": 221
+    "age_s_at_write": 119
   }
 }
