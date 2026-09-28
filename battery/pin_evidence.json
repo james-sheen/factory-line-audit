@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-09-28T02:34:11Z",
+  "measured_on": "2026-09-28T04:28:20Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -35,7 +35,8 @@
         "0.2.13",
         "0.2.14",
         "0.2.15",
-        "0.2.16"
+        "0.2.16",
+        "0.2.17"
       ],
       "inside_range": [
         "0.2.4",
@@ -49,7 +50,8 @@
         "0.2.13",
         "0.2.14",
         "0.2.15",
-        "0.2.16"
+        "0.2.16",
+        "0.2.17"
       ],
       "results": {
         "0.1.17": {
@@ -151,6 +153,13 @@
           "inside_range": true
         },
         "0.2.16": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.17": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
           "stderr": [],
@@ -274,9 +283,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-09-28T02:34:10Z",
+    "built_at": "2026-09-28T04:28:19Z",
     "age_s_at_sweep": 1,
     "narrowest_window_s": 900,
-    "age_s_at_write": 132
+    "age_s_at_write": 199
   }
 }
