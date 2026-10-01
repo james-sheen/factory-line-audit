@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-10-01T11:40:31Z",
+  "measured_on": "2026-10-01T17:25:19Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -48,7 +48,8 @@
         "0.2.26",
         "0.2.27",
         "0.2.28",
-        "0.2.29"
+        "0.2.29",
+        "0.2.30"
       ],
       "inside_range": [
         "0.2.4",
@@ -75,7 +76,8 @@
         "0.2.26",
         "0.2.27",
         "0.2.28",
-        "0.2.29"
+        "0.2.29",
+        "0.2.30"
       ],
       "results": {
         "0.1.17": {
@@ -1337,6 +1339,51 @@
           "stderr": [],
           "installed": true,
           "inside_range": true
+        },
+        "0.2.30": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
@@ -1475,9 +1522,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-10-01T11:40:30Z",
-    "age_s_at_sweep": 1,
+    "built_at": "2026-10-01T17:25:17Z",
+    "age_s_at_sweep": 2,
     "narrowest_window_s": 900,
-    "age_s_at_write": 282
+    "age_s_at_write": 346
   }
 }
