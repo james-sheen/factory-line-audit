@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-10-01T10:34:23Z",
+  "measured_on": "2026-10-01T11:40:31Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -81,6 +81,44 @@
         "0.1.17": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -88,6 +126,44 @@
         "0.1.18": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -95,6 +171,44 @@
         "0.2.3": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -102,6 +216,44 @@
         "0.2.4": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -109,6 +261,44 @@
         "0.2.6": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -116,6 +306,44 @@
         "0.2.7": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -123,6 +351,44 @@
         "0.2.8": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -130,6 +396,44 @@
         "0.2.9": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -137,6 +441,44 @@
         "0.2.10": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -144,6 +486,44 @@
         "0.2.11": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -151,6 +531,44 @@
         "0.2.12": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -158,6 +576,44 @@
         "0.2.13": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -165,6 +621,44 @@
         "0.2.14": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -172,6 +666,44 @@
         "0.2.15": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -179,6 +711,44 @@
         "0.2.16": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -186,6 +756,44 @@
         "0.2.17": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -193,6 +801,44 @@
         "0.2.18": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -200,6 +846,44 @@
         "0.2.19": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -207,6 +891,44 @@
         "0.2.20": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -214,6 +936,44 @@
         "0.2.21": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -221,6 +981,44 @@
         "0.2.22": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -228,6 +1026,44 @@
         "0.2.23": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -235,6 +1071,44 @@
         "0.2.24": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -242,6 +1116,44 @@
         "0.2.25": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -249,6 +1161,44 @@
         "0.2.26": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -256,6 +1206,44 @@
         "0.2.27": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -263,6 +1251,44 @@
         "0.2.28": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -270,12 +1296,51 @@
         "0.2.29": {
           "exit": 0,
           "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
           "stderr": [],
           "installed": true,
           "inside_range": true
         }
       },
       "every_release_in_range_runs_clean": true,
+      "declined_differently": {},
       "checked_below": {
         "0.1.17": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
         "0.1.18": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
@@ -400,6 +1465,7 @@
         }
       },
       "every_release_in_range_runs_clean": true,
+      "declined_differently": {},
       "checked_below": {
         "0.1.10": "OUTCOME conformance=0 presence-audit 0.1.10: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
         "0.1.11": "OUTCOME conformance=0 presence-audit 0.1.11: core clean, this vertical clean, the kit named 10 problem(s) against a short stand-in, and the core renders ('tag', 'tags')",
@@ -409,9 +1475,9 @@
     }
   },
   "corpus": {
-    "built_at": "2026-10-01T10:34:22Z",
+    "built_at": "2026-10-01T11:40:30Z",
     "age_s_at_sweep": 1,
     "narrowest_window_s": 900,
-    "age_s_at_write": 286
+    "age_s_at_write": 282
   }
 }

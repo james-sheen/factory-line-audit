@@ -173,22 +173,75 @@ def published(dist: str):
         return sorted(json.load(response)["releases"], key=as_tuple)
 
 
-def run_detect(python: str) -> dict:
+def decline_rows(attestation: dict) -> list:
+    """What each decline WAS, from the attestation the same run wrote: reason,
+    axiom, entity and indicator, sorted. The engine's prose is left out --
+    it is written for a person, and it moves between releases on its own."""
+    rows = ((attestation.get("declined") or {}).get("rows")) or []
+    return sorted(({key: row.get(key) for key in ("reason", "axiom", "entity",
+                                                   "indicator")}
+                   for row in rows if isinstance(row, dict)),
+                  key=lambda row: tuple(str(row[key]) for key in sorted(row)))
+
+
+def run_detect(python: str, workdir: str) -> dict:
+    """The OUTCOME line, and the declines behind its count, from ONE run.
+
+    THE ROWS, BECAUSE A COUNT CANNOT SAY WHICH. A loaded sweep on 2026-10-01
+    recorded `declined=7` for its last eight releases where every earlier one
+    and every later re-run read 6. The file kept the count alone, the re-run
+    overwrote it, and nothing measured since -- aging, load, dependencies --
+    reproduces it. The attestation the same run writes names each decline, so
+    a count that moves now says what moved.
+    """
+    attestation = os.path.join(workdir, "attestation.json")
     proc = subprocess.run(
         [python, "-m", "factory_line_audit.cli", "detect",
          "--register", os.path.join(ROOT, "examples", "asset_register.json"),
          "--walk", CORPUS,
          "--declarations", os.path.join(ROOT, "examples", "declarations",
-                                        "line1.fixture.json")],
+                                        "line1.fixture.json"),
+         "--attest-out", attestation],
         capture_output=True, text=True, timeout=600,
         env=dict(os.environ, PYTHONPATH=os.path.join(ROOT, "src")))
     outcome = [line for line in proc.stdout.splitlines()
                if line.startswith("OUTCOME")]
+    rows = None
+    if os.path.exists(attestation):
+        with open(attestation, encoding="utf-8") as handle:
+            rows = decline_rows(json.load(handle))
     return {"exit": proc.returncode, "outcome": outcome[0] if outcome else None,
+            "declined_rows": rows,
             "stderr": proc.stderr.strip().splitlines()[-3:]}
 
 
-def run_conformance(python: str) -> dict:
+def declined_differently(results: dict) -> dict:
+    """Each release whose declines differ from the commonest set among the
+    releases that recorded any, with what it added and what it lacked. Empty
+    when they all agree -- which is the expected answer, and the point is
+    that a disagreement names itself."""
+    recorded = {version: result["declined_rows"] for version, result in results.items()
+                if result.get("declined_rows") is not None}
+    if not recorded:
+        return {}
+    keyed = {version: json.dumps(rows, sort_keys=True)
+             for version, rows in recorded.items()}
+    tally: dict = {}
+    for key in keyed.values():
+        tally[key] = tally.get(key, 0) + 1
+    common = max(tally, key=lambda key: (tally[key], key))
+    baseline = {json.dumps(row, sort_keys=True) for row in json.loads(common)}
+    odd = {}
+    for version, key in keyed.items():
+        if key == common:
+            continue
+        mine = {json.dumps(row, sort_keys=True) for row in recorded[version]}
+        odd[version] = {"added": [json.loads(row) for row in sorted(mine - baseline)],
+                        "lacked": [json.loads(row) for row in sorted(baseline - mine)]}
+    return odd
+
+
+def run_conformance(python: str, workdir: str) -> dict:
     """The core's subject is whether it still accepts this vertical, so the run
     is the same probe the `conformance` leg runs -- not a second opinion about
     it. A release where the probe cannot even start reports 2 and says why,
@@ -248,7 +301,7 @@ def sweep(dist: str, run) -> dict:
                                     "why": install.stderr.strip()[-200:]}
                 print(f"  {version}: install failed")
                 continue
-            outcome = run(python)
+            outcome = run(python, workdir)
             results[version] = dict(outcome, installed=True,
                                     inside_range=version in inside)
             print(f"  {version}: exit {outcome['exit']}  "
@@ -257,11 +310,17 @@ def sweep(dist: str, run) -> dict:
             shutil.rmtree(workdir, ignore_errors=True)
 
     inside_ok = all(results[v].get("exit") == 0 for v in inside if v in results)
+    odd = declined_differently(results)
+    for version, moved in sorted(odd.items(), key=lambda item: as_tuple(item[0])):
+        print(f"  NOTE: {version} declined differently from the rest -- "
+              f"added {moved['added']}, lacked {moved['lacked']}")
     return {
         "declared_range": spec, "lower": lower, "upper": upper,
         "published": everything, "inside_range": inside,
         "results": results,
         "every_release_in_range_runs_clean": inside_ok,
+        # Named, not counted: an empty map is every release declining alike.
+        "declined_differently": odd,
         # TWO FIELDS, BECAUSE THEY WERE ONE AND IT WAS A CLAIM THE DATA DID NOT
         # CARRY. `floor_is_forced_by` held every control checked below the
         # floor, whether it failed or not, and the battery printed *floor
