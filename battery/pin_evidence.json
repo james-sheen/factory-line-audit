@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-10-03T03:44:56Z",
+  "measured_on": "2026-10-03T05:10:34Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -51,7 +51,8 @@
         "0.2.29",
         "0.2.30",
         "0.2.31",
-        "0.2.32"
+        "0.2.32",
+        "0.2.33"
       ],
       "inside_range": [
         "0.2.4",
@@ -81,7 +82,8 @@
         "0.2.29",
         "0.2.30",
         "0.2.31",
-        "0.2.32"
+        "0.2.32",
+        "0.2.33"
       ],
       "results": {
         "0.1.17": {
@@ -125,7 +127,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:12Z",
+          "corpus_built_at": "2026-10-03T05:10:42Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -172,7 +174,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:19Z",
+          "corpus_built_at": "2026-10-03T05:10:49Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -219,8 +221,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:26Z",
-          "corpus_age_s": 1,
+          "corpus_built_at": "2026-10-03T05:10:56Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -266,8 +268,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:33Z",
-          "corpus_age_s": 1,
+          "corpus_built_at": "2026-10-03T05:11:03Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -313,7 +315,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:40Z",
+          "corpus_built_at": "2026-10-03T05:11:09Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -360,7 +362,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:47Z",
+          "corpus_built_at": "2026-10-03T05:11:16Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -407,7 +409,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:45:54Z",
+          "corpus_built_at": "2026-10-03T05:11:23Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -454,8 +456,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:01Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:11:29Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -501,7 +503,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:08Z",
+          "corpus_built_at": "2026-10-03T05:11:36Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -548,8 +550,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:15Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:11:42Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -595,7 +597,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:23Z",
+          "corpus_built_at": "2026-10-03T05:11:49Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -642,8 +644,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:30Z",
-          "corpus_age_s": 1,
+          "corpus_built_at": "2026-10-03T05:11:55Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -689,7 +691,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:37Z",
+          "corpus_built_at": "2026-10-03T05:12:01Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -736,8 +738,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:44Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:12:07Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -783,7 +785,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:50Z",
+          "corpus_built_at": "2026-10-03T05:12:14Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -830,7 +832,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:46:56Z",
+          "corpus_built_at": "2026-10-03T05:12:20Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -877,7 +879,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:03Z",
+          "corpus_built_at": "2026-10-03T05:12:27Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -924,7 +926,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:09Z",
+          "corpus_built_at": "2026-10-03T05:12:33Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -971,7 +973,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:15Z",
+          "corpus_built_at": "2026-10-03T05:12:39Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -1018,7 +1020,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:22Z",
+          "corpus_built_at": "2026-10-03T05:12:46Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -1065,8 +1067,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:32Z",
-          "corpus_age_s": 1,
+          "corpus_built_at": "2026-10-03T05:12:52Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1112,7 +1114,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:44Z",
+          "corpus_built_at": "2026-10-03T05:12:59Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -1159,7 +1161,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:47:56Z",
+          "corpus_built_at": "2026-10-03T05:13:11Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -1206,8 +1208,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:48:09Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:13:24Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1253,8 +1255,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:48:21Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:13:36Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1300,7 +1302,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:48:33Z",
+          "corpus_built_at": "2026-10-03T05:13:48Z",
           "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
@@ -1347,8 +1349,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:48:46Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:14:01Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1394,7 +1396,7 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:48:58Z",
+          "corpus_built_at": "2026-10-03T05:14:13Z",
           "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
@@ -1441,8 +1443,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:49:10Z",
-          "corpus_age_s": 0,
+          "corpus_built_at": "2026-10-03T05:14:25Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1488,8 +1490,8 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:49:22Z",
-          "corpus_age_s": 1,
+          "corpus_built_at": "2026-10-03T05:14:38Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1535,8 +1537,55 @@
               "indicator": "parts_out"
             }
           ],
-          "corpus_built_at": "2026-10-03T03:49:34Z",
+          "corpus_built_at": "2026-10-03T05:14:50Z",
           "corpus_age_s": 1,
+          "stderr": [],
+          "installed": true,
+          "inside_range": true
+        },
+        "0.2.33": {
+          "exit": 0,
+          "outcome": "OUTCOME exit=0 verdict=clean findings=1 declined=6 attempted=48",
+          "declined_rows": [
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-01",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_in"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "parts_out_mes"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-02",
+              "indicator": "scrap_count"
+            },
+            {
+              "reason": "partially_checked",
+              "axiom": "MONOTONICITY",
+              "entity": "ST-03",
+              "indicator": "parts_out"
+            }
+          ],
+          "corpus_built_at": "2026-10-03T05:15:03Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
