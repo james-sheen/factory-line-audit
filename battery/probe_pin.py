@@ -17,9 +17,9 @@ verdict is right.
 
 TWO SUBJECTS since 2026-09-09, because this package declares two ranges and only
 one of them was ever exercised. Each is run by the thing that actually uses it:
-the engine by `detect` against the clean corpus, the neutral core by
-`probe_conformance.py`, which is what asks the core whether it still accepts this
-vertical.
+the engine by `detect` against a clean corpus built for each run, the neutral
+core by `probe_conformance.py`, which is what asks the core whether it still
+accepts this vertical.
 
 The second subject was added the day an inventory got a floor wrong. The core's
 floor was written `>=0.1.5` from an install sweep that asked which release first
@@ -48,7 +48,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "pin_evidence.json")
 CORPUS = os.path.join(HERE, "corpus", "clean.json")
-FLOORS = os.path.join(ROOT, "src", "factory_line_audit", "engine_floors.json")
+MAKE_CORPUS = os.path.join(HERE, "make_corpus.py")
 
 
 #: One definition of the work-directory prefix, because the reaper and the
@@ -98,32 +98,14 @@ def reap_abandoned(prefix: str = WORK_PREFIX,
     return reaped
 
 
-def corpus_age() -> tuple:
-    """`(age_seconds, built_at, narrowest_window_s)` for the walk this feeds.
+def _now() -> _dt.datetime:
+    """The clock every stamp and age in the evidence is read from, in one
+    place so a test can run a slow sweep on a clock of its own."""
+    return _dt.datetime.now(_dt.timezone.utc)
 
-    REFUSED IF STALE, and this is the defect that made the file worth guarding.
-    Four engine versions were recorded with the byte-identical line
-    `declined=11`, which cannot be right: B6 measured that from 0.1.11 an
-    undeclared MONOTONICITY rate arm declines where 0.1.10 answered from a
-    default, and this fixture leaves six of eight counters undeclared. Measured
-    on a fresh corpus the two differ by exactly six -- 1 against 7. Measured on a
-    three-hour-old one they are both 11, because every windowed arm has gone
-    quiet with `insufficient_samples` and that decline arrives before the
-    threshold question is ever reached.
-    
-    So the sweep ran against an expired corpus and recorded four identical lines
-    as evidence about four engines. The floor half still held -- 0.1.7 to 0.1.9
-    fail on a missing attribute, which no corpus age can mask -- but the
-    *inside-the-range* half was evidence about a warmed-down fixture. `leg_corpus`
-    refuses a stale corpus and `leg_engine` re-measures the floors; this probe fed
-    the same corpus and asked it nothing.
-    """
-    with open(FLOORS, encoding="utf-8") as handle:
-        floors = json.load(handle)
-    windows = [spec.get("reversal_window_s")
-               for spec in floors["floors"].values()
-               if spec.get("reversal_window_s")]
-    narrowest = min(windows) if windows else None
+
+def corpus_built_at() -> str:
+    """When the walk the engine subject reads was built, from the walk itself."""
     with open(CORPUS, encoding="utf-8") as handle:
         walk = json.load(handle)
     built = (walk.get("source") or {}).get("built_at")
@@ -132,16 +114,58 @@ def corpus_age() -> tuple:
               f"cannot know whether the engines or the clock answered it.",
               file=sys.stderr)
         raise SystemExit(2)
-    age = (_dt.datetime.now(_dt.timezone.utc)
-           - _dt.datetime.fromisoformat(built.replace("Z", "+00:00"))).total_seconds()
-    if narrowest and age > narrowest:
-        print(f"REFUSED: the corpus is {int(age)}s old and the narrowest measured "
-              f"window is {int(narrowest)}s. Every windowed arm has gone quiet, "
-              f"so every release in the range answers identically and the sweep "
-              f"would record that as agreement. Re-run make_corpus.py.",
+    return built
+
+
+def rebuild_corpus() -> tuple:
+    """`(age_seconds, built_at)` of a corpus built for the run about to read it.
+
+    WHY ITS AGE MATTERS. Four engine versions were recorded with the
+    byte-identical line `declined=11`, which cannot be right: B6 measured that
+    from 0.1.11 an undeclared MONOTONICITY rate arm declines where 0.1.10
+    answered from a default, and this fixture leaves six of eight counters
+    undeclared. Measured on a fresh corpus the two differ by exactly six -- 1
+    against 7. Measured on a three-hour-old one they are both 11, because every
+    windowed arm has gone quiet with `insufficient_samples` and that decline
+    arrives before the threshold question is ever reached. So four identical
+    lines were recorded as evidence about four engines.
+
+    WHY BEFORE EACH RELEASE, AND NOT ONCE PER SWEEP. One corpus then fed every
+    release, refused if older than MONOTONICITY's 900 s window -- at the start,
+    and again before writing. An arm goes quiet long before that: on 0.2.31,
+    CONSERVATION on `ST-02` `parts_in_per_interval` answers at 241 s and
+    declines `insufficient_samples` by 331 s, and 0.2.24, asked the same corpus
+    beside it, adds the same decline. The sweep runs releases in version order,
+    so a sweep slowed by other work crossed that age part-way, and its later
+    releases recorded one decline more than its earlier ones. That was read
+    twice as a boundary between engine versions, at 0.2.20 and at 0.2.25.
+    Built here, every release is asked at the same age however long the
+    installs between them take, and nothing has to know which arm quiets
+    first.
+
+    A rebuild that failed would leave the previous corpus in place, perhaps
+    still young enough to pass any window, so the stamp is checked against the
+    moment this rebuild started.
+    """
+    started = _now().replace(microsecond=0)
+    proc = subprocess.run([sys.executable, MAKE_CORPUS], capture_output=True,
+                          text=True, cwd=ROOT, timeout=900)
+    if proc.returncode:
+        print(f"REFUSED: make_corpus.py exited {proc.returncode} rebuilding the "
+              f"corpus: {' '.join(proc.stderr.strip().splitlines()[-1:])}",
               file=sys.stderr)
         raise SystemExit(2)
-    return age, built, narrowest
+    built = corpus_built_at()
+    stamp = _dt.datetime.fromisoformat(built.replace("Z", "+00:00"))
+    if stamp < started:
+        print(f"REFUSED: make_corpus.py exited 0 and {CORPUS} is still stamped "
+              f"{built}, before this rebuild started at "
+              f"{started.isoformat().replace('+00:00', 'Z')}, so this release "
+              f"would be asked whatever was left on disk, at whatever age it "
+              f"has reached.",
+              file=sys.stderr)
+        raise SystemExit(2)
+    return (_now() - stamp).total_seconds(), built
 
 
 def declared_range(dist: str) -> str:
@@ -185,15 +209,17 @@ def decline_rows(attestation: dict) -> list:
 
 
 def run_detect(python: str, workdir: str) -> dict:
-    """The OUTCOME line, and the declines behind its count, from ONE run.
+    """The OUTCOME line, and the declines behind its count, from ONE run, on a
+    corpus built for it -- whose stamp and age the result keeps.
 
     THE ROWS, BECAUSE A COUNT CANNOT SAY WHICH. A loaded sweep on 2026-10-01
     recorded `declined=7` for its last eight releases where every earlier one
-    and every later re-run read 6. The file kept the count alone, the re-run
-    overwrote it, and nothing measured since -- aging, load, dependencies --
-    reproduces it. The attestation the same run writes names each decline, so
-    a count that moves now says what moved.
+    and every later re-run read 6. The file kept the count alone and the re-run
+    overwrote it. The attestation the same run writes names each decline, so a
+    count that moves now says what moved -- and the next time, the rows named
+    the arm `rebuild_corpus` explains.
     """
+    age, built = rebuild_corpus()
     attestation = os.path.join(workdir, "attestation.json")
     proc = subprocess.run(
         [python, "-m", "factory_line_audit.cli", "detect",
@@ -212,6 +238,10 @@ def run_detect(python: str, workdir: str) -> dict:
             rows = decline_rows(json.load(handle))
     return {"exit": proc.returncode, "outcome": outcome[0] if outcome else None,
             "declined_rows": rows,
+            # STAMPED, so the evidence says what each release was measured
+            # against. The file once recorded four engine versions with one
+            # identical OUTCOME line, and nothing in it could say why.
+            "corpus_built_at": built, "corpus_age_s": int(age),
             "stderr": proc.stderr.strip().splitlines()[-3:]}
 
 
@@ -305,7 +335,9 @@ def sweep(dist: str, run) -> dict:
             results[version] = dict(outcome, installed=True,
                                     inside_range=version in inside)
             print(f"  {version}: exit {outcome['exit']}  "
-                  f"{outcome['outcome'] or outcome['stderr']}")
+                  f"{outcome['outcome'] or outcome['stderr']}"
+                  + (f"  (corpus {outcome['corpus_age_s']}s old)"
+                     if "corpus_age_s" in outcome else ""))
         finally:
             shutil.rmtree(workdir, ignore_errors=True)
 
@@ -349,35 +381,11 @@ def main() -> int:
         print(f"reaped {len(abandoned)} work director"
               f"{'y' if len(abandoned) == 1 else 'ies'} left by a killed run: "
               f"{', '.join(abandoned)}")
-    age, built, narrowest = corpus_age()
-    print(f"corpus built {built} ({int(age)}s ago), inside the narrowest "
-          f"measured window ({int(narrowest)}s)")
-    body = {"measured_on": _dt.datetime.now(_dt.timezone.utc)
-            .replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-            "distributions": {},
-            # STAMPED, so the evidence says what it was measured against. The
-            # previous file recorded four engine versions with one identical
-            # OUTCOME line and nothing in it could say why.
-            "corpus": {"built_at": built, "age_s_at_sweep": int(age),
-                       "narrowest_window_s": narrowest}}
+    body = {"measured_on": _now().replace(microsecond=0).isoformat()
+            .replace("+00:00", "Z"),
+            "distributions": {}}
     for dist, run in SUBJECTS.items():
         body["distributions"][dist] = sweep(dist, run)
-
-    # AND AGAIN AT THE END. The check at the top is not enough on its own: this
-    # sweep builds a throwaway environment per release and takes minutes, so a
-    # corpus fresh when it started can expire while it runs -- and then the
-    # earlier releases were asked a live question and the later ones a dead one,
-    # with nothing in the file to say which. Both ages are recorded, and a sweep
-    # that crossed the boundary is not written.
-    end_age, _, _ = corpus_age()
-    body["corpus"]["age_s_at_write"] = int(end_age)
-    if narrowest and end_age > narrowest:
-        print(f"\nREFUSED: the corpus aged past the narrowest measured window "
-              f"({int(narrowest)}s) during the sweep -- {int(age)}s at the start, "
-              f"{int(end_age)}s now. Some releases were asked a live question and "
-              f"some a dead one. Re-run make_corpus.py and this probe.",
-              file=sys.stderr)
-        return 2
 
     # Refuse a partial write: a range with no result is a range this file would
     # then be silent about, and silence here reads as a pin that was exercised.

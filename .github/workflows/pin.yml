@@ -41,6 +41,7 @@ on:
       - "pyproject.toml"
       - "battery/probe_pin.py"
       - "battery/probe_conformance.py"
+      - "battery/make_corpus.py"
       - "src/factory_line_audit/exit_contract.py"
 
 permissions:
@@ -64,14 +65,10 @@ jobs:
           python3 -m pip install --quiet --upgrade pip
           python3 -m pip install --quiet virtualenv
 
-      # DERIVED and expiring, so it is not committed: several axiom arms count
-      # inside a window measured backwards from now, and a corpus on disk goes
-      # stale. Built here so the engine sweep has a walk to judge -- without it
-      # every release would fail for the same reason and say nothing about any
-      # of them.
-      - name: The corpus, stamped now
-        run: python3 battery/make_corpus.py
-
+      # No corpus step. The corpus is derived and it expires, so the sweep
+      # builds it again before each engine release: one built here fed every
+      # release, and a slow sweep's last ones were asked it after an arm had
+      # gone quiet.
       - name: Every release inside every declared range, installed and run
         run: python3 battery/probe_pin.py
 

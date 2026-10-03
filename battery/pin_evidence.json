@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-10-02T11:36:35Z",
+  "measured_on": "2026-10-03T03:44:56Z",
   "distributions": {
     "arbiter-engine": {
       "declared_range": "arbiter-engine>=0.2.4,<0.3",
@@ -125,6 +125,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:12Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -170,6 +172,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:19Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -215,6 +219,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:26Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": false
@@ -260,6 +266,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:33Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -305,6 +313,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:40Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -350,6 +360,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:47Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -395,6 +407,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:45:54Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -440,6 +454,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:01Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -485,6 +501,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:08Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -530,6 +548,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:15Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -575,6 +595,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:23Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -620,6 +642,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:30Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -665,6 +689,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:37Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -710,6 +736,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:44Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -755,6 +783,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:50Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -800,6 +830,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:46:56Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -845,6 +877,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:03Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -890,6 +924,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:09Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -935,6 +971,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:15Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -980,6 +1018,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:22Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1025,6 +1065,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:32Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1070,6 +1112,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:44Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1115,6 +1159,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:47:56Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1160,6 +1206,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:48:09Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1205,6 +1253,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:48:21Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1250,6 +1300,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:48:33Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1295,6 +1347,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:48:46Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1340,6 +1394,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:48:58Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1385,6 +1441,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:49:10Z",
+          "corpus_age_s": 0,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1430,6 +1488,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:49:22Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1475,6 +1535,8 @@
               "indicator": "parts_out"
             }
           ],
+          "corpus_built_at": "2026-10-03T03:49:34Z",
+          "corpus_age_s": 1,
           "stderr": [],
           "installed": true,
           "inside_range": true
@@ -1614,11 +1676,5 @@
       },
       "floor_is_forced_by": {}
     }
-  },
-  "corpus": {
-    "built_at": "2026-10-02T11:36:32Z",
-    "age_s_at_sweep": 3,
-    "narrowest_window_s": 900,
-    "age_s_at_write": 292
   }
 }

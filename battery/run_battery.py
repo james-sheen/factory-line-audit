@@ -1136,30 +1136,48 @@ def leg_pin():
     if "distributions" not in evidence:
         return leg("pin", 2, "pin_evidence.json predates the two-subject sweep "
                              "and covers one range; re-run probe_pin.py")
+    if not evidence.get("measured_on"):
+        return leg("pin", 2, "pin_evidence.json does not say when it was "
+                             "measured, so nothing can tell how far behind the "
+                             "index it is; re-run probe_pin.py")
     # WHICH CORPUS ANSWERED. The engine subject runs `detect` against the clean
     # walk, and on a corpus older than the narrowest measured window every
     # release in the range answers identically -- which the file then records as
     # agreement. It did: four engine versions, one byte-identical line. The
     # evidence has to say what it was measured against, and an old file that
     # cannot say is refused rather than read.
-    if not evidence.get("measured_on"):
-        return leg("pin", 2, "pin_evidence.json does not say when it was "
-                             "measured, so nothing can tell how far behind the "
-                             "index it is; re-run probe_pin.py")
-    corpus = evidence.get("corpus") or {}
-    window = corpus.get("narrowest_window_s")
-    if not corpus.get("built_at") or window is None:
-        return leg("pin", 2, "pin_evidence.json does not record the corpus it "
-                             "was measured against, so it cannot say whether "
-                             "the engines or an expired fixture answered; "
-                             "re-run probe_pin.py")
-    if corpus.get("age_s_at_sweep", 0) > window:
+    #
+    # PER RELEASE, because one corpus fed the whole sweep and aged through it.
+    # This compared its age when the sweep started, younger than any release
+    # saw it, against MONOTONICITY's 900 s window, while CONSERVATION on `ST-02`
+    # goes quiet between 241 and 331 s. A slow sweep's later releases recorded
+    # one decline more than its earlier ones, and that was read twice as a
+    # boundary between engine versions. `probe_pin.py` now builds the corpus
+    # before each engine release and records its age at the run, and each age
+    # is held to `FAULT_AGE_FLOOR_S`, the youngest at which this battery has
+    # measured a corpus answering differently.
+    order = _release_order()
+    engine = evidence["distributions"].get("arbiter-engine") or {}
+    ages = {version: result.get("corpus_age_s")
+            for version, result in (engine.get("results") or {}).items()
+            if result.get("installed")}
+    unstamped = sorted((v for v, age in ages.items() if age is None), key=order)
+    if unstamped:
+        return leg("pin", 2, f"pin_evidence.json does not record the corpus "
+                             f"{len(unstamped)} engine "
+                             f"release{'' if len(unstamped) == 1 else 's'} ran "
+                             f"against ({', '.join(unstamped[:3])}...), so it "
+                             f"cannot say they were asked the same question -- "
+                             f"it predates the corpus built per release; re-run "
+                             f"probe_pin.py")
+    old = {v: age for v, age in ages.items() if age > FAULT_AGE_FLOOR_S}
+    if old:
         return leg("pin", 2,
-                   f"the sweep ran against a corpus {corpus['age_s_at_sweep']}s "
-                   f"old, past the narrowest measured window of {int(window)}s. "
-                   f"Every windowed arm was quiet, so every release answered the "
-                   f"same and the file records that as agreement; re-run "
-                   f"probe_pin.py")
+                   f"engine releases ran against a corpus past the measured "
+                   f"{FAULT_AGE_FLOOR_S}s floor ({old}), where at least one arm "
+                   f"answers differently, so they and the rest were not asked "
+                   f"the same question; re-run probe_pin.py")
+    oldest = max(ages.values(), default=None)
     with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as handle:
         pyproject = handle.read()
     found = evidence["distributions"]
@@ -1167,7 +1185,6 @@ def leg_pin():
         return leg("pin", 2, "the evidence names no distribution, so it is an "
                              "absence reported as a pass")
     stale, red, notes, news = [], [], [], []
-    order = _release_order()
     for dist, body in sorted(found.items()):
         if body["declared_range"] not in pyproject:
             stale.append(f"{dist} was measured against {body['declared_range']}, "
@@ -1240,6 +1257,9 @@ def leg_pin():
         return leg("pin", 1, f"a release inside the declared range does not run "
                              f"clean for {red}; the range is a claim that is "
                              f"not true")
+    if oldest is not None:
+        notes.append(f"each engine release asked a corpus built for it, at most "
+                     f"{oldest}s old")
     for item in news:
         print(f"::notice::{item}")
     return leg("pin", 0, "; ".join(notes + [f"NOTICE: {item}" for item in news]))

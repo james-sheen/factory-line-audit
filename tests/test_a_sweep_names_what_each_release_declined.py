@@ -2,11 +2,14 @@
 
 A loaded sweep recorded `declined=7` for its last eight engine releases, where
 every earlier release and every later re-run read 6. The evidence kept the
-count alone, the re-run overwrote it, and nothing measured since reproduces
-it, so which decline the seventh was is lost. Each release now records its
-declines -- reason, axiom, entity, indicator -- from the attestation the same
-run writes, and a release whose declines differ from the rest is named, with
-what it added and what it lacked.
+count alone and the re-run overwrote it, so which decline the seventh was is
+lost. Each release now records its declines -- reason, axiom, entity, indicator
+-- from the attestation the same run writes, and a release whose declines
+differ from the rest is named, with what it added and what it lacked.
+
+The next time, it named the row: CONSERVATION on `ST-02`, from a corpus that had
+aged through the sweep. `test_each_release_is_asked_a_corpus_built_for_it.py`
+holds what was done about that.
 """
 
 from __future__ import annotations
