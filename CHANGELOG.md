@@ -12,6 +12,23 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
+## 0.1.17 -- unreleased
+
+**The qa vertical's findings are judged, and the probe that waited for that is
+gone.** qa-orchestrator 0.3.3 reads a report's `findings` with a dotted path, which
+is where this tool keeps them, and the tripwire meant to notice could never fire: it
+read a dotted key off its own dict with a plain `.get`. The `orchestrator` leg now
+asks the installed harness to read a nested finding through this vertical's schema,
+and goes red if it cannot.
+
+**On the live rung a removed tag is absent, and `tag-removed` can fail.** The surface
+created every node the register declares, so a tag the qa tier took out of the walk
+was served at 0.0 as a working one, and the scenario's referee expectation -- exit 1,
+met by the two nodes withheld from the start -- held whatever the referee saw. The
+surface creates only the nodes a sample carries, and each phase names, from the
+referee's own report, the rows that say what was planted; `must-fail.yaml` gains a
+third deliberate error, in the findings channel.
+
 ## 0.1.16 -- 2026-09-27
 
 **`regression` refuses a walk whose samples carry no node, as it refuses one with

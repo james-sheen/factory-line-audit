@@ -25,13 +25,18 @@ more; four are expressible as `drive` over a series, and the fifth is named
 `drift`, which is already an alias of `set` -- `register_verb` refuses it:
 *verb 'drift' is already defined*.
 
-**What is NOT yet judgeable, and why nothing here pretends otherwise.** This
-tool keeps its findings at `checked.findings_verbatim`. `ReportSchema.checked`
-is read with a dotted path and reaches its neighbour `checked.invariants_attempted`
-fine; `findings` is read with a plain `.get()` and cannot. So a scenario
-asserting on findings would see none and pass. Filed upstream as
-`qa-orchestrator` #1. `test_qa_vertical.py` carries a tripwire that goes red the
-day it is answered, so this comment cannot outlive its own fix.
+**Findings are judgeable from qa-orchestrator 0.3.3.** This tool keeps them at
+`checked.findings_verbatim`, and until 0.3.3 the harness read `findings` with a
+plain `.get()`, so a scenario asserting on them saw none and passed --
+`qa-orchestrator` #1, answered there with a dotted path. A tripwire meant to go
+red on the answer could never fire, and the answer went unnoticed for three
+weeks. `probe_qa_vertical.py` now asks the installed harness to read a nested
+finding through this schema, so a harness that cannot is named.
+
+**`presence` has no JSON switch**, because it prints its report as JSON already,
+and the harness reads a mode's report only through a non-empty `json_argv`. So
+a presence scenario's findings are judged from that output as prose: a `text`
+anchors the tag's own row, and the names are the nodes in it.
 """
 
 from __future__ import annotations
@@ -260,8 +265,8 @@ def _schema(referee):
 
     * `checked` -- `checked.invariants_attempted` exists and a dotted path
       reaches it.
-    * `findings` -- `checked.findings_verbatim` is where they are. A dotted path
-      does NOT reach it today; `qa-orchestrator` #1.
+    * `findings` -- `checked.findings_verbatim` is where they are, reached
+      with a dotted path from qa-orchestrator 0.3.3 (#1).
     * `subject` -- an attestation finding names `entity_id`; a presence row
       names `asset` and `tag`.
     * `text` -- an attestation finding carries `reason` and `problem_type`.

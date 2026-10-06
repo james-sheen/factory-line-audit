@@ -67,22 +67,35 @@ def measure() -> dict:
             problems.append(f"{key} did not come back: before {sorted(before[key])}, "
                             f"after {sorted(after[key])}")
 
-    # THE TRIPWIRE for qa-orchestrator #1. `findings` is read with a plain
-    # `.get()` while `declines` and `checked` are read with `_dig`, so this
-    # tool's nested findings cannot be reached and a scenario asserting on them
-    # would pass having seen none. This asserts the CURRENT behaviour, so it
-    # goes red the day the ask is answered -- which is the only way anybody
-    # notices that the vertical can now judge.
+    # FINDINGS ARE REACHABLE, asked of the harness's own reader. This was a
+    # tripwire meant to go red the day qa-orchestrator #1 was answered, and it
+    # could never fire: it read a dotted key off its own literal dict with a
+    # plain `.get`, which is None whatever the harness does. #1 was answered in
+    # qa-orchestrator 0.3.3 -- `Verdict.findings()` reads the schema's path with
+    # `_dig` -- and nothing here noticed. So the question is now the positive
+    # one, put to the harness with this vertical's own schema: a nested finding
+    # comes back, or this vertical cannot judge findings and a scenario
+    # asserting on them would pass having seen none.
     nested = {"checked": {"findings_verbatim": [{"entity_id": "x"}],
                           "invariants_attempted": 48}}
-    dig = getattr(referee, "_dig", None)
-    reachable = bool(nested.get("checked.findings_verbatim"))
-    denominator = dig(nested, "checked.invariants_attempted") if dig else None
-    if reachable:
-        problems.append("qa-orchestrator #1 appears to be ANSWERED: a dotted "
-                        "`findings` now resolves. Point the schema at it, drop "
-                        "this tripwire, and the vertical can judge findings")
-    if denominator != 48:
+    schema = qa_vertical._schema(referee)
+    try:
+        verdict = referee.Verdict(exit_code=1, stdout="", stderr="",
+                                  report=nested, schema=schema)
+    except TypeError as error:
+        verdict = None
+        problems.append(f"this harness's `Verdict` would not take a report and "
+                        f"a schema ({error}), so nothing can be read through it")
+    reachable = (verdict is not None
+                 and [f.get("entity_id") for f in verdict.findings()] == ["x"])
+    denominator = verdict.checked() if verdict is not None else None
+    if verdict is not None and not reachable:
+        problems.append(f"qa-orchestrator {qa_orchestrator.__version__} does "
+                        f"not reach the schema's `{schema.findings}` in a report "
+                        f"keeping findings at `checked.findings_verbatim`; it "
+                        f"reads a dotted path from 0.3.3, and without one this "
+                        f"vertical cannot judge findings")
+    if verdict is not None and denominator != 48:
         problems.append(f"`checked` no longer reaches a dotted path either "
                         f"({denominator!r}); the schema's denominator is gone")
 
@@ -183,13 +196,15 @@ def measure() -> dict:
             output = bad.stdout + bad.stderr
             if bad.returncode == 0:
                 problems.append(
-                    "scenarios/must-fail.yaml PASSED. Both of its expectations "
-                    "are false, so the comparator is not comparing -- and every "
-                    "green scenario beside it means nothing")
+                    "scenarios/must-fail.yaml PASSED. All three of its "
+                    "expectations are false, so the comparator is not "
+                    "comparing -- and every green scenario beside it means "
+                    "nothing")
             # One tell per channel, named by subject rather than by the whole
             # sentence: the wording is the harness's to change, the subject is
-            # not.
+            # not. The findings channel has its own subject for that reason.
             for tell, channel in (("exit code", "the referee channel"),
+                                  ("ns=2;s=PR01.Strokes", "the findings channel"),
                                   ("ns=2;s=PR01.DieTemp", "the substrate channel"),
                                   ("expected reading", "the substrate channel")):
                 if tell not in output:
@@ -214,10 +229,10 @@ def measure() -> dict:
         answer.update(code=0, note=(
             f"qa-orchestrator {qa_orchestrator.__version__}: registries come "
             f"back ({added['substrates']} + {added['tools']}, no verbs); a "
-            f"foreign entity is refused by name; the scenario ran end to end "
-            f"({ran}) and the wrong-on-purpose one failed for both of its "
-            f"reasons ({wrong_on_purpose}); findings stay unreachable pending "
-            f"their #1"))
+            f"foreign entity is refused by name; findings reach the harness "
+            f"through the schema; the scenario ran end to end ({ran}) and the "
+            f"wrong-on-purpose one failed for each of its three reasons "
+            f"({wrong_on_purpose})"))
     return answer
 
 

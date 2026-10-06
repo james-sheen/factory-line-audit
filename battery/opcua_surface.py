@@ -173,9 +173,17 @@ async def serve(port: int, walk_path: str, ready: str,
     # A register exported from a real MES would carry the datatype; this one
     # infers it, and the inference is named here rather than hidden.
     first = (samples[0].get("nodes") if samples else {}) or {}
+    # A NODE NO SAMPLE CARRIES IS NOT CREATED. Every node the register declares
+    # was created here, and one the walk never mentions was then served at its
+    # initial 0.0, never written and readable -- so a tag the qa tier removed,
+    # by taking it out of the walk this replays, came back from the register as
+    # a working tag. On the live rung `tag-removed` could not fail: nothing the
+    # referee saw was absent. Absent from every sample now means absent from the
+    # server, which is what a removed tag looks like on a line.
+    carried = {node for sample in samples for node in (sample.get("nodes") or {})}
     variables = {}
     for node in node_ids():
-        if node == WITHHOLD_ABSENT:
+        if node == WITHHOLD_ABSENT or node not in carried:
             continue
         seed = (first.get(node) or {}).get("v")
         # THE SEED'S TYPE, all three of them. A string seed used to fall to

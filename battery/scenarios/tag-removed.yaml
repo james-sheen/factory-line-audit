@@ -9,6 +9,14 @@
 # the only thing that could show the referee was right to stay quiet. Without
 # it, a broken injector and a blind referee look identical from here.
 #
+# AND THE REFEREE'S OWN VIEW TELLS THE PHASES APART. Its exit is 1 in every
+# phase, because the surface withholds two nodes from the start, so an exit
+# alone could not fail on either planted fault -- and a removed tag was served
+# at 0.0 as a working one while it could not. Each phase therefore names, from
+# the referee's report, the rows that say it: `presence` prints that report and
+# has no JSON switch, so the harness reads it as prose, and a `text` anchors the
+# tag's own row.
+#
 # Config paths resolve against THIS FILE, not the working directory.
 format: qa-scenario/2
 name: a declared tag removed, then one that stops reading
@@ -25,7 +33,12 @@ phases:
   - note: the surface as it stands, already withholding two nodes
     captures: 1
     expect:
-      referee: {exit: 1}
+      referee:
+        exit: 1
+        findings:
+          text: "the walk never served this node"
+          names: ["ns=2;s=ROB01.Torque"]
+          not_names: ["ns=2;s=PR01.DieTemp"]
       substrate:
         "ns=2;s=PR01.DieTemp": reading
         "ns=2;s=ROB01.Torque": absent
@@ -35,7 +48,11 @@ phases:
     captures: 1
     action: {remove: "ns=2;s=PR01.DieTemp"}
     expect:
-      referee: {exit: 1}
+      referee:
+        exit: 1
+        findings:
+          text: "the walk never served this node"
+          names: ["ns=2;s=PR01.DieTemp", "ns=2;s=ROB01.Torque"]
       substrate:
         "ns=2;s=PR01.DieTemp": absent
         "ns=2;s=PR01.Strokes": reading
@@ -44,7 +61,11 @@ phases:
     captures: 1
     action: {disable: "ns=2;s=PR01.Strokes"}
     expect:
-      referee: {exit: 1}
+      referee:
+        exit: 1
+        findings:
+          text: "the server reports the source as failed"
+          names: ["ns=2;s=PR01.Strokes", "ns=2;s=PLC01.CpuLoad"]
       substrate:
         "ns=2;s=PR01.Strokes": disabled
         "ns=2;s=PR01.DieTemp": absent

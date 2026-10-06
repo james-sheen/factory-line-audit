@@ -7,17 +7,19 @@
 # expectation in three shipped scenarios matched nothing and passed, and only
 # running one against a real report showed it.
 #
-# So this asserts two things that the run will contradict, one in each
+# So this asserts three things that the run will contradict, one in each
 # expectation channel:
 #
 #   * the REFEREE channel -- exit 0, where a line with an absent tag returns 1;
+#   * the FINDINGS channel -- a tag that reads, named in the rows of tags the
+#     walk never served;
 #   * the SUBSTRATE channel -- a tag reporting `reading` in the same phase that
 #     removed it.
 #
-# `probe_qa_vertical.py` runs this and requires BOTH named mismatches. Requiring
-# only that it fails would be satisfied by a scenario broken in some unrelated
-# way -- an unknown substrate, a typo'd verb -- which proves nothing about
-# whether anything is being compared.
+# `probe_qa_vertical.py` runs this and requires ALL THREE named mismatches.
+# Requiring only that it fails would be satisfied by a scenario broken in some
+# unrelated way -- an unknown substrate, a typo'd verb -- which proves nothing
+# about whether anything is being compared.
 format: qa-scenario/2
 name: WRONG ON PURPOSE -- both expectations are false and both must be caught
 substrate: factory-opcua
@@ -32,7 +34,13 @@ phases:
     expect:
       # The line already withholds two nodes and this removes a third, so the
       # tool returns 1. Asserting 0 is the deliberate error.
-      referee: {exit: 0}
+      referee:
+        exit: 0
+        # PR01.Strokes reads in this phase, so its row is not among the ones
+        # the walk never served. Naming it there is the second.
+        findings:
+          text: "the walk never served this node"
+          names: ["ns=2;s=PR01.Strokes"]
       substrate:
         # Removed in this very phase. Asserting it still reads is the other one.
         "ns=2;s=PR01.DieTemp": reading

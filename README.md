@@ -156,7 +156,7 @@ below. `corpus`, `conformance`, `regression`, `capture`, `engine`,
 | `suite` | Does the suite pass from a directory that is not the repository? |
 | `conformance` **added** | Does the core's own kit still accept this vertical, and does its noun reach the core? |
 | `regression` **added** | Does a declared prefix move pair, and the same move undeclared get reported and not applied? |
-| `orchestrator` **added** | Does this package register as a `qa-orchestrator` vertical, hand back all three registries, refuse another vertical's entity, and does the wrong-on-purpose scenario still fail? |
+| `orchestrator` **added** | Does this package register as a `qa-orchestrator` vertical, hand back all three registries, refuse another vertical's entity, reach its findings through the harness, and on the live rung does the scenario hold and the wrong-on-purpose one still fail? |
 | `pin_channel` **added** | Over a channel that has a certificate, does the client library actually call the pin -- does a right digest walk and a wrong one refuse, naming both? |
 | `pin` | Does every release inside each declared range actually run? |
 | `ship` | Does the built artifact, installed clean, still do all of that? |
