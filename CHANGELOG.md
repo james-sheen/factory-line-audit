@@ -12,7 +12,7 @@ Entries say what a reader has to DO, then what was wrong. A release that only
 narrows an internal rule still gets a line, because somebody's declaration file
 is the thing it narrows.
 
-## 0.1.17 -- unreleased
+## 0.1.17 -- 2026-10-06
 
 **The qa vertical's findings are judged, and the probe that waited for that is
 gone.** qa-orchestrator 0.3.3 reads a report's `findings` with a dotted path, which
